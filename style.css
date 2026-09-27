@@ -1,41 +1,762 @@
-body {
+* {
+    box-sizing: border-box;
     margin: 0;
-    background: #080d14;
-    color: white;
-    font-family: Arial, sans-serif;
+    padding: 0;
+}
 
-    height: 100vh;
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
+
+
+body {
+    background: #05080d;
+    color: white;
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    overflow: hidden;
+}
+
+
+/* =========================
+   GAME
+========================= */
+
+#game {
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    background: #080d13;
+
+    z-index: 1;
+}
+
+
+/* =========================
+   MAIN MENU
+========================= */
+
+#menu {
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
 
     display: flex;
-    justify-content: center;
+
     align-items: center;
+    justify-content: center;
+
+    z-index: 100;
+
+    background:
+        radial-gradient(
+            circle at 50% 45%,
+            #203b4d 0%,
+            #10202c 30%,
+            #080f17 65%,
+            #03060a 100%
+        );
 }
 
-.box {
+
+#menu::before {
+    content: "";
+
+    position: absolute;
+
+    inset: 0;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent 49.5%,
+            rgba(100,180,220,0.04) 50%,
+            transparent 50.5%
+        );
+
+    pointer-events: none;
+}
+
+
+.menuBox {
+    position: relative;
+
+    width: min(600px, 90vw);
+
+    padding: 55px 40px;
+
     text-align: center;
-    background: #142331;
-    padding: 50px;
-    border-radius: 20px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18,32,44,0.98),
+            rgba(7,14,21,0.98)
+        );
+
+    border:
+        1px solid rgba(110,170,205,0.45);
+
+    border-radius: 24px;
+
+    box-shadow:
+        0 30px 100px rgba(0,0,0,0.75),
+        inset 0 0 50px rgba(80,150,190,0.04);
+
+    z-index: 101;
 }
 
-h1 {
-    font-size: 50px;
+
+.smallLogo {
+    color: #78cfff;
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+    letter-spacing: 8px;
+
+    margin-bottom: 15px;
 }
 
-button {
-    padding: 18px 40px;
 
-    background: #2879aa;
-    color: white;
+.menuBox h1 {
+    font-size:
+        clamp(
+            35px,
+            7vw,
+            65px
+        );
 
-    border: 2px solid #70caff;
+    line-height: 1;
+
+    letter-spacing: 5px;
+
+    margin-bottom: 18px;
+
+    color: #f2f9ff;
+
+    text-shadow:
+        0 0 20px rgba(90,190,255,0.4);
+}
+
+
+.menuDescription {
+    color: #8ea6b7;
+
+    line-height: 1.7;
+
+    font-size: 14px;
+
+    margin-bottom: 35px;
+}
+
+
+.menuButtons {
+    width: min(380px, 100%);
+
+    margin: auto;
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 11px;
+}
+
+
+.menuButton {
+    appearance: none;
+
+    width: 100%;
+
+    min-height: 56px;
+
+    padding: 12px 20px;
+
+    border:
+        1px solid #385467;
+
     border-radius: 10px;
 
-    font-size: 20px;
+    background:
+        linear-gradient(
+            180deg,
+            #172b3a,
+            #101e29
+        );
+
+    color: #e9f5fb;
+
+    font-size: 16px;
+
+    font-weight: bold;
+
+    letter-spacing: 1px;
+
+    cursor: pointer;
+
+    position: relative;
+
+    z-index: 200;
+
+    pointer-events: auto;
+
+    transition:
+        transform 0.15s,
+        background 0.15s,
+        border-color 0.15s,
+        box-shadow 0.15s;
+}
+
+
+.menuButton:hover {
+    transform: translateY(-2px);
+
+    background:
+        linear-gradient(
+            180deg,
+            #21445b,
+            #173143
+        );
+
+    border-color: #73cfff;
+
+    box-shadow:
+        0 0 20px rgba(70,180,240,0.15);
+}
+
+
+.menuButton:active {
+    transform: translateY(1px);
+}
+
+
+.menuButton.main {
+    background:
+        linear-gradient(
+            180deg,
+            #2b759e,
+            #1d536f
+        );
+
+    border-color: #7dd5ff;
+
+    box-shadow:
+        0 0 25px rgba(70,190,255,0.18);
+}
+
+
+.menuButton.main:hover {
+    background:
+        linear-gradient(
+            180deg,
+            #358bb9,
+            #256783
+        );
+}
+
+
+#saveStatus {
+    margin-top: 25px;
+
+    color: #607989;
+
+    font-size: 11px;
+
+    letter-spacing: 2px;
+}
+
+
+/* =========================
+   HUD
+========================= */
+
+#hud {
+    position: fixed;
+
+    inset: 0;
+
+    z-index: 10;
+
+    pointer-events: none;
+}
+
+
+.topLeft {
+    position: absolute;
+
+    left: 22px;
+    top: 20px;
+
+    width: 240px;
+}
+
+
+.hudTitle {
+    color: #73c9f7;
+
+    font-size: 13px;
+
+    font-weight: bold;
+
+    letter-spacing: 4px;
+
+    margin-bottom: 16px;
+}
+
+
+.statLabel {
+    color: #9bb0bd;
+
+    font-size: 10px;
+
+    font-weight: bold;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 5px;
+}
+
+
+.bar {
+    width: 100%;
+    height: 15px;
+
+    margin-bottom: 11px;
+
+    background: #091118;
+
+    border:
+        1px solid #344b5b;
+
+    border-radius: 4px;
+
+    overflow: hidden;
+}
+
+
+.healthBar {
+    width: 100%;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            #a52e48,
+            #ff7182
+        );
+
+    transition: width 0.15s;
+}
+
+
+.energyBar {
+    width: 100%;
+    height: 100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            #247ba6,
+            #6bdcff
+        );
+
+    transition: width 0.15s;
+}
+
+
+#objective {
+    position: absolute;
+
+    top: 22px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    padding:
+        9px 18px;
+
+    background:
+        rgba(5,12,18,0.8);
+
+    border:
+        1px solid #304b5e;
+
+    border-radius: 8px;
+
+    color: #d4eaf5;
+
+    font-size: 12px;
+
+    letter-spacing: 2px;
+
+    white-space: nowrap;
+}
+
+
+.topRight {
+    position: absolute;
+
+    top: 22px;
+    right: 22px;
+
+    text-align: right;
+}
+
+
+#zone {
+    color: #8ca5b4;
+
+    font-size: 12px;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 8px;
+}
+
+
+#kills,
+#credits {
+    color: #d0e1eb;
+
+    font-size: 13px;
+
+    margin-top: 3px;
+}
+
+
+.bottomLeft {
+    position: absolute;
+
+    left: 22px;
+    bottom: 20px;
+
+    color: #6d8391;
+
+    font-size: 10px;
+
+    letter-spacing: 1px;
+}
+
+
+.weapon {
+    position: absolute;
+
+    right: 25px;
+    bottom: 20px;
+
+    text-align: right;
+}
+
+
+.weaponName {
+    color: #8ea8b8;
+
+    font-size: 11px;
+
+    letter-spacing: 3px;
+
+    margin-bottom: 2px;
+}
+
+
+#ammo {
+    color: #78d4ff;
+
+    font-size: 30px;
+
+    font-weight: bold;
+}
+
+
+/* =========================
+   PAUSE
+========================= */
+
+#pause {
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 150;
+
+    background:
+        rgba(2,5,8,0.88);
+}
+
+
+.pauseBox {
+    width: min(470px, 90vw);
+
+    padding: 42px;
+
+    text-align: center;
+
+    background:
+        linear-gradient(
+            145deg,
+            #142433,
+            #0a131c
+        );
+
+    border:
+        1px solid #456277;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 30px 80px rgba(0,0,0,0.7);
+}
+
+
+.pauseSmall {
+    color: #6eb9df;
+
+    font-size: 11px;
+
+    letter-spacing: 5px;
+
+    margin-bottom: 10px;
+}
+
+
+.pauseBox h2 {
+    font-size: 42px;
+
+    letter-spacing: 5px;
+
+    margin-bottom: 28px;
+}
+
+
+/* =========================
+   ACHIEVEMENT
+========================= */
+
+#achievement {
+    position: fixed;
+
+    right: 25px;
+    bottom: 25px;
+
+    width: 310px;
+
+    padding: 18px 20px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #162d3e,
+            #0b1822
+        );
+
+    border:
+        1px solid #5684a0;
+
+    border-radius: 12px;
+
+    z-index: 300;
+
+    transform:
+        translateX(380px);
+
+    transition:
+        transform 0.4s ease;
+
+    box-shadow:
+        0 15px 50px rgba(0,0,0,0.5);
+}
+
+
+#achievement.show {
+    transform:
+        translateX(0);
+}
+
+
+.achievementTop {
+    color: #70ccff;
+
+    font-size: 10px;
+
+    letter-spacing: 3px;
+
+    margin-bottom: 6px;
+}
+
+
+#achievementName {
+    color: white;
+
+    font-size: 18px;
+
+    font-weight: bold;
+}
+
+
+/* =========================
+   MAP
+========================= */
+
+#map {
+    position: fixed;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    z-index: 140;
+
+    background:
+        rgba(2,7,11,0.95);
+}
+
+
+.mapBox {
+    width: min(850px, 92vw);
+
+    height: min(650px, 85vh);
+
+    padding: 22px;
+
+    background:
+        #09141d;
+
+    border:
+        1px solid #3e5b6d;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 30px 100px rgba(0,0,0,0.8);
+}
+
+
+.mapHeader {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 15px;
+}
+
+
+.mapHeader h2 {
+    font-size: 22px;
+
+    letter-spacing: 4px;
+}
+
+
+#closeMap {
+    padding: 8px 14px;
+
+    color: white;
+
+    background: #162937;
+
+    border:
+        1px solid #456273;
+
+    border-radius: 7px;
 
     cursor: pointer;
 }
 
-button:hover {
-    background: #3c9bd0;
+
+#closeMap:hover {
+    background: #244457;
+}
+
+
+#mapCanvas {
+    display: block;
+
+    width: 100%;
+    height: calc(100% - 50px);
+
+    background:
+        #061019;
+
+    border:
+        1px solid #263e4d;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 650px) {
+
+    .menuBox {
+        padding: 38px 20px;
+    }
+
+    .menuBox h1 {
+        letter-spacing: 2px;
+    }
+
+    .topLeft {
+        width: 170px;
+
+        left: 12px;
+        top: 12px;
+    }
+
+    .topRight {
+        right: 12px;
+        top: 12px;
+    }
+
+    #objective {
+        top: 125px;
+
+        font-size: 9px;
+    }
+
+    .bottomLeft {
+        display: none;
+    }
+
+    .weapon {
+        right: 15px;
+        bottom: 15px;
+    }
+
+    #achievement {
+        width: 270px;
+
+        right: 12px;
+        bottom: 12px;
+    }
 }
