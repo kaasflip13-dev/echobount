@@ -1,17 +1,11 @@
 alert("JAVASCRIPT WERKT!");
 
-document.getElementById("newGame").onclick = function () {
-    alert("NEW RUN KNOP WERKT!");
-};
+const knop = document.getElementById("testKnop");
 
-document.getElementById("loadGame").onclick = function () {
-    alert("CONTINUE KNOP WERKT!");
-};
-
-document.getElementById("achievementsButton").onclick = function () {
-    alert("ACHIEVEMENTS KNOP WERKT!");
-};
-
-document.getElementById("controlsButton").onclick = function () {
-    alert("CONTROLS KNOP WERKT!");
-};
+if (knop) {
+    knop.addEventListener("click", function () {
+        alert("DE KNOP WERKT!");
+    });
+} else {
+    alert("KNOP NIET GEVONDEN!");
+}
