@@ -13,101 +13,85 @@ body {
 body {
     background: #05080d;
     color: white;
-    font-family: Arial, Helvetica, sans-serif;
+    font-family: Arial, sans-serif;
     overflow: hidden;
 }
 
-button {
-    font-family: inherit;
-}
-
 #game {
-    position: absolute;
+    position: fixed;
     inset: 0;
-
     width: 100%;
     height: 100%;
-
-    display: block;
-
     background: #080d14;
 }
 
 
-/* =========================================
-   START MENU
-========================================= */
+/* MENU */
 
 #menu {
-    position: absolute;
+    position: fixed;
     inset: 0;
 
     display: flex;
     align-items: center;
     justify-content: center;
 
+    z-index: 100;
+
     background:
         radial-gradient(
-            circle at 50% 35%,
-            #263d52 0%,
-            #111c28 35%,
-            #05080d 78%
+            circle at center,
+            #263d52,
+            #101a25 45%,
+            #05080d 85%
         );
-
-    z-index: 20;
 }
 
 .menuBox {
-    width: min(850px, 92vw);
+    width: min(600px, 90vw);
 
-    padding: 55px;
+    padding: 45px 35px;
 
     text-align: center;
 
-    background:
-        linear-gradient(
-            145deg,
-            rgba(18, 31, 44, 0.96),
-            rgba(5, 11, 18, 0.96)
-        );
+    background: rgba(8, 16, 25, 0.96);
 
-    border: 1px solid #46647d;
+    border: 1px solid #55748d;
 
-    border-radius: 24px;
+    border-radius: 20px;
 
     box-shadow:
-        0 25px 80px rgba(0, 0, 0, 0.75),
-        inset 0 0 40px rgba(100, 170, 220, 0.04);
+        0 30px 100px rgba(0,0,0,0.8);
 }
 
 .logo {
-    font-size: clamp(42px, 8vw, 70px);
+    font-size: clamp(40px, 8vw, 70px);
 
     font-weight: 900;
 
-    letter-spacing: 10px;
+    letter-spacing: 8px;
 
-    color: #e6f5ff;
+    color: white;
 
     text-shadow:
         0 0 15px #4ba7ff,
-        0 0 40px rgba(75, 167, 255, 0.5);
+        0 0 40px #2479b8;
 
     margin-bottom: 8px;
 }
 
 .subtitle {
-    color: #7894ab;
+    color: #8da7bb;
 
-    font-size: 14px;
+    letter-spacing: 5px;
 
-    letter-spacing: 6px;
+    font-size: 13px;
 
-    margin-bottom: 45px;
+    margin-bottom: 35px;
 }
 
 .menuButtons {
-    width: min(390px, 100%);
+    width: min(380px, 100%);
 
     margin: auto;
 
@@ -115,97 +99,79 @@ button {
 
     flex-direction: column;
 
-    gap: 13px;
+    gap: 12px;
 }
 
 .menuButton {
+    appearance: none;
+
     width: 100%;
 
     min-height: 55px;
 
-    padding: 15px 20px;
+    border: 1px solid #466176;
 
     border-radius: 10px;
 
-    border: 1px solid #405b70;
+    background: #142331;
 
-    background:
-        linear-gradient(
-            180deg,
-            #172736,
-            #101b27
-        );
-
-    color: #e8f4ff;
+    color: white;
 
     font-size: 17px;
 
+    font-weight: 600;
+
     cursor: pointer;
 
-    transition:
-        transform 0.18s,
-        background 0.18s,
-        border-color 0.18s,
-        box-shadow 0.18s;
+    position: relative;
+
+    z-index: 200;
+
+    pointer-events: auto;
+
+    transition: 0.2s;
 }
 
 .menuButton:hover {
+    background: #20405a;
+
+    border-color: #72caff;
+
     transform: translateY(-2px);
-
-    background:
-        linear-gradient(
-            180deg,
-            #213c52,
-            #162b3b
-        );
-
-    border-color: #76c8ff;
-
-    box-shadow:
-        0 8px 25px rgba(0, 0, 0, 0.35);
 }
 
 .menuButton:active {
-    transform: translateY(1px);
+    transform: scale(0.98);
 }
 
 .menuButton.main {
-    background:
-        linear-gradient(
-            180deg,
-            #28638c,
-            #1b405c
-        );
+    background: #28648c;
 
-    border-color: #75c8ff;
-
-    font-weight: bold;
+    border-color: #76ccff;
 
     box-shadow:
-        0 0 25px rgba(55, 160, 230, 0.18);
+        0 0 25px rgba(60,170,240,0.25);
 }
 
 #saveInfo {
-    margin-top: 22px;
+    margin-top: 20px;
 
-    color: #6e8497;
+    color: #718799;
 
-    font-size: 13px;
+    font-size: 12px;
 }
 
 
-/* =========================================
-   HUD
-========================================= */
+/* HUD */
 
 #hud {
-    position: absolute;
+    position: fixed;
 
     inset: 0;
 
-    pointer-events: none;
+    z-index: 10;
 
-    z-index: 5;
+    pointer-events: none;
 }
 
 #stats {
@@ -218,25 +184,23 @@ button {
 }
 
 .statText {
-    color: #b8cad8;
-
     font-size: 11px;
 
     letter-spacing: 1px;
+
+    color: #b9cbd7;
 
     margin-bottom: 4px;
 }
 
 .bar {
-    width: 100%;
-
     height: 17px;
 
     margin-bottom: 9px;
 
-    background: #0d141c;
+    background: #0c141c;
 
-    border: 1px solid #344857;
+    border: 1px solid #405463;
 
     border-radius: 5px;
 
@@ -244,29 +208,25 @@ button {
 }
 
 .barInner {
-    width: 100%;
-
     height: 100%;
 
-    transition: width 0.15s;
+    width: 100%;
 }
 
 .health {
-    background:
-        linear-gradient(
-            90deg,
-            #b7374d,
-            #f06673
-        );
+    background: linear-gradient(
+        90deg,
+        #a83248,
+        #f36b7b
+    );
 }
 
 .energy {
-    background:
-        linear-gradient(
-            90deg,
-            #277ba9,
-            #62d2ff
-        );
+    background: linear-gradient(
+        90deg,
+        #287da8,
+        #62d5ff
+    );
 }
 
 #objective {
@@ -278,30 +238,26 @@ button {
 
     transform: translateX(-50%);
 
-    max-width: 80vw;
-
     padding: 10px 18px;
 
     color: #dceeff;
 
-    background: rgba(5, 10, 16, 0.78);
+    background: rgba(5,10,16,0.8);
 
     border: 1px solid #30495c;
 
     border-radius: 8px;
 
     font-size: 14px;
-
-    text-align: center;
 }
 
 #location {
     position: absolute;
 
-    right: 20px;
     top: 20px;
+    right: 20px;
 
-    color: #8faabd;
+    color: #9ab0c0;
 
     font-size: 13px;
 
@@ -318,9 +274,7 @@ button {
 }
 
 #weaponName {
-    color: #dceeff;
-
-    font-size: 22px;
+    font-size: 21px;
 
     font-weight: bold;
 
@@ -328,9 +282,9 @@ button {
 }
 
 #ammo {
-    color: #70c7ff;
-
     font-size: 30px;
+
+    color: #70c7ff;
 
     font-weight: bold;
 }
@@ -344,20 +298,16 @@ button {
 
     transform: translateX(-50%);
 
-    color: #7e93a5;
+    color: #7f94a5;
 
     font-size: 12px;
-
-    white-space: nowrap;
 }
 
 
-/* =========================================
-   PAUSE
-========================================= */
+/* PAUSE */
 
 #pause {
-    position: absolute;
+    position: fixed;
 
     inset: 0;
 
@@ -366,9 +316,9 @@ button {
     align-items: center;
     justify-content: center;
 
-    background: rgba(2, 5, 9, 0.84);
+    z-index: 150;
 
-    z-index: 15;
+    background: rgba(0,0,0,0.85);
 }
 
 .pauseBox {
@@ -376,69 +326,45 @@ button {
 
     padding: 40px;
 
-    text-align: center;
+    background: #101c28;
 
-    background:
-        linear-gradient(
-            145deg,
-            #111d29,
-            #09111a
-        );
-
-    border: 1px solid #41596c;
+    border: 1px solid #4b6679;
 
     border-radius: 18px;
 
-    box-shadow:
-        0 30px 80px rgba(0, 0, 0, 0.6);
+    text-align: center;
 }
 
 .pauseBox h2 {
     font-size: 40px;
 
     margin-bottom: 25px;
-
-    letter-spacing: 4px;
-}
-
-.pauseBox .menuButton {
-    margin-top: 10px;
 }
 
 
-/* =========================================
-   ACHIEVEMENT
-========================================= */
+/* ACHIEVEMENT */
 
 #achievement {
-    position: absolute;
+    position: fixed;
 
     right: 25px;
     bottom: 25px;
 
-    width: min(310px, calc(100vw - 50px));
+    width: 300px;
 
     padding: 18px;
 
-    background:
-        linear-gradient(
-            145deg,
-            #152738,
-            #0d1822
-        );
+    background: #132536;
 
-    border: 1px solid #4d7594;
+    border: 1px solid #5a83a0;
 
     border-radius: 12px;
 
-    transform: translateX(360px);
+    z-index: 300;
 
-    transition: transform 0.5s;
+    transform: translateX(350px);
 
-    z-index: 30;
-
-    box-shadow:
-        0 15px 40px rgba(0, 0, 0, 0.45);
+    transition: 0.4s;
 }
 
 #achievement.show {
@@ -446,7 +372,7 @@ button {
 }
 
 .achTitle {
-    color: #75c8ff;
+    color: #71c8ff;
 
     font-size: 11px;
 
@@ -456,20 +382,16 @@ button {
 }
 
 .achName {
-    color: white;
-
-    font-size: 19px;
+    font-size: 18px;
 
     font-weight: bold;
 }
 
 
-/* =========================================
-   MAP
-========================================= */
+/* MAP */
 
 #map {
-    position: absolute;
+    position: fixed;
 
     inset: 0;
 
@@ -478,9 +400,9 @@ button {
     align-items: center;
     justify-content: center;
 
-    background: rgba(3, 7, 11, 0.94);
+    z-index: 140;
 
-    z-index: 18;
+    background: rgba(3,7,11,0.95);
 }
 
 .mapBox {
@@ -495,14 +417,9 @@ button {
     border: 1px solid #415d70;
 
     border-radius: 18px;
-
-    box-shadow:
-        0 30px 80px rgba(0, 0, 0, 0.6);
 }
 
 .mapBox h2 {
-    color: #dceeff;
-
     margin-bottom: 15px;
 
     letter-spacing: 3px;
@@ -513,7 +430,7 @@ button {
 
     width: 100%;
 
-    height: calc(100% - 55px);
+    height: calc(100% - 50px);
 
     background: #071018;
 
@@ -521,24 +438,10 @@ button {
 }
 
 
-/* =========================================
-   MOBILE
-========================================= */
-
 @media (max-width: 600px) {
 
     .menuBox {
-        padding: 32px 20px;
-    }
-
-    .logo {
-        letter-spacing: 5px;
-    }
-
-    .subtitle {
-        letter-spacing: 3px;
-
-        margin-bottom: 30px;
+        padding: 30px 20px;
     }
 
     #stats {
@@ -546,21 +449,9 @@ button {
     }
 
     #objective {
-        top: 70px;
+        top: 75px;
 
         font-size: 12px;
-    }
-
-    #location {
-        top: 45px;
-
-        right: 12px;
-    }
-
-    #weapon {
-        right: 15px;
-
-        bottom: 15px;
     }
 
     #hint {
