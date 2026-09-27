@@ -1,163 +1,153 @@
-
 <!DOCTYPE html>
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>EchoBound - The Lost Signal</title>
-
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <canvas id="game"></canvas>
+<canvas id="game"></canvas>
 
-    <div id="menu">
+<!-- MENU -->
+<div id="menu">
 
-        <div class="menuBox">
+    <div class="menuBox">
 
-            <div class="logo">
-                ECHOBOUND
-            </div>
+        <div class="logo">ECHOBOUND</div>
 
-            <div class="subtitle">
-                THE LOST SIGNAL
-            </div>
+        <div class="subtitle">THE LOST SIGNAL</div>
 
-            <div class="menuButtons">
+        <div class="menuButtons">
 
-                <button class="menuButton main" id="newGame">
-                    NEW RUN
-                </button>
-
-                <button class="menuButton" id="loadGame">
-                    CONTINUE
-                </button>
-
-                <button class="menuButton" id="achievementsButton">
-                    ACHIEVEMENTS
-                </button>
-
-                <button class="menuButton" id="controlsButton">
-                    CONTROLS
-                </button>
-
-            </div>
-
-            <div id="saveInfo">
-                Your journey is stored in this browser.
-            </div>
-
-        </div>
-
-    </div>
-
-
-    <div id="hud">
-
-        <div id="stats">
-
-            <div class="statText">
-                HEALTH
-            </div>
-
-            <div class="bar">
-                <div id="healthBar" class="barInner health"></div>
-            </div>
-
-            <div class="statText">
-                ENERGY
-            </div>
-
-            <div class="bar">
-                <div id="energyBar" class="barInner energy"></div>
-            </div>
-
-        </div>
-
-
-        <div id="objective">
-            Find the first signal
-        </div>
-
-
-        <div id="location">
-            UNKNOWN SECTOR
-        </div>
-
-
-        <div id="weapon">
-
-            <div id="weaponName">
-                PULSE
-            </div>
-
-            <div id="ammo">
-                12 / ∞
-            </div>
-
-        </div>
-
-
-        <div id="hint">
-            WASD • MOUSE • SPACE • M • ESC
-        </div>
-
-    </div>
-
-
-    <div id="pause">
-
-        <div class="pauseBox">
-
-            <h2>PAUSED</h2>
-
-            <button class="menuButton main" id="resume">
-                RESUME
+            <button type="button" id="newGame" class="menuButton main">
+                NEW RUN
             </button>
 
-            <button class="menuButton" id="save">
-                SAVE RUN
+            <button type="button" id="loadGame" class="menuButton">
+                CONTINUE
             </button>
 
-            <button class="menuButton" id="quit">
-                QUIT TO MENU
+            <button type="button" id="achievementsButton" class="menuButton">
+                ACHIEVEMENTS
+            </button>
+
+            <button type="button" id="controlsButton" class="menuButton">
+                CONTROLS
             </button>
 
         </div>
 
-    </div>
-
-
-    <div id="achievement">
-
-        <div class="achTitle">
-            ACHIEVEMENT UNLOCKED
-        </div>
-
-        <div class="achName" id="achievementName">
-            First Encounter
+        <div id="saveInfo">
+            Your journey is stored in this browser.
         </div>
 
     </div>
 
+</div>
 
-    <div id="map">
 
-        <div class="mapBox">
+<!-- HUD -->
+<div id="hud">
 
-            <h2>SECTOR MAP</h2>
+    <div id="stats">
 
-            <canvas id="mapCanvas"></canvas>
+        <div class="statText">HEALTH</div>
 
+        <div class="bar">
+            <div id="healthBar" class="barInner health"></div>
+        </div>
+
+        <div class="statText">ENERGY</div>
+
+        <div class="bar">
+            <div id="energyBar" class="barInner energy"></div>
         </div>
 
     </div>
 
+    <div id="objective">
+        Find the first signal
+    </div>
 
-    <script src="script.js"></script>
+    <div id="location">
+        UNKNOWN SECTOR
+    </div>
+
+    <div id="weapon">
+
+        <div id="weaponName">
+            PULSE
+        </div>
+
+        <div id="ammo">
+            12 / ∞
+        </div>
+
+    </div>
+
+    <div id="hint">
+        WASD • MOUSE • SPACE • M • ESC
+    </div>
+
+</div>
+
+
+<!-- PAUSE -->
+<div id="pause">
+
+    <div class="pauseBox">
+
+        <h2>PAUSED</h2>
+
+        <button type="button" id="resume" class="menuButton main">
+            RESUME
+        </button>
+
+        <button type="button" id="save" class="menuButton">
+            SAVE RUN
+        </button>
+
+        <button type="button" id="quit" class="menuButton">
+            QUIT TO MENU
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ACHIEVEMENT -->
+<div id="achievement">
+
+    <div class="achTitle">
+        ACHIEVEMENT UNLOCKED
+    </div>
+
+    <div id="achievementName" class="achName">
+        FIRST ENCOUNTER
+    </div>
+
+</div>
+
+
+<!-- MAP -->
+<div id="map">
+
+    <div class="mapBox">
+
+        <h2>SECTOR MAP</h2>
+
+        <canvas id="mapCanvas"></canvas>
+
+    </div>
+
+</div>
+
+
+<script src="script.js"></script>
 
 </body>
 </html>
