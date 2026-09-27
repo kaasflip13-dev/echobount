@@ -2,152 +2,24 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EchoBound - The Lost Signal</title>
+    <title>EchoBound Test</title>
+
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-<canvas id="game"></canvas>
+    <div class="box">
 
-<!-- MENU -->
-<div id="menu">
+        <h1>ECHOBOUND</h1>
 
-    <div class="menuBox">
+        <p id="tekst">Klik op de knop.</p>
 
-        <div class="logo">ECHOBOUND</div>
-
-        <div class="subtitle">THE LOST SIGNAL</div>
-
-        <div class="menuButtons">
-
-            <button type="button" id="newGame" class="menuButton main">
-                NEW RUN
-            </button>
-
-            <button type="button" id="loadGame" class="menuButton">
-                CONTINUE
-            </button>
-
-            <button type="button" id="achievementsButton" class="menuButton">
-                ACHIEVEMENTS
-            </button>
-
-            <button type="button" id="controlsButton" class="menuButton">
-                CONTROLS
-            </button>
-
-        </div>
-
-        <div id="saveInfo">
-            Your journey is stored in this browser.
-        </div>
+        <button id="testKnop">START GAME</button>
 
     </div>
 
-</div>
-
-
-<!-- HUD -->
-<div id="hud">
-
-    <div id="stats">
-
-        <div class="statText">HEALTH</div>
-
-        <div class="bar">
-            <div id="healthBar" class="barInner health"></div>
-        </div>
-
-        <div class="statText">ENERGY</div>
-
-        <div class="bar">
-            <div id="energyBar" class="barInner energy"></div>
-        </div>
-
-    </div>
-
-    <div id="objective">
-        Find the first signal
-    </div>
-
-    <div id="location">
-        UNKNOWN SECTOR
-    </div>
-
-    <div id="weapon">
-
-        <div id="weaponName">
-            PULSE
-        </div>
-
-        <div id="ammo">
-            12 / ∞
-        </div>
-
-    </div>
-
-    <div id="hint">
-        WASD • MOUSE • SPACE • M • ESC
-    </div>
-
-</div>
-
-
-<!-- PAUSE -->
-<div id="pause">
-
-    <div class="pauseBox">
-
-        <h2>PAUSED</h2>
-
-        <button type="button" id="resume" class="menuButton main">
-            RESUME
-        </button>
-
-        <button type="button" id="save" class="menuButton">
-            SAVE RUN
-        </button>
-
-        <button type="button" id="quit" class="menuButton">
-            QUIT TO MENU
-        </button>
-
-    </div>
-
-</div>
-
-
-<!-- ACHIEVEMENT -->
-<div id="achievement">
-
-    <div class="achTitle">
-        ACHIEVEMENT UNLOCKED
-    </div>
-
-    <div id="achievementName" class="achName">
-        FIRST ENCOUNTER
-    </div>
-
-</div>
-
-
-<!-- MAP -->
-<div id="map">
-
-    <div class="mapBox">
-
-        <h2>SECTOR MAP</h2>
-
-        <canvas id="mapCanvas"></canvas>
-
-    </div>
-
-</div>
-
-
-<script src="script.js"></script>
+    <script src="script.js"></script>
 
 </body>
 </html>
