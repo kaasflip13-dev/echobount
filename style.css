@@ -1,653 +1,173 @@
-* {
-    box-sizing: border-box;
-}
-
-html,
-body {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background: #05070b;
-    color: #e8fff5;
-    font-family: Arial, Helvetica, sans-serif;
-}
-
-button {
-    font-family: inherit;
-    cursor: pointer;
-}
-
-
-/* ================= MENU ================= */
-
-#menu {
-    position: fixed;
-    inset: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background:
-        radial-gradient(circle at 50% 40%, rgba(35, 120, 95, .18), transparent 35%),
-        radial-gradient(circle at 20% 80%, rgba(30, 90, 130, .12), transparent 30%),
-        #05070b;
-}
-
-#menu::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    opacity: .18;
-    background-image:
-        linear-gradient(rgba(100,255,200,.06) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(100,255,200,.06) 1px, transparent 1px);
-    background-size: 50px 50px;
-}
-
-.menuGlow {
-    position: absolute;
-    width: 500px;
-    height: 500px;
-    border-radius: 50%;
-    background: rgba(30, 255, 170, .06);
-    filter: blur(80px);
-}
-
-.menuContent {
-    position: relative;
-    width: 390px;
-    text-align: center;
-    z-index: 2;
-}
-
-.gameLogo {
-    font-size: 70px;
-    font-weight: 900;
-    letter-spacing: 12px;
-    color: #dfffee;
-    text-shadow:
-        0 0 10px rgba(60,255,180,.4),
-        0 0 40px rgba(60,255,180,.18);
-}
-
-.gameSubtitle {
-    margin-top: 10px;
-    color: #7aa997;
-    font-size: 13px;
-    letter-spacing: 5px;
-}
-
-.menuLine {
-    width: 100%;
-    height: 1px;
-    margin: 28px 0;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        #42d99d,
-        transparent
-    );
-}
-
-.menuButton {
-    width: 100%;
-    height: 56px;
-    margin: 7px 0;
-    border: 1px solid #254b3e;
-    background: rgba(11, 23, 20, .88);
-    color: #dfffee;
-    font-size: 15px;
-    font-weight: bold;
-    letter-spacing: 2px;
-    transition: .2s;
-}
-
-.menuButton:hover {
-    transform: translateY(-2px);
-    border-color: #54e3a8;
-    background: rgba(22, 55, 43, .9);
-    box-shadow: 0 0 25px rgba(70,230,160,.15);
-}
-
-.menuButton.secondary {
-    color: #9cbcaf;
-}
-
-.controls {
-    margin-top: 25px;
-    padding: 15px;
-    border: 1px solid #172d27;
-    background: rgba(5, 12, 10, .65);
-    color: #719386;
-    font-size: 12px;
-    line-height: 1.8;
-}
-
-.controls b {
-    color: #b7e7d3;
-    letter-spacing: 2px;
-}
-
-.version {
-    margin-top: 15px;
-    color: #3e5a50;
-    font-size: 10px;
-    letter-spacing: 2px;
-}
-
-
-/* ================= SCREENS ================= */
-
-.screen {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: rgba(2, 5, 7, .92);
-}
-
-.screen.active {
-    display: flex;
-}
-
-.savePanel,
-.achievementPanel {
-    position: relative;
-    width: min(700px, 90vw);
-    max-height: 85vh;
-    overflow-y: auto;
-    padding: 35px;
-    border: 1px solid #294c40;
-    background:
-        linear-gradient(145deg, #0d1714, #07100e);
-    box-shadow: 0 20px 80px rgba(0,0,0,.7);
-}
-
-.savePanel h1,
-.achievementTitle {
-    margin: 0;
-    color: #dfffee;
-    letter-spacing: 5px;
-}
-
-.panelSubtitle,
-.achievementSubtitle {
-    color: #688c7e;
-}
-
-
-/* CLOSE */
-
-.closeButton {
-    position: absolute;
-    right: 15px;
-    top: 15px;
-    width: 35px;
-    height: 35px;
-    border: 1px solid #28473d;
-    background: #0a1512;
-    color: #bdebd8;
-    font-size: 22px;
-}
-
-.closeButton:hover {
-    background: #17382c;
-}
-
-
-/* ================= SAVE SLOTS ================= */
-
-.saveSlot {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 15px;
-    padding: 18px;
-    margin-top: 12px;
-    border: 1px solid #1e3b31;
-    background: #09120f;
-}
-
-.saveSlotInfo {
-    text-align: left;
-}
-
-.saveSlotTitle {
-    color: #dfffee;
-    font-weight: bold;
-    letter-spacing: 2px;
-}
-
-.saveSlotData {
-    margin-top: 5px;
-    color: #638579;
-    font-size: 12px;
-}
-
-.saveSlot button {
-    border: 1px solid #356b56;
-    background: #10251d;
-    color: #cffff0;
-    padding: 10px 15px;
-}
-
-.saveSlot button:hover {
-    background: #1b4434;
-}
-
-
-/* ================= ACHIEVEMENTS ================= */
-
-#achievementList {
-    display: grid;
-    gap: 10px;
-    margin-top: 25px;
-}
-
-.achievement {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 14px;
-    border: 1px solid #203b32;
-    background: #09120f;
-}
-
-.achievement.unlocked {
-    border-color: #397d60;
-    background: rgba(20, 55, 42, .45);
-}
-
-.achievement.locked {
-    opacity: .48;
-}
-
-.achievementIcon {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #101d19;
-    font-size: 22px;
-}
-
-.achievementName {
-    color: #d9f9e9;
-    font-weight: bold;
-}
-
-.achievementDescription {
-    margin-top: 4px;
-    color: #668b7b;
-    font-size: 12px;
-}
-
-.status {
-    margin-left: auto;
-    color: #4fe09d;
-    font-size: 11px;
-    font-weight: bold;
-}
-
-
-/* ================= GAME ================= */
-
-#game {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: #070b0d;
-}
-
-#game.active {
-    display: block;
-}
-
-#gameCanvas {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    image-rendering: auto;
-}
-
-
-/* ================= HUD ================= */
-
-#hud {
-    position: absolute;
-    top: 18px;
-    left: 18px;
-    right: 18px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    pointer-events: none;
-}
-
-#healthBox {
-    width: 220px;
-    padding: 12px;
-    background: rgba(5, 12, 10, .82);
-    border: 1px solid #25473c;
-}
-
-.hudTitle {
-    color: #75b79b;
-    font-size: 11px;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-}
-
-.healthBar {
-    width: 100%;
-    height: 9px;
-    background: #1a2824;
-}
-
-#health {
-    width: 100%;
-    height: 100%;
-    background: #4bd795;
-    transition: width .2s;
-}
-
-#healthText {
-    margin-top: 6px;
-    color: #a8d5c2;
-    font-size: 11px;
-}
-
-#inventory {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    max-width: 600px;
-}
-
-.item {
-    min-width: 90px;
-    padding: 9px 10px;
-    border: 1px solid #203d33;
-    background: rgba(5, 12, 10, .86);
-    color: #789c8c;
-    font-size: 10px;
-}
-
-.itemIcon {
-    color: #52dca0;
-    margin-right: 5px;
-}
-
-.item strong {
-    display: block;
-    margin-top: 3px;
-    color: #d8f8e8;
-    font-size: 15px;
-}
-
-
-/* ================= INFO ================= */
-
-#info {
-    position: absolute;
-    left: 18px;
-    bottom: 18px;
-    padding: 10px 13px;
-    border: 1px solid #1f3b31;
-    background: rgba(5, 12, 10, .78);
-    color: #668b7c;
-    font-size: 11px;
-    line-height: 1.7;
-}
-
-#message {
-    position: absolute;
-    left: 50%;
-    top: 100px;
-    transform: translateX(-50%);
-    padding: 10px 20px;
-    background: rgba(5,15,12,.9);
-    border: 1px solid #39745b;
-    color: #bfffe4;
-    opacity: 0;
-    transition: opacity .2s;
-    pointer-events: none;
-}
-
-#message.show {
-    opacity: 1;
-}
-
-#saveIndicator {
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    color: #65dca3;
-    font-size: 11px;
-    opacity: 0;
-    transition: opacity .3s;
-}
-
-#saveIndicator.show {
-    opacity: 1;
-}
-
-
-/* ================= CRAFTING ================= */
-
-#crafting {
-    position: absolute;
-    top: 50%;
-    right: 25px;
-    transform: translateY(-50%);
-    width: 320px;
-    max-height: 90vh;
-    overflow-y: auto;
-    display: none;
-    padding: 20px;
-    border: 1px solid #2b5546;
-    background: rgba(6, 14, 12, .96);
-    box-shadow: 0 20px 60px rgba(0,0,0,.5);
-}
-
-#crafting.active {
-    display: block;
-}
-
-.craftHeader {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-}
-
-.craftHeader h2 {
-    margin: 0;
-    color: #dfffee;
-    letter-spacing: 3px;
-}
-
-#closeCrafting {
-    border: 0;
-    background: transparent;
-    color: #7da99a;
-    font-size: 22px;
-}
-
-#crafting p {
-    color: #628778;
-    font-size: 12px;
-}
-
-.craftButton {
-    width: 100%;
-    margin: 5px 0;
-    padding: 13px;
-    text-align: left;
-    border: 1px solid #214337;
-    background: #0b1713;
-    color: #d7f7e8;
-}
-
-.craftButton:hover {
-    border-color: #48c994;
-    background: #10281f;
-}
-
-.craftButton b {
-    display: block;
-}
-
-.craftButton small {
-    display: block;
-    margin-top: 5px;
-    color: #638778;
-}
-
-.craftDivider {
-    height: 1px;
-    margin: 15px 0;
-    background: #203d33;
-}
-
-
-/* ================= BUILD MENU ================= */
-
-#buildMenu {
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    width: 240px;
-    display: none;
-    padding: 15px;
-    border: 1px solid #2c5546;
-    background: rgba(5, 13, 11, .94);
-}
-
-#buildMenu.active {
-    display: block;
-}
-
-.buildTitle {
-    margin-bottom: 10px;
-    color: #bcebd7;
-    letter-spacing: 3px;
-    font-size: 12px;
-}
-
-.buildButton {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    margin: 4px 0;
-    padding: 10px;
-    border: 1px solid #1e3d32;
-    background: #0b1713;
-    color: #c9ebdc;
-}
-
-.buildButton:hover,
-.buildButton.selected {
-    border-color: #4ad59c;
-    background: #153126;
-}
-
-.buildHint {
-    margin-top: 10px;
-    color: #5f8376;
-    font-size: 10px;
-    line-height: 1.5;
-}
-
-
-/* ================= GAME OVER ================= */
-
-#gameOver {
-    position: absolute;
-    inset: 0;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    background: rgba(2,5,7,.78);
-}
-
-#gameOver.active {
-    display: flex;
-}
-
-.gameOverBox {
-    width: 350px;
-    padding: 35px;
-    text-align: center;
-    border: 1px solid #573d3d;
-    background: #0c1010;
-}
-
-.gameOverTitle {
-    color: #e6d5d5;
-    font-size: 32px;
-    font-weight: bold;
-    letter-spacing: 5px;
-}
-
-.gameOverBox p {
-    color: #7f9290;
-}
-
-.gameOverBox button {
-    width: 100%;
-    margin-top: 8px;
-    padding: 13px;
-    border: 1px solid #345346;
-    background: #0d1d17;
-    color: #d8f8e8;
-}
-
-.gameOverBox button:hover {
-    background: #173b2d;
-}
-
-
-/* ================= MOBILE ================= */
-
-@media(max-width: 800px) {
-
-    .gameLogo {
-        font-size: 46px;
-        letter-spacing: 7px;
-    }
-
-    #hud {
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    #inventory {
-        justify-content: flex-start;
-    }
-
-    .item {
-        min-width: 70px;
-    }
-
-    #crafting {
-        right: 10px;
-        left: 10px;
-        width: auto;
-    }
-
-    #buildMenu {
-        right: 10px;
-        bottom: 10px;
-    }
-
-    .controls {
-        font-size: 10px;
-    }
-}
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EchoBound - The Lost Signal</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <canvas id="game"></canvas>
+
+
+    <!-- START MENU -->
+
+    <div id="menu">
+
+        <div class="menuBox">
+
+            <div class="logo">
+                ECHOBOUND
+            </div>
+
+            <div class="subtitle">
+                THE LOST SIGNAL
+            </div>
+
+            <div class="menuButtons">
+
+                <button class="menuButton main" id="newGame">
+                    NEW RUN
+                </button>
+
+                <button class="menuButton" id="loadGame">
+                    CONTINUE
+                </button>
+
+                <button class="menuButton" id="achievementsButton">
+                    ACHIEVEMENTS
+                </button>
+
+                <button class="menuButton" id="controlsButton">
+                    CONTROLS
+                </button>
+
+            </div>
+
+            <div id="saveInfo">
+                Your journey is stored in this browser.
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- HUD -->
+
+    <div id="hud">
+
+        <div id="stats">
+
+            <div class="statText">
+                HEALTH
+            </div>
+
+            <div class="bar">
+                <div id="healthBar" class="barInner health"></div>
+            </div>
+
+            <div class="statText">
+                ENERGY
+            </div>
+
+            <div class="bar">
+                <div id="energyBar" class="barInner energy"></div>
+            </div>
+
+        </div>
+
+
+        <div id="objective">
+            Find the first signal
+        </div>
+
+
+        <div id="location">
+            UNKNOWN SECTOR
+        </div>
+
+
+        <div id="weapon">
+
+            <div id="weaponName">
+                PULSE
+            </div>
+
+            <div id="ammo">
+                12 / ∞
+            </div>
+
+        </div>
+
+
+        <div id="hint">
+            WASD • MOUSE • SPACE • M • ESC
+        </div>
+
+    </div>
+
+
+    <!-- PAUSE MENU -->
+
+    <div id="pause">
+
+        <div class="pauseBox">
+
+            <h2>PAUSED</h2>
+
+            <button class="menuButton main" id="resume">
+                RESUME
+            </button>
+
+            <button class="menuButton" id="save">
+                SAVE RUN
+            </button>
+
+            <button class="menuButton" id="quit">
+                QUIT TO MENU
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- ACHIEVEMENT -->
+
+    <div id="achievement">
+
+        <div class="achTitle">
+            ACHIEVEMENT UNLOCKED
+        </div>
+
+        <div class="achName" id="achievementName">
+            First Encounter
+        </div>
+
+    </div>
+
+
+    <!-- MAP -->
+
+    <div id="map">
+
+        <div class="mapBox">
+
+            <h2>SECTOR MAP</h2>
+
+            <canvas id="mapCanvas"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <script src="script.js"></script>
+
+</body>
+</html>
