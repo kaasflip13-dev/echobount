@@ -1,173 +1,570 @@
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-    <title>EchoBound - The Lost Signal</title>
+html,
+body {
+    width: 100%;
+    height: 100%;
+}
 
-    <link rel="stylesheet" href="style.css">
-</head>
+body {
+    background: #05080d;
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
+}
 
-<body>
+button {
+    font-family: inherit;
+}
 
-    <canvas id="game"></canvas>
+#game {
+    position: absolute;
+    inset: 0;
 
+    width: 100%;
+    height: 100%;
 
-    <!-- START MENU -->
+    display: block;
 
-    <div id="menu">
+    background: #080d14;
+}
 
-        <div class="menuBox">
 
-            <div class="logo">
-                ECHOBOUND
-            </div>
+/* =========================================
+   START MENU
+========================================= */
 
-            <div class="subtitle">
-                THE LOST SIGNAL
-            </div>
+#menu {
+    position: absolute;
+    inset: 0;
 
-            <div class="menuButtons">
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
-                <button class="menuButton main" id="newGame">
-                    NEW RUN
-                </button>
+    background:
+        radial-gradient(
+            circle at 50% 35%,
+            #263d52 0%,
+            #111c28 35%,
+            #05080d 78%
+        );
 
-                <button class="menuButton" id="loadGame">
-                    CONTINUE
-                </button>
+    z-index: 20;
+}
 
-                <button class="menuButton" id="achievementsButton">
-                    ACHIEVEMENTS
-                </button>
+.menuBox {
+    width: min(850px, 92vw);
 
-                <button class="menuButton" id="controlsButton">
-                    CONTROLS
-                </button>
+    padding: 55px;
 
-            </div>
+    text-align: center;
 
-            <div id="saveInfo">
-                Your journey is stored in this browser.
-            </div>
+    background:
+        linear-gradient(
+            145deg,
+            rgba(18, 31, 44, 0.96),
+            rgba(5, 11, 18, 0.96)
+        );
 
-        </div>
+    border: 1px solid #46647d;
 
-    </div>
+    border-radius: 24px;
 
+    box-shadow:
+        0 25px 80px rgba(0, 0, 0, 0.75),
+        inset 0 0 40px rgba(100, 170, 220, 0.04);
+}
 
-    <!-- HUD -->
+.logo {
+    font-size: clamp(42px, 8vw, 70px);
 
-    <div id="hud">
+    font-weight: 900;
 
-        <div id="stats">
+    letter-spacing: 10px;
 
-            <div class="statText">
-                HEALTH
-            </div>
+    color: #e6f5ff;
 
-            <div class="bar">
-                <div id="healthBar" class="barInner health"></div>
-            </div>
+    text-shadow:
+        0 0 15px #4ba7ff,
+        0 0 40px rgba(75, 167, 255, 0.5);
 
-            <div class="statText">
-                ENERGY
-            </div>
+    margin-bottom: 8px;
+}
 
-            <div class="bar">
-                <div id="energyBar" class="barInner energy"></div>
-            </div>
+.subtitle {
+    color: #7894ab;
 
-        </div>
+    font-size: 14px;
 
+    letter-spacing: 6px;
 
-        <div id="objective">
-            Find the first signal
-        </div>
+    margin-bottom: 45px;
+}
 
+.menuButtons {
+    width: min(390px, 100%);
 
-        <div id="location">
-            UNKNOWN SECTOR
-        </div>
+    margin: auto;
 
+    display: flex;
 
-        <div id="weapon">
+    flex-direction: column;
 
-            <div id="weaponName">
-                PULSE
-            </div>
+    gap: 13px;
+}
 
-            <div id="ammo">
-                12 / ∞
-            </div>
+.menuButton {
+    width: 100%;
 
-        </div>
+    min-height: 55px;
 
+    padding: 15px 20px;
 
-        <div id="hint">
-            WASD • MOUSE • SPACE • M • ESC
-        </div>
+    border-radius: 10px;
 
-    </div>
+    border: 1px solid #405b70;
 
+    background:
+        linear-gradient(
+            180deg,
+            #172736,
+            #101b27
+        );
 
-    <!-- PAUSE MENU -->
+    color: #e8f4ff;
 
-    <div id="pause">
+    font-size: 17px;
 
-        <div class="pauseBox">
+    cursor: pointer;
 
-            <h2>PAUSED</h2>
+    transition:
+        transform 0.18s,
+        background 0.18s,
+        border-color 0.18s,
+        box-shadow 0.18s;
+}
 
-            <button class="menuButton main" id="resume">
-                RESUME
-            </button>
+.menuButton:hover {
+    transform: translateY(-2px);
 
-            <button class="menuButton" id="save">
-                SAVE RUN
-            </button>
+    background:
+        linear-gradient(
+            180deg,
+            #213c52,
+            #162b3b
+        );
 
-            <button class="menuButton" id="quit">
-                QUIT TO MENU
-            </button>
+    border-color: #76c8ff;
 
-        </div>
+    box-shadow:
+        0 8px 25px rgba(0, 0, 0, 0.35);
+}
 
-    </div>
+.menuButton:active {
+    transform: translateY(1px);
+}
 
+.menuButton.main {
+    background:
+        linear-gradient(
+            180deg,
+            #28638c,
+            #1b405c
+        );
 
-    <!-- ACHIEVEMENT -->
+    border-color: #75c8ff;
 
-    <div id="achievement">
+    font-weight: bold;
 
-        <div class="achTitle">
-            ACHIEVEMENT UNLOCKED
-        </div>
+    box-shadow:
+        0 0 25px rgba(55, 160, 230, 0.18);
+}
 
-        <div class="achName" id="achievementName">
-            First Encounter
-        </div>
+#saveInfo {
+    margin-top: 22px;
 
-    </div>
+    color: #6e8497;
 
+    font-size: 13px;
+}
 
-    <!-- MAP -->
 
-    <div id="map">
+/* =========================================
+   HUD
+========================================= */
 
-        <div class="mapBox">
+#hud {
+    position: absolute;
 
-            <h2>SECTOR MAP</h2>
+    inset: 0;
 
-            <canvas id="mapCanvas"></canvas>
+    pointer-events: none;
 
-        </div>
+    z-index: 5;
+}
 
-    </div>
+#stats {
+    position: absolute;
 
+    left: 20px;
+    top: 20px;
 
-    <script src="script.js"></script>
+    width: 230px;
+}
 
-</body>
-</html>
+.statText {
+    color: #b8cad8;
+
+    font-size: 11px;
+
+    letter-spacing: 1px;
+
+    margin-bottom: 4px;
+}
+
+.bar {
+    width: 100%;
+
+    height: 17px;
+
+    margin-bottom: 9px;
+
+    background: #0d141c;
+
+    border: 1px solid #344857;
+
+    border-radius: 5px;
+
+    overflow: hidden;
+}
+
+.barInner {
+    width: 100%;
+
+    height: 100%;
+
+    transition: width 0.15s;
+}
+
+.health {
+    background:
+        linear-gradient(
+            90deg,
+            #b7374d,
+            #f06673
+        );
+}
+
+.energy {
+    background:
+        linear-gradient(
+            90deg,
+            #277ba9,
+            #62d2ff
+        );
+}
+
+#objective {
+    position: absolute;
+
+    top: 20px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    max-width: 80vw;
+
+    padding: 10px 18px;
+
+    color: #dceeff;
+
+    background: rgba(5, 10, 16, 0.78);
+
+    border: 1px solid #30495c;
+
+    border-radius: 8px;
+
+    font-size: 14px;
+
+    text-align: center;
+}
+
+#location {
+    position: absolute;
+
+    right: 20px;
+    top: 20px;
+
+    color: #8faabd;
+
+    font-size: 13px;
+
+    letter-spacing: 1px;
+}
+
+#weapon {
+    position: absolute;
+
+    right: 25px;
+    bottom: 25px;
+
+    text-align: right;
+}
+
+#weaponName {
+    color: #dceeff;
+
+    font-size: 22px;
+
+    font-weight: bold;
+
+    letter-spacing: 2px;
+}
+
+#ammo {
+    color: #70c7ff;
+
+    font-size: 30px;
+
+    font-weight: bold;
+}
+
+#hint {
+    position: absolute;
+
+    bottom: 20px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    color: #7e93a5;
+
+    font-size: 12px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================
+   PAUSE
+========================================= */
+
+#pause {
+    position: absolute;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(2, 5, 9, 0.84);
+
+    z-index: 15;
+}
+
+.pauseBox {
+    width: min(500px, 90vw);
+
+    padding: 40px;
+
+    text-align: center;
+
+    background:
+        linear-gradient(
+            145deg,
+            #111d29,
+            #09111a
+        );
+
+    border: 1px solid #41596c;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.pauseBox h2 {
+    font-size: 40px;
+
+    margin-bottom: 25px;
+
+    letter-spacing: 4px;
+}
+
+.pauseBox .menuButton {
+    margin-top: 10px;
+}
+
+
+/* =========================================
+   ACHIEVEMENT
+========================================= */
+
+#achievement {
+    position: absolute;
+
+    right: 25px;
+    bottom: 25px;
+
+    width: min(310px, calc(100vw - 50px));
+
+    padding: 18px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #152738,
+            #0d1822
+        );
+
+    border: 1px solid #4d7594;
+
+    border-radius: 12px;
+
+    transform: translateX(360px);
+
+    transition: transform 0.5s;
+
+    z-index: 30;
+
+    box-shadow:
+        0 15px 40px rgba(0, 0, 0, 0.45);
+}
+
+#achievement.show {
+    transform: translateX(0);
+}
+
+.achTitle {
+    color: #75c8ff;
+
+    font-size: 11px;
+
+    letter-spacing: 2px;
+
+    margin-bottom: 5px;
+}
+
+.achName {
+    color: white;
+
+    font-size: 19px;
+
+    font-weight: bold;
+}
+
+
+/* =========================================
+   MAP
+========================================= */
+
+#map {
+    position: absolute;
+
+    inset: 0;
+
+    display: none;
+
+    align-items: center;
+    justify-content: center;
+
+    background: rgba(3, 7, 11, 0.94);
+
+    z-index: 18;
+}
+
+.mapBox {
+    width: min(800px, 90vw);
+
+    height: min(650px, 85vh);
+
+    padding: 25px;
+
+    background: #0b141d;
+
+    border: 1px solid #415d70;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.mapBox h2 {
+    color: #dceeff;
+
+    margin-bottom: 15px;
+
+    letter-spacing: 3px;
+}
+
+#mapCanvas {
+    display: block;
+
+    width: 100%;
+
+    height: calc(100% - 55px);
+
+    background: #071018;
+
+    border: 1px solid #263a49;
+}
+
+
+/* =========================================
+   MOBILE
+========================================= */
+
+@media (max-width: 600px) {
+
+    .menuBox {
+        padding: 32px 20px;
+    }
+
+    .logo {
+        letter-spacing: 5px;
+    }
+
+    .subtitle {
+        letter-spacing: 3px;
+
+        margin-bottom: 30px;
+    }
+
+    #stats {
+        width: 170px;
+    }
+
+    #objective {
+        top: 70px;
+
+        font-size: 12px;
+    }
+
+    #location {
+        top: 45px;
+
+        right: 12px;
+    }
+
+    #weapon {
+        right: 15px;
+
+        bottom: 15px;
+    }
+
+    #hint {
+        display: none;
+    }
+
+}
