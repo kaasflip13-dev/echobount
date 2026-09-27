@@ -2,23 +2,218 @@
 <html lang="nl">
 <head>
     <meta charset="UTF-8">
-    <title>EchoBound Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>EchoBound — The Lost Signal</title>
 
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
-    <div class="box">
+    <!-- GAME CANVAS -->
+    <canvas id="game"></canvas>
 
-        <h1>ECHOBOUND</h1>
 
-        <p id="tekst">Klik op de knop.</p>
+    <!-- =========================
+         MAIN MENU
+    ========================== -->
 
-        <button id="testKnop">START GAME</button>
+    <div id="menu">
+
+        <div class="menuBox">
+
+            <div class="smallLogo">ECHOBOUND</div>
+
+            <h1>THE LOST SIGNAL</h1>
+
+            <p class="menuDescription">
+                Explore the unknown.<br>
+                Find the signal. Survive the echoes.
+            </p>
+
+            <div class="menuButtons">
+
+                <button id="newGame" class="menuButton main">
+                    NEW RUN
+                </button>
+
+                <button id="loadGame" class="menuButton">
+                    CONTINUE
+                </button>
+
+                <button id="achievementsButton" class="menuButton">
+                    ACHIEVEMENTS
+                </button>
+
+                <button id="controlsButton" class="menuButton">
+                    CONTROLS
+                </button>
+
+            </div>
+
+            <div id="saveStatus">
+                SAVE DATA: LOCAL
+            </div>
+
+        </div>
 
     </div>
-<script src="app.js"></script>
+
+
+    <!-- =========================
+         HUD
+    ========================== -->
+
+    <div id="hud">
+
+        <div class="topLeft">
+
+            <div class="hudTitle">
+                ECHOBOUND
+            </div>
+
+            <div class="statLabel">
+                HEALTH
+            </div>
+
+            <div class="bar">
+                <div id="healthBar" class="healthBar"></div>
+            </div>
+
+            <div class="statLabel">
+                ENERGY
+            </div>
+
+            <div class="bar">
+                <div id="energyBar" class="energyBar"></div>
+            </div>
+
+        </div>
+
+
+        <div id="objective">
+            FIND THE SIGNAL
+        </div>
+
+
+        <div class="topRight">
+
+            <div id="zone">
+                UNKNOWN SECTOR
+            </div>
+
+            <div id="kills">
+                KILLS: 0
+            </div>
+
+            <div id="credits">
+                CREDITS: 0
+            </div>
+
+        </div>
+
+
+        <div class="bottomLeft">
+            WASD MOVE &nbsp; • &nbsp;
+            MOUSE AIM &nbsp; • &nbsp;
+            SPACE DASH
+        </div>
+
+
+        <div class="weapon">
+
+            <div class="weaponName">
+                PULSE
+            </div>
+
+            <div id="ammo">
+                12 / ∞
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         PAUSE MENU
+    ========================== -->
+
+    <div id="pause">
+
+        <div class="pauseBox">
+
+            <div class="pauseSmall">
+                ECHOBOUND
+            </div>
+
+            <h2>PAUSED</h2>
+
+            <button id="resume" class="menuButton main">
+                RESUME
+            </button>
+
+            <button id="save" class="menuButton">
+                SAVE RUN
+            </button>
+
+            <button id="quit" class="menuButton">
+                QUIT TO MENU
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         ACHIEVEMENT POPUP
+    ========================== -->
+
+    <div id="achievement">
+
+        <div class="achievementTop">
+            ACHIEVEMENT UNLOCKED
+        </div>
+
+        <div id="achievementName">
+            FIRST ECHO
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MAP
+    ========================== -->
+
+    <div id="map">
+
+        <div class="mapBox">
+
+            <div class="mapHeader">
+
+                <h2>SECTOR MAP</h2>
+
+                <button id="closeMap">
+                    CLOSE
+                </button>
+
+            </div>
+
+            <canvas id="mapCanvas"></canvas>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         JAVASCRIPT
+    ========================== -->
+
+    <script src="app.js"></script>
 
 </body>
 </html>
