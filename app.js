@@ -2,12 +2,7 @@
 
 /* =====================================================
    ECHOBOUND — THE LOST SIGNAL
-   COMPLETE APP.JS
-===================================================== */
-
-
-/* =====================================================
-   CANVAS
+   COMPLETE + STABLE VERSION
 ===================================================== */
 
 const canvas = document.getElementById("game");
@@ -22,9 +17,8 @@ let H = window.innerHeight;
 canvas.width = W;
 canvas.height = H;
 
-
 /* =====================================================
-   GAME STATE
+   STATE
 ===================================================== */
 
 let gameRunning = false;
@@ -50,7 +44,6 @@ let mouse = {
     down: false
 };
 
-
 /* =====================================================
    WORLD
 ===================================================== */
@@ -58,116 +51,767 @@ let mouse = {
 const WORLD_WIDTH = 2400;
 const WORLD_HEIGHT = 2400;
 
-
 /* =====================================================
-   MUREN
+   WALLS
 ===================================================== */
 
 const walls = [
-
     { x: 520, y: 420, w: 430, h: 55 },
-
     { x: 1040, y: 300, w: 55, h: 520 },
-
     { x: 1370, y: 520, w: 480, h: 55 },
-
     { x: 1480, y: 980, w: 55, h: 570 },
-
     { x: 820, y: 1500, w: 520, h: 55 },
-
     { x: 410, y: 1050, w: 55, h: 430 },
-
     { x: 1080, y: 1000, w: 55, h: 300 },
-
     { x: 610, y: 1850, w: 460, h: 55 },
-
     { x: 1760, y: 1680, w: 430, h: 55 },
-
     { x: 1860, y: 760, w: 55, h: 430 }
-
 ];
-
-
-/* =====================================================
-   ACHIEVEMENTS
-===================================================== */
-
-let achievements = {
-
-    firstEcho: false,
-
-    tenEchoes: false,
-
-    firstSave: false,
-
-    explorer: false
-
-};
-
 
 /* =====================================================
    SAVE
 ===================================================== */
 
-const SAVE_KEY =
-    "echobound_save_v4";
+const SAVE_KEY = "echobound_save_v5";
 
+let achievements = {
+    firstEcho: false,
+    tenEchoes: false,
+    firstSave: false,
+    explorer: false
+};
 
 /* =====================================================
-   RESIZE
+   DOM HELPERS
 ===================================================== */
 
-window.addEventListener(
-    "resize",
-    function () {
+function get(id) {
+    return document.getElementById(id);
+}
 
-        W = window.innerWidth;
-        H = window.innerHeight;
+/* =====================================================
+   ACHIEVEMENTS PAGE
+===================================================== */
 
-        canvas.width = W;
-        canvas.height = H;
+function createAchievementsPage() {
 
+    if (get("achievementsScreen")) {
+        return;
     }
-);
 
+    const screen = document.createElement("div");
+
+    screen.id = "achievementsScreen";
+
+    screen.innerHTML = `
+        <div class="achievementsWindow">
+
+            <div class="achievementsTop">
+
+                <div>
+                    <div class="achievementLogo">
+                        ECHOBOUND
+                    </div>
+
+                    <h2>
+                        ACHIEVEMENTS
+                    </h2>
+
+                    <p>
+                        Bekijk je voortgang.
+                    </p>
+                </div>
+
+                <button id="dynamicCloseAchievements">
+                    BACK
+                </button>
+
+            </div>
+
+            <div class="achievementCards">
+
+                <div class="dynamicAchievement" id="cardFirstEcho">
+                    <div class="dynamicIcon">◈</div>
+
+                    <div class="dynamicText">
+                        <h3>FIRST ECHO</h3>
+                        <p>Versla je eerste vijand.</p>
+                    </div>
+
+                    <div class="dynamicStatus">
+                        LOCKED
+                    </div>
+                </div>
+
+                <div class="dynamicAchievement" id="cardTenEchoes">
+                    <div class="dynamicIcon">◆</div>
+
+                    <div class="dynamicText">
+                        <h3>TEN ECHOES</h3>
+                        <p>Versla 10 vijanden.</p>
+                    </div>
+
+                    <div class="dynamicStatus">
+                        LOCKED
+                    </div>
+                </div>
+
+                <div class="dynamicAchievement" id="cardFirstSave">
+                    <div class="dynamicIcon">⬡</div>
+
+                    <div class="dynamicText">
+                        <h3>FIRST SAVE</h3>
+                        <p>Sla je run op.</p>
+                    </div>
+
+                    <div class="dynamicStatus">
+                        LOCKED
+                    </div>
+                </div>
+
+                <div class="dynamicAchievement" id="cardExplorer">
+                    <div class="dynamicIcon">✦</div>
+
+                    <div class="dynamicText">
+                        <h3>EXPLORER</h3>
+                        <p>Leg 5000 meter af.</p>
+                    </div>
+
+                    <div class="dynamicStatus">
+                        LOCKED
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    `;
+
+    document.body.appendChild(screen);
+
+    injectAchievementCSS();
+
+    get("dynamicCloseAchievements").addEventListener(
+        "click",
+        function () {
+            closeAchievements();
+        }
+    );
+}
+
+function injectAchievementCSS() {
+
+    if (get("dynamicAchievementCSS")) {
+        return;
+    }
+
+    const style = document.createElement("style");
+
+    style.id = "dynamicAchievementCSS";
+
+    style.textContent = `
+        #achievementsScreen {
+            position: fixed;
+            inset: 0;
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background:
+                radial-gradient(
+                    circle at center,
+                    #193746 0%,
+                    #0b1720 45%,
+                    #03070b 100%
+                );
+        }
+
+        .achievementsWindow {
+            width: min(900px, 95vw);
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 35px;
+            background:
+                linear-gradient(
+                    145deg,
+                    #142936,
+                    #08121a
+                );
+            border: 1px solid #4b7184;
+            border-radius: 20px;
+            box-shadow:
+                0 30px 100px rgba(0,0,0,0.8);
+        }
+
+        .achievementsTop {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .achievementLogo {
+            color: #78cfff;
+            font-size: 11px;
+            font-weight: bold;
+            letter-spacing: 5px;
+            margin-bottom: 8px;
+        }
+
+        .achievementsTop h2 {
+            color: #f4fbff;
+            font-size: 38px;
+            letter-spacing: 4px;
+            margin: 0;
+        }
+
+        .achievementsTop p {
+            color: #8199a8;
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        #dynamicCloseAchievements {
+            padding: 10px 18px;
+            color: white;
+            background: #162a38;
+            border: 1px solid #4c6877;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #dynamicCloseAchievements:hover {
+            border-color: #77d4ff;
+            background: #214457;
+        }
+
+        .achievementCards {
+            display: grid;
+            grid-template-columns:
+                repeat(2, minmax(0, 1fr));
+            gap: 15px;
+        }
+
+        .dynamicAchievement {
+            display: grid;
+            grid-template-columns:
+                52px 1fr auto;
+            align-items: center;
+            gap: 15px;
+            min-height: 105px;
+            padding: 16px;
+            background: #0e1c25;
+            border: 1px solid #294351;
+            border-radius: 13px;
+        }
+
+        .dynamicAchievement.unlocked {
+            background: #14303e;
+            border-color: #5ec7f3;
+            box-shadow:
+                0 0 20px rgba(80,190,240,0.08);
+        }
+
+        .dynamicIcon {
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 11px;
+            border: 1px solid #344f5d;
+            color: #536977;
+            background: #08131a;
+            font-size: 23px;
+        }
+
+        .dynamicAchievement.unlocked .dynamicIcon {
+            color: #7addff;
+            border-color: #54a8ca;
+        }
+
+        .dynamicText h3 {
+            color: #e4f3fa;
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            margin-bottom: 6px;
+        }
+
+        .dynamicText p {
+            color: #768d9b;
+            font-size: 12px;
+        }
+
+        .dynamicStatus {
+            color: #5d717d;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .dynamicAchievement.unlocked .dynamicStatus {
+            color: #70d7ff;
+        }
+
+        @media (max-width: 700px) {
+            .achievementCards {
+                grid-template-columns: 1fr;
+            }
+
+            .achievementsWindow {
+                padding: 20px;
+            }
+
+            .achievementsTop h2 {
+                font-size: 29px;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+}
+
+function showAchievements() {
+
+    createAchievementsPage();
+
+    get("achievementsScreen").style.display = "flex";
+
+    updateAchievementsPage();
+}
+
+function closeAchievements() {
+
+    const screen = get("achievementsScreen");
+
+    if (screen) {
+        screen.style.display = "none";
+    }
+}
+
+function updateAchievementsPage() {
+
+    createAchievementsPage();
+
+    updateAchievementCard(
+        "cardFirstEcho",
+        achievements.firstEcho
+    );
+
+    updateAchievementCard(
+        "cardTenEchoes",
+        achievements.tenEchoes
+    );
+
+    updateAchievementCard(
+        "cardFirstSave",
+        achievements.firstSave
+    );
+
+    updateAchievementCard(
+        "cardExplorer",
+        achievements.explorer
+    );
+}
+
+function updateAchievementCard(id, unlocked) {
+
+    const card = get(id);
+
+    if (!card) {
+        return;
+    }
+
+    const status =
+        card.querySelector(".dynamicStatus");
+
+    if (unlocked) {
+
+        card.classList.add("unlocked");
+
+        if (status) {
+            status.textContent = "UNLOCKED";
+        }
+
+    } else {
+
+        card.classList.remove("unlocked");
+
+        if (status) {
+            status.textContent = "LOCKED";
+        }
+    }
+}
 
 /* =====================================================
-   BUTTONS
+   BUTTON SETUP
 ===================================================== */
 
-const newGameButton =
-    document.getElementById("newGame");
-
-const loadGameButton =
-    document.getElementById("loadGame");
-
+const newGameButton = get("newGame");
+const loadGameButton = get("loadGame");
 const achievementsButton =
-    document.getElementById(
-        "achievementsButton"
-    );
-
+    get("achievementsButton");
 const controlsButton =
-    document.getElementById(
-        "controlsButton"
+    get("controlsButton");
+const resumeButton = get("resume");
+const saveButton = get("save");
+const quitButton = get("quit");
+const closeMapButton = get("closeMap");
+
+if (newGameButton) {
+    newGameButton.addEventListener(
+        "click",
+        startNewGame
+    );
+}
+
+if (loadGameButton) {
+    loadGameButton.addEventListener(
+        "click",
+        loadGame
+    );
+}
+
+if (achievementsButton) {
+    achievementsButton.addEventListener(
+        "click",
+        showAchievements
+    );
+}
+
+if (controlsButton) {
+    controlsButton.addEventListener(
+        "click",
+        showControls
+    );
+}
+
+if (resumeButton) {
+    resumeButton.addEventListener(
+        "click",
+        resumeGame
+    );
+}
+
+if (saveButton) {
+    saveButton.addEventListener(
+        "click",
+        saveGame
+    );
+}
+
+if (quitButton) {
+    quitButton.addEventListener(
+        "click",
+        quitToMenu
+    );
+}
+
+if (closeMapButton) {
+    closeMapButton.addEventListener(
+        "click",
+        closeMap
+    );
+}
+
+/* =====================================================
+   NEW GAME
+===================================================== */
+
+function startNewGame() {
+
+    player = {
+
+        x: WORLD_WIDTH / 2,
+
+        y: WORLD_HEIGHT / 2,
+
+        radius: 18,
+
+        speed: 3.5,
+
+        maxHealth: 100,
+
+        health: 100,
+
+        maxEnergy: 100,
+
+        energy: 100,
+
+        ammo: 12,
+
+        kills: 0,
+
+        credits: 0,
+
+        cooldown: 0,
+
+        dashCooldown: 0,
+
+        dashTimer: 0,
+
+        invincible: 0,
+
+        distance: 0
+    };
+
+    enemies = [];
+    bullets = [];
+    particles = [];
+    pickups = [];
+
+    mouse.down = false;
+
+    for (let i = 0; i < 18; i++) {
+        createEnemy();
+    }
+
+    gameRunning = true;
+    paused = false;
+
+    get("menu").style.display = "none";
+    get("pause").style.display = "none";
+    get("map").style.display = "none";
+
+    closeAchievements();
+
+    updateHUD();
+}
+
+/* =====================================================
+   LOAD GAME
+===================================================== */
+
+function loadGame() {
+
+    const saved =
+        localStorage.getItem(SAVE_KEY);
+
+    if (!saved) {
+
+        alert(
+            "Er is nog geen opgeslagen run."
+        );
+
+        return;
+    }
+
+    try {
+
+        const data =
+            JSON.parse(saved);
+
+        player = data.player;
+
+        if (!player) {
+            throw new Error(
+                "Player missing"
+            );
+        }
+
+        player.radius =
+            player.radius || 18;
+
+        player.speed =
+            player.speed || 3.5;
+
+        player.maxHealth =
+            player.maxHealth || 100;
+
+        player.maxEnergy =
+            player.maxEnergy || 100;
+
+        player.health =
+            typeof player.health === "number"
+                ? player.health
+                : 100;
+
+        player.energy =
+            typeof player.energy === "number"
+                ? player.energy
+                : 100;
+
+        player.ammo =
+            typeof player.ammo === "number"
+                ? player.ammo
+                : 12;
+
+        player.kills =
+            typeof player.kills === "number"
+                ? player.kills
+                : 0;
+
+        player.credits =
+            typeof player.credits === "number"
+                ? player.credits
+                : 0;
+
+        player.distance =
+            player.distance || 0;
+
+        player.cooldown = 0;
+        player.dashCooldown = 0;
+        player.dashTimer = 0;
+        player.invincible = 0;
+
+        if (data.achievements) {
+
+            achievements = {
+                ...achievements,
+                ...data.achievements
+            };
+        }
+
+        if (
+            collidesWithWall(
+                player.x,
+                player.y,
+                player.radius
+            )
+        ) {
+
+            player.x =
+                WORLD_WIDTH / 2;
+
+            player.y =
+                WORLD_HEIGHT / 2;
+        }
+
+        enemies = [];
+        bullets = [];
+        particles = [];
+        pickups = [];
+
+        for (let i = 0; i < 18; i++) {
+            createEnemy();
+        }
+
+        gameRunning = true;
+        paused = false;
+        mouse.down = false;
+
+        get("menu").style.display = "none";
+
+        updateHUD();
+
+    } catch (error) {
+
+        console.error(error);
+
+        alert(
+            "De opgeslagen game kon niet worden geladen."
+        );
+    }
+}
+
+/* =====================================================
+   SAVE
+===================================================== */
+
+function saveGame() {
+
+    if (!player) {
+
+        alert(
+            "Start eerst een game."
+        );
+
+        return;
+    }
+
+    localStorage.setItem(
+        SAVE_KEY,
+        JSON.stringify({
+            player: player,
+            achievements: achievements
+        })
     );
 
-const resumeButton =
-    document.getElementById("resume");
+    if (!achievements.firstSave) {
 
-const saveButton =
-    document.getElementById("save");
+        achievements.firstSave = true;
 
-const quitButton =
-    document.getElementById("quit");
+        showAchievement(
+            "FIRST SAVE"
+        );
 
-const closeMapButton =
-    document.getElementById("closeMap");
+    } else {
 
-const closeAchievementsButton =
-    document.getElementById(
-        "closeAchievements"
+        showAchievement(
+            "GAME SAVED"
+        );
+    }
+
+    updateAchievementsPage();
+}
+
+/* =====================================================
+   CONTROLS
+===================================================== */
+
+function showControls() {
+
+    alert(
+
+        "BESTURING\n\n" +
+
+        "W A S D\n" +
+        "Bewegen\n\n" +
+
+        "MUIS\n" +
+        "Richten\n\n" +
+
+        "LINKERMUISKNOP\n" +
+        "Schieten\n\n" +
+
+        "SPACE\n" +
+        "Dash\n\n" +
+
+        "M\n" +
+        "Kaart\n\n" +
+
+        "ESC\n" +
+        "Pauzeren"
+
     );
+}
 
+/* =====================================================
+   PAUSE
+===================================================== */
+
+function resumeGame() {
+
+    paused = false;
+
+    get("pause").style.display =
+        "none";
+}
+
+function quitToMenu() {
+
+    if (player) {
+        saveGame();
+    }
+
+    gameRunning = false;
+    paused = false;
+    mouse.down = false;
+
+    get("pause").style.display =
+        "none";
+
+    get("map").style.display =
+        "none";
+
+    closeAchievements();
+
+    get("menu").style.display =
+        "flex";
+}
 
 /* =====================================================
    COLLISION
@@ -211,6 +855,29 @@ function circleIntersectsRect(
     );
 }
 
+function collidesWithWall(
+    x,
+    y,
+    radius
+) {
+
+    for (const wall of walls) {
+
+        if (
+            circleIntersectsRect(
+                x,
+                y,
+                radius,
+                wall
+            )
+        ) {
+
+            return true;
+        }
+    }
+
+    return false;
+}
 
 function pointInRect(
     x,
@@ -225,7 +892,6 @@ function pointInRect(
         y <= rect.y + rect.h
     );
 }
-
 
 function segmentIntersectsRect(
     x1,
@@ -250,126 +916,66 @@ function segmentIntersectsRect(
     ) {
 
         return true;
-
     }
 
+    const dx = x2 - x1;
+    const dy = y2 - y1;
 
-    const dx =
-        x2 - x1;
+    let t0 = 0;
+    let t1 = 1;
 
-    const dy =
-        y2 - y1;
-
-
-    let tMin = 0;
-    let tMax = 1;
-
-
-    const values = [
-
-        [-dx, x1 - rect.x],
-
-        [dx, rect.x + rect.w - x1],
-
-        [-dy, y1 - rect.y],
-
-        [dy, rect.y + rect.h - y1]
-
+    const p = [
+        -dx,
+        dx,
+        -dy,
+        dy
     ];
 
+    const q = [
+        x1 - rect.x,
+        rect.x + rect.w - x1,
+        y1 - rect.y,
+        rect.y + rect.h - y1
+    ];
 
-    for (
-        const [p, q]
-        of values
-    ) {
+    for (let i = 0; i < 4; i++) {
 
-        if (p === 0) {
+        if (p[i] === 0) {
 
-            if (q < 0) {
-
+            if (q[i] < 0) {
                 return false;
-
-            }
-
-            continue;
-
-        }
-
-
-        const t =
-            q / p;
-
-
-        if (p < 0) {
-
-            if (t > tMax) {
-
-                return false;
-
-            }
-
-
-            if (t > tMin) {
-
-                tMin = t;
-
             }
 
         } else {
 
-            if (t < tMin) {
+            const r =
+                q[i] / p[i];
 
-                return false;
+            if (p[i] < 0) {
 
+                if (r > t1) {
+                    return false;
+                }
+
+                if (r > t0) {
+                    t0 = r;
+                }
+
+            } else {
+
+                if (r < t0) {
+                    return false;
+                }
+
+                if (r < t1) {
+                    t1 = r;
+                }
             }
-
-
-            if (t < tMax) {
-
-                tMax = t;
-
-            }
-
         }
-
     }
-
 
     return true;
-
 }
-
-
-function collidesWithWall(
-    x,
-    y,
-    radius
-) {
-
-    for (
-        const wall of walls
-    ) {
-
-        if (
-            circleIntersectsRect(
-                x,
-                y,
-                radius,
-                wall
-            )
-        ) {
-
-            return true;
-
-        }
-
-    }
-
-
-    return false;
-
-}
-
 
 function bulletHitsWall(
     x1,
@@ -378,9 +984,7 @@ function bulletHitsWall(
     y2
 ) {
 
-    for (
-        const wall of walls
-    ) {
+    for (const wall of walls) {
 
         if (
             segmentIntersectsRect(
@@ -393,18 +997,13 @@ function bulletHitsWall(
         ) {
 
             return true;
-
         }
-
     }
 
-
     return false;
-
 }
 
-
-function moveCircleWithCollision(
+function moveCircle(
     entity,
     dx,
     dy
@@ -416,9 +1015,6 @@ function moveCircleWithCollision(
     const nextY =
         entity.y + dy;
 
-
-    /* X */
-
     if (
         !collidesWithWall(
             nextX,
@@ -428,11 +1024,7 @@ function moveCircleWithCollision(
     ) {
 
         entity.x = nextX;
-
     }
-
-
-    /* Y */
 
     if (
         !collidesWithWall(
@@ -443,11 +1035,7 @@ function moveCircleWithCollision(
     ) {
 
         entity.y = nextY;
-
     }
-
-
-    /* World boundary */
 
     entity.x =
         Math.max(
@@ -459,7 +1047,6 @@ function moveCircleWithCollision(
             )
         );
 
-
     entity.y =
         Math.max(
             entity.radius,
@@ -469,574 +1056,7 @@ function moveCircleWithCollision(
                 entity.y
             )
         );
-
 }
-
-
-/* =====================================================
-   NEW GAME
-===================================================== */
-
-newGameButton.addEventListener(
-    "click",
-    startNewGame
-);
-
-
-function startNewGame() {
-
-    player = {
-
-        x: WORLD_WIDTH / 2,
-
-        y: WORLD_HEIGHT / 2,
-
-        radius: 18,
-
-        speed: 3.5,
-
-        maxHealth: 100,
-
-        health: 100,
-
-        maxEnergy: 100,
-
-        energy: 100,
-
-        ammo: 12,
-
-        kills: 0,
-
-        credits: 0,
-
-        cooldown: 0,
-
-        dashCooldown: 0,
-
-        dashTimer: 0,
-
-        invincible: 0,
-
-        distance: 0
-
-    };
-
-
-    enemies = [];
-    bullets = [];
-    particles = [];
-    pickups = [];
-
-    mouse.down = false;
-
-
-    for (
-        let i = 0;
-        i < 18;
-        i++
-    ) {
-
-        createEnemy();
-
-    }
-
-
-    gameRunning = true;
-    paused = false;
-
-
-    document.getElementById(
-        "menu"
-    ).style.display = "none";
-
-
-    document.getElementById(
-        "pause"
-    ).style.display = "none";
-
-
-    document.getElementById(
-        "map"
-    ).style.display = "none";
-
-
-    document.getElementById(
-        "achievementsScreen"
-    ).style.display = "none";
-
-
-    updateHUD();
-
-}
-
-
-/* =====================================================
-   LOAD GAME
-===================================================== */
-
-loadGameButton.addEventListener(
-    "click",
-    loadGame
-);
-
-
-function loadGame() {
-
-    const save =
-        localStorage.getItem(
-            SAVE_KEY
-        );
-
-
-    if (!save) {
-
-        alert(
-            "Er is nog geen opgeslagen run."
-        );
-
-        return;
-
-    }
-
-
-    try {
-
-        const data =
-            JSON.parse(save);
-
-
-        player =
-            data.player;
-
-
-        if (!player) {
-
-            throw new Error(
-                "Geen speler gevonden."
-            );
-
-        }
-
-
-        player.radius =
-            player.radius || 18;
-
-
-        player.speed =
-            player.speed || 3.5;
-
-
-        player.maxHealth =
-            player.maxHealth || 100;
-
-
-        player.maxEnergy =
-            player.maxEnergy || 100;
-
-
-        player.ammo =
-            typeof player.ammo ===
-            "number"
-                ? player.ammo
-                : 12;
-
-
-        player.kills =
-            typeof player.kills ===
-            "number"
-                ? player.kills
-                : 0;
-
-
-        player.credits =
-            typeof player.credits ===
-            "number"
-                ? player.credits
-                : 0;
-
-
-        player.distance =
-            player.distance || 0;
-
-
-        player.cooldown = 0;
-        player.dashCooldown = 0;
-        player.dashTimer = 0;
-        player.invincible = 0;
-
-
-        if (data.achievements) {
-
-            achievements = {
-
-                ...achievements,
-
-                ...data.achievements
-
-            };
-
-        }
-
-
-        if (
-            collidesWithWall(
-                player.x,
-                player.y,
-                player.radius
-            )
-        ) {
-
-            player.x =
-                WORLD_WIDTH / 2;
-
-            player.y =
-                WORLD_HEIGHT / 2;
-
-        }
-
-
-        enemies = [];
-        bullets = [];
-        particles = [];
-        pickups = [];
-
-
-        for (
-            let i = 0;
-            i < 18;
-            i++
-        ) {
-
-            createEnemy();
-
-        }
-
-
-        gameRunning = true;
-        paused = false;
-
-
-        document.getElementById(
-            "menu"
-        ).style.display = "none";
-
-
-        document.getElementById(
-            "pause"
-        ).style.display = "none";
-
-
-        document.getElementById(
-            "map"
-        ).style.display = "none";
-
-
-        document.getElementById(
-            "achievementsScreen"
-        ).style.display = "none";
-
-
-        updateHUD();
-
-    } catch (error) {
-
-        console.error(error);
-
-        alert(
-            "De opgeslagen game kon niet worden geladen."
-        );
-
-    }
-
-}
-
-
-/* =====================================================
-   SAVE GAME
-===================================================== */
-
-saveButton.addEventListener(
-    "click",
-    saveGame
-);
-
-
-function saveGame() {
-
-    if (!player) {
-
-        alert(
-            "Je hebt nog geen run gestart."
-        );
-
-        return;
-
-    }
-
-
-    const data = {
-
-        player: player,
-
-        achievements: achievements
-
-    };
-
-
-    localStorage.setItem(
-        SAVE_KEY,
-        JSON.stringify(data)
-    );
-
-
-    if (
-        !achievements.firstSave
-    ) {
-
-        achievements.firstSave = true;
-
-        showAchievement(
-            "FIRST SAVE"
-        );
-
-    } else {
-
-        showAchievement(
-            "GAME SAVED"
-        );
-
-    }
-
-
-    updateAchievementsScreen();
-
-}
-
-
-/* =====================================================
-   ACHIEVEMENTS PAGE
-===================================================== */
-
-achievementsButton.addEventListener(
-    "click",
-    showAchievements
-);
-
-
-closeAchievementsButton.addEventListener(
-    "click",
-    closeAchievements
-);
-
-
-function showAchievements() {
-
-    const screen =
-        document.getElementById(
-            "achievementsScreen"
-        );
-
-
-    screen.style.display =
-        "flex";
-
-
-    updateAchievementsScreen();
-
-}
-
-
-function closeAchievements() {
-
-    document.getElementById(
-        "achievementsScreen"
-    ).style.display =
-        "none";
-
-}
-
-
-function updateAchievementsScreen() {
-
-    updateAchievementCard(
-        "achievementFirstEcho",
-        achievements.firstEcho
-    );
-
-
-    updateAchievementCard(
-        "achievementTenEchoes",
-        achievements.tenEchoes
-    );
-
-
-    updateAchievementCard(
-        "achievementFirstSave",
-        achievements.firstSave
-    );
-
-
-    updateAchievementCard(
-        "achievementExplorer",
-        achievements.explorer
-    );
-
-}
-
-
-function updateAchievementCard(
-    id,
-    unlocked
-) {
-
-    const card =
-        document.getElementById(id);
-
-
-    if (!card) {
-
-        return;
-
-    }
-
-
-    const status =
-        card.querySelector(
-            ".achievementStatus"
-        );
-
-
-    if (unlocked) {
-
-        card.classList.add(
-            "unlocked"
-        );
-
-
-        if (status) {
-
-            status.textContent =
-                "UNLOCKED";
-
-        }
-
-    } else {
-
-        card.classList.remove(
-            "unlocked"
-        );
-
-
-        if (status) {
-
-            status.textContent =
-                "LOCKED";
-
-        }
-
-    }
-
-}
-
-
-/* =====================================================
-   CONTROLS
-===================================================== */
-
-controlsButton.addEventListener(
-    "click",
-    function () {
-
-        alert(
-
-            "BESTURING\n\n" +
-
-            "W A S D\n" +
-            "Bewegen\n\n" +
-
-            "MUIS\n" +
-            "Richten\n\n" +
-
-            "LINKERMUISKNOP\n" +
-            "Schieten\n\n" +
-
-            "SPACE\n" +
-            "Dash\n\n" +
-
-            "M\n" +
-            "Kaart\n\n" +
-
-            "ESC\n" +
-            "Pauzeren"
-
-        );
-
-    }
-);
-
-
-/* =====================================================
-   PAUSE
-===================================================== */
-
-resumeButton.addEventListener(
-    "click",
-    function () {
-
-        paused = false;
-
-        document.getElementById(
-            "pause"
-        ).style.display =
-            "none";
-
-    }
-);
-
-
-quitButton.addEventListener(
-    "click",
-    function () {
-
-        if (player) {
-
-            saveGame();
-
-        }
-
-
-        gameRunning = false;
-        paused = false;
-
-        mouse.down = false;
-
-
-        document.getElementById(
-            "pause"
-        ).style.display =
-            "none";
-
-
-        document.getElementById(
-            "map"
-        ).style.display =
-            "none";
-
-
-        document.getElementById(
-            "achievementsScreen"
-        ).style.display =
-            "none";
-
-
-        document.getElementById(
-            "menu"
-        ).style.display =
-            "flex";
-
-    }
-);
-
 
 /* =====================================================
    KEYBOARD
@@ -1049,9 +1069,7 @@ window.addEventListener(
         const key =
             event.key.toLowerCase();
 
-
         keys[key] = true;
-
 
         if (
             event.code === "Space"
@@ -1060,113 +1078,76 @@ window.addEventListener(
             event.preventDefault();
 
             keys.space = true;
-
         }
-
-
-        /* ESC */
 
         if (
             key === "escape"
         ) {
 
-            const achievementsScreen =
-                document.getElementById(
-                    "achievementsScreen"
-                );
-
+            const achievementScreen =
+                get("achievementsScreen");
 
             const map =
-                document.getElementById(
-                    "map"
-                );
-
+                get("map");
 
             if (
-                achievementsScreen.style.display
-                === "flex"
+                achievementScreen &&
+                achievementScreen.style.display === "flex"
             ) {
 
                 closeAchievements();
 
                 return;
-
             }
 
-
             if (
-                map.style.display ===
-                "flex"
+                map &&
+                map.style.display === "flex"
             ) {
 
                 closeMap();
 
                 return;
-
             }
-
 
             if (gameRunning) {
 
-                paused =
-                    !paused;
+                paused = !paused;
 
-
-                document.getElementById(
-                    "pause"
-                ).style.display =
+                get("pause").style.display =
                     paused
                         ? "flex"
                         : "none";
-
             }
-
         }
-
-
-        /* M */
 
         if (
-            key === "m"
+            key === "m" &&
+            gameRunning &&
+            !paused
         ) {
 
-            if (
-                gameRunning &&
-                !paused
-            ) {
-
-                toggleMap();
-
-            }
-
+            toggleMap();
         }
-
     }
 );
-
 
 window.addEventListener(
     "keyup",
     function (event) {
 
-        const key =
-            event.key.toLowerCase();
-
-
-        keys[key] = false;
-
+        keys[
+            event.key.toLowerCase()
+        ] = false;
 
         if (
             event.code === "Space"
         ) {
 
             keys.space = false;
-
         }
-
     }
 );
-
 
 /* =====================================================
    MOUSE
@@ -1179,19 +1160,15 @@ canvas.addEventListener(
         const rect =
             canvas.getBoundingClientRect();
 
-
         mouse.x =
             event.clientX -
             rect.left;
 
-
         mouse.y =
             event.clientY -
             rect.top;
-
     }
 );
-
 
 canvas.addEventListener(
     "mousedown",
@@ -1204,12 +1181,9 @@ canvas.addEventListener(
         ) {
 
             mouse.down = true;
-
         }
-
     }
 );
-
 
 window.addEventListener(
     "mouseup",
@@ -1220,30 +1194,21 @@ window.addEventListener(
         ) {
 
             mouse.down = false;
-
         }
-
     }
 );
-
 
 /* =====================================================
    MAP
 ===================================================== */
 
-closeMapButton.addEventListener(
-    "click",
-    closeMap
-);
-
-
 function toggleMap() {
 
-    const map =
-        document.getElementById(
-            "map"
-        );
+    const map = get("map");
 
+    if (!map) {
+        return;
+    }
 
     if (
         map.style.display === "flex"
@@ -1254,53 +1219,47 @@ function toggleMap() {
     } else {
 
         openMap();
-
     }
-
 }
-
 
 function openMap() {
 
-    document.getElementById(
-        "map"
-    ).style.display =
-        "flex";
+    const map = get("map");
 
+    if (!map) {
+        return;
+    }
+
+    map.style.display = "flex";
 
     drawMap();
-
 }
-
 
 function closeMap() {
 
-    document.getElementById(
-        "map"
-    ).style.display =
-        "none";
+    const map = get("map");
 
+    if (!map) {
+        return;
+    }
+
+    map.style.display = "none";
 }
 
-
 /* =====================================================
-   CREATE ENEMY
+   ENEMIES
 ===================================================== */
 
 function createEnemy() {
 
     if (!player) {
-
         return;
-
     }
 
-
-    let x = 0;
-    let y = 0;
+    let x;
+    let y;
 
     let attempts = 0;
-
 
     do {
 
@@ -1309,12 +1268,10 @@ function createEnemy() {
             Math.random() *
             (WORLD_WIDTH - 160);
 
-
         y =
             80 +
             Math.random() *
             (WORLD_HEIGHT - 160);
-
 
         attempts++;
 
@@ -1340,25 +1297,18 @@ function createEnemy() {
         &&
 
         attempts < 200
-
     );
 
-
-    const type =
+    const random =
         Math.random();
-
 
     let enemy;
 
-
-    if (
-        type > 0.85
-    ) {
+    if (random > 0.85) {
 
         enemy = {
 
             x: x,
-
             y: y,
 
             radius: 21,
@@ -1366,7 +1316,6 @@ function createEnemy() {
             speed: 0.55,
 
             hp: 4,
-
             maxHp: 4,
 
             cooldown:
@@ -1375,19 +1324,13 @@ function createEnemy() {
                 80,
 
             type: "heavy"
-
         };
 
-    }
-
-    else if (
-        type > 0.6
-    ) {
+    } else if (random > 0.6) {
 
         enemy = {
 
             x: x,
-
             y: y,
 
             radius: 18,
@@ -1395,7 +1338,6 @@ function createEnemy() {
             speed: 0.75,
 
             hp: 3,
-
             maxHp: 3,
 
             cooldown:
@@ -1404,17 +1346,13 @@ function createEnemy() {
                 80,
 
             type: "mid"
-
         };
 
-    }
-
-    else {
+    } else {
 
         enemy = {
 
             x: x,
-
             y: y,
 
             radius: 16,
@@ -1422,7 +1360,6 @@ function createEnemy() {
             speed: 0.9,
 
             hp: 2,
-
             maxHp: 2,
 
             cooldown:
@@ -1431,19 +1368,14 @@ function createEnemy() {
                 100,
 
             type: "light"
-
         };
-
     }
 
-
     enemies.push(enemy);
-
 }
 
-
 /* =====================================================
-   PLAYER UPDATE
+   PLAYER
 ===================================================== */
 
 function updatePlayer() {
@@ -1451,34 +1383,21 @@ function updatePlayer() {
     let dx = 0;
     let dy = 0;
 
-
     if (keys.w) {
-
-        dy -= 1;
-
+        dy--;
     }
-
 
     if (keys.s) {
-
-        dy += 1;
-
+        dy++;
     }
-
 
     if (keys.a) {
-
-        dx -= 1;
-
+        dx--;
     }
-
 
     if (keys.d) {
-
-        dx += 1;
-
+        dx++;
     }
-
 
     if (
         dx !== 0 ||
@@ -1486,19 +1405,13 @@ function updatePlayer() {
     ) {
 
         const length =
-            Math.hypot(
-                dx,
-                dy
-            );
-
+            Math.hypot(dx, dy);
 
         dx /= length;
         dy /= length;
 
-
         let speed =
             player.speed;
-
 
         if (
             player.dashTimer > 0
@@ -1507,65 +1420,40 @@ function updatePlayer() {
             speed = 11;
 
             player.dashTimer--;
-
         }
-
 
         const oldX =
             player.x;
 
-
         const oldY =
             player.y;
 
-
-        moveCircleWithCollision(
-
+        moveCircle(
             player,
-
             dx * speed,
-
             dy * speed
-
         );
 
-
-        const moved =
-            Math.hypot(
-
-                player.x - oldX,
-
-                player.y - oldY
-
-            );
-
-
         player.distance +=
-            moved;
-
+            Math.hypot(
+                player.x - oldX,
+                player.y - oldY
+            );
 
         if (
             player.distance >= 5000 &&
             !achievements.explorer
         ) {
 
-            achievements.explorer =
-                true;
-
+            achievements.explorer = true;
 
             showAchievement(
                 "EXPLORER"
             );
 
-
-            updateAchievementsScreen();
-
+            updateAchievementsPage();
         }
-
     }
-
-
-    /* DASH */
 
     if (
 
@@ -1582,21 +1470,13 @@ function updatePlayer() {
 
     ) {
 
-        player.dashTimer =
-            10;
+        player.dashTimer = 10;
 
+        player.energy -= 25;
 
-        player.energy -=
-            25;
+        player.dashCooldown = 70;
 
-
-        player.dashCooldown =
-            70;
-
-
-        player.invincible =
-            25;
-
+        player.invincible = 25;
 
         createParticles(
             player.x,
@@ -1604,50 +1484,27 @@ function updatePlayer() {
             25
         );
 
-
         keys.space = false;
-
     }
 
-
-    if (
-        player.cooldown > 0
-    ) {
-
+    if (player.cooldown > 0) {
         player.cooldown--;
-
     }
 
-
-    if (
-        player.dashCooldown > 0
-    ) {
-
+    if (player.dashCooldown > 0) {
         player.dashCooldown--;
-
     }
 
-
-    if (
-        player.invincible > 0
-    ) {
-
+    if (player.invincible > 0) {
         player.invincible--;
-
     }
-
 
     player.energy =
         Math.min(
-
             player.maxEnergy,
-
             player.energy + 0.12
-
         );
-
 }
-
 
 /* =====================================================
    SHOOT
@@ -1662,94 +1519,65 @@ function shoot() {
     ) {
 
         return;
-
     }
 
-
-    if (
-        player.ammo <= 0
-    ) {
+    if (player.ammo <= 0) {
 
         player.ammo = 12;
 
         return;
-
     }
-
 
     player.ammo--;
 
     player.cooldown = 9;
 
-
     const worldX =
-        camera.x +
-        mouse.x;
-
+        camera.x + mouse.x;
 
     const worldY =
-        camera.y +
-        mouse.y;
-
+        camera.y + mouse.y;
 
     const angle =
         Math.atan2(
-
-            worldY -
-            player.y,
-
-            worldX -
-            player.x
-
+            worldY - player.y,
+            worldX - player.x
         );
-
 
     bullets.push({
 
         x:
             player.x +
-            Math.cos(angle) *
-            22,
+            Math.cos(angle) * 22,
 
         y:
             player.y +
-            Math.sin(angle) *
-            22,
+            Math.sin(angle) * 22,
 
         vx:
-            Math.cos(angle) *
-            11,
+            Math.cos(angle) * 11,
 
         vy:
-            Math.sin(angle) *
-            11,
+            Math.sin(angle) * 11,
 
         enemy: false,
 
         life: 100
-
     });
 
-
     createParticles(
-
         player.x +
-        Math.cos(angle) *
-        25,
+        Math.cos(angle) * 25,
 
         player.y +
-        Math.sin(angle) *
-        25,
+        Math.sin(angle) * 25,
 
         4
-
     );
-
 }
 
-
 /* =====================================================
-   ENEMIES UPDATE
+   ENEMY UPDATE
 ===================================================== */
 
 function updateEnemies() {
@@ -1762,27 +1590,19 @@ function updateEnemies() {
             player.x -
             enemy.x;
 
-
         const dy =
             player.y -
             enemy.y;
 
-
         const distance =
-            Math.hypot(
-                dx,
-                dy
-            );
-
-
-        /* MOVE */
+            Math.hypot(dx, dy);
 
         if (
             distance > 65 &&
             distance > 0
         ) {
 
-            moveCircleWithCollision(
+            moveCircle(
 
                 enemy,
 
@@ -1795,18 +1615,13 @@ function updateEnemies() {
                 enemy.speed
 
             );
-
         }
-
-
-        /* SHOOT */
 
         if (
             distance < 650
         ) {
 
             enemy.cooldown--;
-
 
             if (
                 enemy.cooldown <= 0
@@ -1817,42 +1632,25 @@ function updateEnemies() {
                     Math.random() *
                     100;
 
-
                 const angle =
                     Math.atan2(
-
-                        player.y -
-                        enemy.y,
-
-                        player.x -
-                        enemy.x
-
+                        player.y - enemy.y,
+                        player.x - enemy.x
                     );
 
-
-                let speed =
-                    3.3;
-
+                let speed = 3.3;
 
                 if (
-                    enemy.type ===
-                    "mid"
+                    enemy.type === "mid"
                 ) {
-
                     speed = 3.7;
-
                 }
-
 
                 if (
-                    enemy.type ===
-                    "heavy"
+                    enemy.type === "heavy"
                 ) {
-
-                    speed = 3.0;
-
+                    speed = 3;
                 }
-
 
                 bullets.push({
 
@@ -1871,38 +1669,25 @@ function updateEnemies() {
                     enemy: true,
 
                     life: 160
-
                 });
-
             }
-
         }
 
-
-        /* CONTACT */
-
         if (
-
             distance <
-
             player.radius +
             enemy.radius
-
         ) {
 
             damagePlayer(
                 0.35
             );
-
         }
-
     }
-
 }
 
-
 /* =====================================================
-   BULLET UPDATE
+   BULLETS
 ===================================================== */
 
 function updateBullets() {
@@ -1919,138 +1704,100 @@ function updateBullets() {
         const bullet =
             bullets[i];
 
-
         const oldX =
             bullet.x;
-
 
         const oldY =
             bullet.y;
 
-
         bullet.x +=
             bullet.vx;
-
 
         bullet.y +=
             bullet.vy;
 
-
         bullet.life--;
-
 
         /* WALL */
 
         if (
             bulletHitsWall(
-
                 oldX,
                 oldY,
-
                 bullet.x,
                 bullet.y
-
             )
         ) {
 
             createParticles(
-
                 bullet.x,
                 bullet.y,
-                6
-
+                7
             );
-
 
             bullets.splice(
                 i,
                 1
             );
 
-
             continue;
-
         }
-
 
         /* ENEMY BULLET */
 
-        if (
-            bullet.enemy
-        ) {
+        if (bullet.enemy) {
 
             if (
 
                 Math.hypot(
-
                     bullet.x -
                     player.x,
 
                     bullet.y -
                     player.y
-
-                )
-
-                <
+                ) <
 
                 player.radius + 6
 
             ) {
 
-                damagePlayer(
-                    8
-                );
-
+                damagePlayer(8);
 
                 bullets.splice(
                     i,
                     1
                 );
 
-
                 continue;
-
             }
 
-        }
+        } else {
 
+            /* PLAYER BULLET */
 
-        /* PLAYER BULLET */
-
-        else {
-
-            let hit =
-                false;
-
+            let hit = false;
 
             for (
-
                 let j =
                     enemies.length - 1;
 
                 j >= 0;
 
                 j--
-
             ) {
 
                 const enemy =
                     enemies[j];
 
-
                 if (
 
                     Math.hypot(
-
                         bullet.x -
                         enemy.x,
 
                         bullet.y -
                         enemy.y
-
-                    )
-
-                    <
+                    ) <
 
                     enemy.radius + 7
 
@@ -2058,18 +1805,13 @@ function updateBullets() {
 
                     enemy.hp--;
 
-
                     createParticles(
-
                         enemy.x,
                         enemy.y,
                         8
-
                     );
 
-
                     hit = true;
-
 
                     if (
                         enemy.hp <= 0
@@ -2078,16 +1820,11 @@ function updateBullets() {
                         enemyDefeated(
                             j
                         );
-
                     }
 
-
                     break;
-
                 }
-
             }
-
 
             if (hit) {
 
@@ -2096,13 +1833,9 @@ function updateBullets() {
                     1
                 );
 
-
                 continue;
-
             }
-
         }
-
 
         if (
 
@@ -2124,28 +1857,20 @@ function updateBullets() {
                 i,
                 1
             );
-
         }
-
     }
-
 }
-
 
 /* =====================================================
    ENEMY DEFEATED
 ===================================================== */
 
-function enemyDefeated(
-    index
-) {
+function enemyDefeated(index) {
 
     const enemy =
         enemies[index];
 
-
     player.kills++;
-
 
     if (
         enemy.type === "heavy"
@@ -2153,56 +1878,39 @@ function enemyDefeated(
 
         player.credits += 30;
 
-    }
-
-    else if (
+    } else if (
         enemy.type === "mid"
     ) {
 
         player.credits += 20;
 
-    }
-
-    else {
+    } else {
 
         player.credits += 10;
-
     }
-
 
     if (
         !achievements.firstEcho
     ) {
 
-        achievements.firstEcho =
-            true;
-
+        achievements.firstEcho = true;
 
         showAchievement(
             "FIRST ECHO"
         );
-
     }
 
-
     if (
-
         player.kills >= 10 &&
-
         !achievements.tenEchoes
-
     ) {
 
-        achievements.tenEchoes =
-            true;
-
+        achievements.tenEchoes = true;
 
         showAchievement(
             "TEN ECHOES"
         );
-
     }
-
 
     if (
         Math.random() < 0.25
@@ -2215,39 +1923,27 @@ function enemyDefeated(
             y: enemy.y,
 
             type:
-
                 Math.random() < 0.5
-
                     ? "energy"
-
                     : "credit"
-
         });
-
     }
-
 
     enemies.splice(
         index,
         1
     );
 
-
     createEnemy();
 
-
-    updateAchievementsScreen();
-
+    updateAchievementsPage();
 }
-
 
 /* =====================================================
    DAMAGE
 ===================================================== */
 
-function damagePlayer(
-    amount
-) {
+function damagePlayer(amount) {
 
     if (
         !player ||
@@ -2256,24 +1952,19 @@ function damagePlayer(
     ) {
 
         return;
-
     }
-
 
     player.health -=
         amount;
 
-
     player.invincible =
         30;
-
 
     createParticles(
         player.x,
         player.y,
         10
     );
-
 
     if (
         player.health <= 0
@@ -2282,11 +1973,8 @@ function damagePlayer(
         player.health = 0;
 
         gameOver();
-
     }
-
 }
-
 
 /* =====================================================
    GAME OVER
@@ -2294,20 +1982,11 @@ function damagePlayer(
 
 function gameOver() {
 
-    gameRunning =
-        false;
-
-
-    paused =
-        false;
-
-
-    mouse.down =
-        false;
-
+    gameRunning = false;
+    paused = false;
+    mouse.down = false;
 
     setTimeout(
-
         function () {
 
             const retry =
@@ -2325,28 +2004,20 @@ function gameOver() {
 
                 );
 
-
             if (retry) {
 
                 startNewGame();
 
             } else {
 
-                document.getElementById(
-                    "menu"
-                ).style.display =
+                get("menu").style.display =
                     "flex";
-
             }
 
         },
-
         150
-
     );
-
 }
-
 
 /* =====================================================
    PICKUPS
@@ -2366,7 +2037,6 @@ function updatePickups() {
         const pickup =
             pickups[i];
 
-
         const distance =
             Math.hypot(
 
@@ -2377,7 +2047,6 @@ function updatePickups() {
                 player.y
 
             );
-
 
         if (
             distance < 35
@@ -2390,42 +2059,28 @@ function updatePickups() {
 
                 player.energy =
                     Math.min(
-
                         player.maxEnergy,
-
                         player.energy + 30
-
                     );
 
-            }
-
-            else {
+            } else {
 
                 player.credits += 25;
-
             }
 
-
             createParticles(
-
                 pickup.x,
                 pickup.y,
                 10
-
             );
-
 
             pickups.splice(
                 i,
                 1
             );
-
         }
-
     }
-
 }
-
 
 /* =====================================================
    PARTICLES
@@ -2448,16 +2103,12 @@ function createParticles(
             Math.PI *
             2;
 
-
         const speed =
-            Math.random() *
-            3.5;
-
+            Math.random() * 3.5;
 
         particles.push({
 
             x: x,
-
             y: y,
 
             vx:
@@ -2475,15 +2126,10 @@ function createParticles(
 
             size:
                 2 +
-                Math.random() *
-                3
-
+                Math.random() * 3
         });
-
     }
-
 }
-
 
 function updateParticles() {
 
@@ -2499,17 +2145,13 @@ function updateParticles() {
         const p =
             particles[i];
 
-
         p.x += p.vx;
         p.y += p.vy;
-
 
         p.vx *= 0.97;
         p.vy *= 0.97;
 
-
         p.life--;
-
 
         if (
             p.life <= 0
@@ -2519,13 +2161,9 @@ function updateParticles() {
                 i,
                 1
             );
-
         }
-
     }
-
 }
-
 
 /* =====================================================
    CAMERA
@@ -2534,55 +2172,35 @@ function updateParticles() {
 function updateCamera() {
 
     if (!player) {
-
         return;
-
     }
-
 
     camera.x =
         player.x -
         W / 2;
 
-
     camera.y =
         player.y -
         H / 2;
 
-
     camera.x =
         Math.max(
-
             0,
-
             Math.min(
-
                 WORLD_WIDTH - W,
-
                 camera.x
-
             )
-
         );
-
 
     camera.y =
         Math.max(
-
             0,
-
             Math.min(
-
                 WORLD_HEIGHT - H,
-
                 camera.y
-
             )
-
         );
-
 }
-
 
 /* =====================================================
    DRAW WORLD
@@ -2593,7 +2211,6 @@ function drawWorld() {
     ctx.fillStyle =
         "#0b151c";
 
-
     ctx.fillRect(
         0,
         0,
@@ -2601,9 +2218,7 @@ function drawWorld() {
         H
     );
 
-
     const gridSize = 100;
-
 
     const startX =
         Math.floor(
@@ -2612,7 +2227,6 @@ function drawWorld() {
         ) *
         gridSize;
 
-
     const startY =
         Math.floor(
             camera.y /
@@ -2620,61 +2234,35 @@ function drawWorld() {
         ) *
         gridSize;
 
-
     for (
-
-        let worldX =
-            startX;
-
+        let worldX = startX;
         worldX <
-            camera.x +
-            W +
-            gridSize;
-
-        worldX +=
-            gridSize
-
+        camera.x + W + gridSize;
+        worldX += gridSize
     ) {
 
         for (
-
-            let worldY =
-                startY;
-
+            let worldY = startY;
             worldY <
-                camera.y +
-                H +
-                gridSize;
-
-            worldY +=
-                gridSize
-
+            camera.y + H + gridSize;
+            worldY += gridSize
         ) {
 
             const screenX =
                 worldX -
                 camera.x;
 
-
             const screenY =
                 worldY -
                 camera.y;
 
-
             const sector =
-
                 Math.floor(
-                    worldX /
-                    500
-                )
-
-                +
-
+                    worldX / 500
+                ) +
                 Math.floor(
-                    worldY /
-                    500
+                    worldY / 500
                 );
-
 
             if (
                 sector % 4 === 0
@@ -2683,67 +2271,49 @@ function drawWorld() {
                 ctx.fillStyle =
                     "#111f25";
 
-            }
-
-            else if (
+            } else if (
                 sector % 4 === 1
             ) {
 
                 ctx.fillStyle =
                     "#122329";
 
-            }
-
-            else if (
+            } else if (
                 sector % 4 === 2
             ) {
 
                 ctx.fillStyle =
                     "#151e27";
 
-            }
-
-            else {
+            } else {
 
                 ctx.fillStyle =
                     "#101b23";
-
             }
 
-
             ctx.fillRect(
-
                 screenX,
                 screenY,
-
                 gridSize,
                 gridSize
-
             );
-
         }
-
     }
-
 
     /* GRID */
 
     ctx.strokeStyle =
         "rgba(120,190,220,0.06)";
 
-
     ctx.lineWidth = 1;
 
-
     for (
-
         let x =
             -(camera.x % 100);
 
         x < W;
 
         x += 100
-
     ) {
 
         ctx.beginPath();
@@ -2759,19 +2329,15 @@ function drawWorld() {
         );
 
         ctx.stroke();
-
     }
 
-
     for (
-
         let y =
             -(camera.y % 100);
 
         y < H;
 
         y += 100
-
     ) {
 
         ctx.beginPath();
@@ -2787,34 +2353,22 @@ function drawWorld() {
         );
 
         ctx.stroke();
-
     }
 
-
     drawWalls();
-
-
-    /* WORLD BORDER */
 
     ctx.strokeStyle =
         "rgba(100,190,230,0.35)";
 
-
     ctx.lineWidth = 4;
 
-
     ctx.strokeRect(
-
         -camera.x,
         -camera.y,
-
         WORLD_WIDTH,
         WORLD_HEIGHT
-
     );
-
 }
-
 
 /* =====================================================
    DRAW WALLS
@@ -2823,206 +2377,86 @@ function drawWorld() {
 function drawWalls() {
 
     const pulse =
-        0.35 +
+        0.30 +
         Math.sin(
-            performance.now() /
-            450
-        ) *
-        0.08;
+            performance.now() / 450
+        ) * 0.08;
 
-
-    for (
-        const wall of walls
-    ) {
+    for (const wall of walls) {
 
         const x =
             wall.x -
             camera.x;
 
-
         const y =
             wall.y -
             camera.y;
-
 
         /* Shadow */
 
         ctx.fillStyle =
             "rgba(0,0,0,0.45)";
 
-
         ctx.fillRect(
-
             x + 6,
             y + 8,
-
             wall.w,
             wall.h
-
         );
-
 
         /* Body */
 
         ctx.fillStyle =
             "#1b2c37";
 
-
         ctx.fillRect(
-
             x,
             y,
-
             wall.w,
             wall.h
-
         );
-
 
         /* Border */
 
         ctx.strokeStyle =
             "#4e7a8c";
 
-
         ctx.lineWidth = 2;
 
-
         ctx.strokeRect(
-
             x,
             y,
-
             wall.w,
             wall.h
-
         );
-
 
         /* Energy line */
 
         ctx.fillStyle =
             `rgba(104,220,255,${pulse})`;
 
-
         if (
             wall.w >= wall.h
         ) {
 
             ctx.fillRect(
-
                 x + 8,
-
-                y +
-                wall.h / 2 -
-                2,
-
+                y + wall.h / 2 - 2,
                 wall.w - 16,
-
                 4
-
             );
 
         } else {
 
             ctx.fillRect(
-
-                x +
-                wall.w / 2 -
-                2,
-
+                x + wall.w / 2 - 2,
                 y + 8,
-
                 4,
-
                 wall.h - 16
-
             );
-
         }
-
-
-        /* Plate lines */
-
-        ctx.strokeStyle =
-            "rgba(190,230,240,0.16)";
-
-
-        ctx.lineWidth = 1;
-
-
-        if (
-            wall.w >= wall.h
-        ) {
-
-            for (
-
-                let px =
-                    x + 24;
-
-                px <
-                    x +
-                    wall.w -
-                    10;
-
-                px += 48
-
-            ) {
-
-                ctx.beginPath();
-
-                ctx.moveTo(
-                    px,
-                    y + 7
-                );
-
-                ctx.lineTo(
-                    px,
-                    y + wall.h - 7
-                );
-
-                ctx.stroke();
-
-            }
-
-        } else {
-
-            for (
-
-                let py =
-                    y + 24;
-
-                py <
-                    y +
-                    wall.h -
-                    10;
-
-                py += 48
-
-            ) {
-
-                ctx.beginPath();
-
-                ctx.moveTo(
-                    x + 7,
-                    py
-                );
-
-                ctx.lineTo(
-                    x + wall.w - 7,
-                    py
-                );
-
-                ctx.stroke();
-
-            }
-
-        }
-
     }
-
 }
-
 
 /* =====================================================
    DRAW PICKUPS
@@ -3038,41 +2472,29 @@ function drawPickups() {
             pickup.x -
             camera.x;
 
-
         const y =
             pickup.y -
             camera.y;
 
-
         ctx.save();
-
 
         ctx.translate(
             x,
             y
         );
 
-
         ctx.rotate(
             performance.now() /
             500
         );
 
+        ctx.fillStyle =
 
-        if (
             pickup.type === "energy"
-        ) {
 
-            ctx.fillStyle =
-                "#60dfff";
+                ? "#60dfff"
 
-        } else {
-
-            ctx.fillStyle =
-                "#ffd35c";
-
-        }
-
+                : "#ffd35c";
 
         ctx.fillRect(
             -7,
@@ -3081,13 +2503,9 @@ function drawPickups() {
             14
         );
 
-
         ctx.restore();
-
     }
-
 }
-
 
 /* =====================================================
    DRAW PLAYER
@@ -3099,90 +2517,59 @@ function drawPlayer() {
         player.x -
         camera.x;
 
-
     const y =
         player.y -
         camera.y;
-
 
     const worldMouseX =
         camera.x +
         mouse.x;
 
-
     const worldMouseY =
         camera.y +
         mouse.y;
 
-
     const angle =
         Math.atan2(
-
             worldMouseY -
             player.y,
-
             worldMouseX -
             player.x
-
         );
-
-
-    /* Shadow */
 
     ctx.fillStyle =
         "rgba(0,0,0,0.35)";
 
-
     ctx.beginPath();
 
-
     ctx.ellipse(
-
         x,
         y + 15,
-
         25,
         9,
-
         0,
         0,
         Math.PI * 2
-
     );
 
-
     ctx.fill();
-
-
-    /* Ring */
 
     ctx.strokeStyle =
         "rgba(90,210,255,0.25)";
 
-
     ctx.lineWidth = 3;
-
 
     ctx.beginPath();
 
-
     ctx.arc(
-
         x,
         y,
-
         26,
-
         0,
         Math.PI * 2
-
     );
 
-
     ctx.stroke();
-
-
-    /* Body */
 
     ctx.fillStyle =
 
@@ -3192,86 +2579,55 @@ function drawPlayer() {
 
             : "#71cfff";
 
-
     ctx.beginPath();
 
-
     ctx.arc(
-
         x,
         y,
-
         player.radius,
-
         0,
         Math.PI * 2
-
     );
 
-
     ctx.fill();
-
-
-    /* Weapon */
 
     ctx.strokeStyle =
         "#e8f8ff";
 
-
     ctx.lineWidth = 6;
 
-
     ctx.beginPath();
-
 
     ctx.moveTo(
         x,
         y
     );
 
-
     ctx.lineTo(
-
         x +
-        Math.cos(angle) *
-        31,
+        Math.cos(angle) * 31,
 
         y +
-        Math.sin(angle) *
-        31
-
+        Math.sin(angle) * 31
     );
 
-
     ctx.stroke();
-
-
-    /* Core */
 
     ctx.fillStyle =
         "#dff8ff";
 
-
     ctx.beginPath();
 
-
     ctx.arc(
-
         x,
         y,
-
         5,
-
         0,
         Math.PI * 2
-
     );
 
-
     ctx.fill();
-
 }
-
 
 /* =====================================================
    DRAW ENEMIES
@@ -3287,19 +2643,15 @@ function drawEnemies() {
             enemy.x -
             camera.x;
 
-
         const y =
             enemy.y -
             camera.y;
 
-
         let color =
             "#bd6dff";
 
-
         let glow =
             "#8b4bc0";
-
 
         if (
             enemy.type === "mid"
@@ -3308,12 +2660,9 @@ function drawEnemies() {
             color =
                 "#d18cff";
 
-
             glow =
                 "#934cc7";
-
         }
-
 
         if (
             enemy.type === "heavy"
@@ -3322,182 +2671,108 @@ function drawEnemies() {
             color =
                 "#ff9c69";
 
-
             glow =
                 "#bc6240";
-
         }
-
-
-        /* Shadow */
 
         ctx.fillStyle =
             "rgba(0,0,0,0.4)";
 
-
         ctx.beginPath();
 
-
         ctx.ellipse(
-
             x,
             y + 13,
-
             enemy.radius + 4,
-
             8,
-
             0,
             0,
             Math.PI * 2
-
         );
 
-
         ctx.fill();
-
-
-        /* Glow */
 
         ctx.fillStyle =
             glow;
 
-
-        ctx.globalAlpha =
-            0.18;
-
+        ctx.globalAlpha = 0.18;
 
         ctx.beginPath();
 
-
         ctx.arc(
-
             x,
             y,
-
             enemy.radius + 9,
-
             0,
             Math.PI * 2
-
         );
-
 
         ctx.fill();
 
-
         ctx.globalAlpha = 1;
-
-
-        /* Body */
 
         ctx.fillStyle =
             color;
 
-
         ctx.beginPath();
 
-
         ctx.arc(
-
             x,
             y,
-
             enemy.radius,
-
             0,
             Math.PI * 2
-
         );
 
-
         ctx.fill();
-
-
-        /* Border */
 
         ctx.strokeStyle =
             "#f1d7ff";
 
-
         ctx.lineWidth = 2;
 
-
         ctx.stroke();
-
-
-        /* Eye */
 
         ctx.fillStyle =
             "#ffffff";
 
-
         ctx.beginPath();
 
-
         ctx.arc(
-
             x,
             y,
-
             4,
-
             0,
             Math.PI * 2
-
         );
 
-
         ctx.fill();
-
-
-        /* Health */
 
         ctx.fillStyle =
             "#080c10";
 
-
         ctx.fillRect(
-
             x - 20,
-
-            y -
-            enemy.radius -
-            12,
-
+            y - enemy.radius - 12,
             40,
-
             4
-
         );
-
 
         ctx.fillStyle =
             color;
 
-
         ctx.fillRect(
-
             x - 20,
-
-            y -
-            enemy.radius -
-            12,
-
+            y - enemy.radius - 12,
             40 *
             (
                 enemy.hp /
                 enemy.maxHp
             ),
-
             4
-
         );
-
     }
-
 }
-
 
 /* =====================================================
    DRAW BULLETS
@@ -3513,11 +2788,9 @@ function drawBullets() {
             bullet.x -
             camera.x;
 
-
         const y =
             bullet.y -
             camera.y;
-
 
         ctx.fillStyle =
 
@@ -3527,55 +2800,35 @@ function drawBullets() {
 
                 : "#7be0ff";
 
-
         ctx.beginPath();
 
-
         ctx.arc(
-
             x,
             y,
-
             5,
-
             0,
             Math.PI * 2
-
         );
-
 
         ctx.fill();
 
-
-        ctx.globalAlpha =
-            0.25;
-
+        ctx.globalAlpha = 0.25;
 
         ctx.beginPath();
 
-
         ctx.arc(
-
             x,
             y,
-
             10,
-
             0,
             Math.PI * 2
-
         );
 
-
         ctx.fill();
-
 
         ctx.globalAlpha = 1;
-
     }
-
 }
-
 
 /* =====================================================
    DRAW PARTICLES
@@ -3588,37 +2841,24 @@ function drawParticles() {
     ) {
 
         ctx.globalAlpha =
-
             Math.max(
                 0,
                 p.life / 40
             );
 
-
         ctx.fillStyle =
             "#9feaff";
 
-
         ctx.fillRect(
-
-            p.x -
-            camera.x,
-
-            p.y -
-            camera.y,
-
+            p.x - camera.x,
+            p.y - camera.y,
             p.size,
             p.size
-
         );
-
     }
 
-
     ctx.globalAlpha = 1;
-
 }
-
 
 /* =====================================================
    HUD
@@ -3627,186 +2867,151 @@ function drawParticles() {
 function updateHUD() {
 
     if (!player) {
-
         return;
-
     }
 
-
-    const healthPercent =
-
+    const health =
         Math.max(
-
             0,
-
             player.health /
             player.maxHealth *
             100
-
         );
 
-
-    const energyPercent =
-
+    const energy =
         Math.max(
-
             0,
-
             player.energy /
             player.maxEnergy *
             100
-
         );
 
+    const healthBar =
+        get("healthBar");
 
-    document.getElementById(
-        "healthBar"
-    ).style.width =
-        healthPercent + "%";
+    const energyBar =
+        get("energyBar");
 
+    const ammo =
+        get("ammo");
 
-    document.getElementById(
-        "energyBar"
-    ).style.width =
-        energyPercent + "%";
+    const kills =
+        get("kills");
 
+    const credits =
+        get("credits");
 
-    document.getElementById(
-        "ammo"
-    ).textContent =
+    const zone =
+        get("zone");
 
-        player.ammo +
-        " / ∞";
+    const objective =
+        get("objective");
 
-
-    document.getElementById(
-        "kills"
-    ).textContent =
-
-        "KILLS: " +
-        player.kills;
-
-
-    document.getElementById(
-        "credits"
-    ).textContent =
-
-        "CREDITS: " +
-        player.credits;
-
-
-    const zoneX =
-        Math.floor(
-            player.x /
-            600
-        ) + 1;
-
-
-    const zoneY =
-        Math.floor(
-            player.y /
-            600
-        ) + 1;
-
-
-    document.getElementById(
-        "zone"
-    ).textContent =
-
-        "SECTOR " +
-        zoneX +
-        "-" +
-        zoneY;
-
-
-    if (
-        player.kills === 0
-    ) {
-
-        document.getElementById(
-            "objective"
-        ).textContent =
-            "FIND THE SIGNAL";
-
+    if (healthBar) {
+        healthBar.style.width =
+            health + "%";
     }
 
-    else if (
-        player.kills < 5
-    ) {
-
-        document.getElementById(
-            "objective"
-        ).textContent =
-            "EXPLORE THE SECTOR";
-
+    if (energyBar) {
+        energyBar.style.width =
+            energy + "%";
     }
 
-    else {
-
-        document.getElementById(
-            "objective"
-        ).textContent =
-            "FOLLOW THE ECHOES";
-
+    if (ammo) {
+        ammo.textContent =
+            player.ammo + " / ∞";
     }
 
+    if (kills) {
+        kills.textContent =
+            "KILLS: " +
+            player.kills;
+    }
+
+    if (credits) {
+        credits.textContent =
+            "CREDITS: " +
+            player.credits;
+    }
+
+    if (zone) {
+
+        const zoneX =
+            Math.floor(
+                player.x / 600
+            ) + 1;
+
+        const zoneY =
+            Math.floor(
+                player.y / 600
+            ) + 1;
+
+        zone.textContent =
+            "SECTOR " +
+            zoneX +
+            "-" +
+            zoneY;
+    }
+
+    if (objective) {
+
+        if (player.kills === 0) {
+
+            objective.textContent =
+                "FIND THE SIGNAL";
+
+        } else if (
+            player.kills < 5
+        ) {
+
+            objective.textContent =
+                "EXPLORE THE SECTOR";
+
+        } else {
+
+            objective.textContent =
+                "FOLLOW THE ECHOES";
+        }
+    }
 }
-
 
 /* =====================================================
    ACHIEVEMENT POPUP
 ===================================================== */
 
-let achievementTimer =
-    null;
+let achievementTimer = null;
 
-
-function showAchievement(
-    name
-) {
+function showAchievement(name) {
 
     const box =
-        document.getElementById(
-            "achievement"
-        );
-
+        get("achievement");
 
     const nameBox =
-        document.getElementById(
-            "achievementName"
-        );
+        get("achievementName");
 
-
-    if (!box || !nameBox) {
-
+    if (
+        !box ||
+        !nameBox
+    ) {
         return;
-
     }
-
 
     nameBox.textContent =
         name;
-
 
     box.classList.add(
         "show"
     );
 
-
-    if (
-        achievementTimer
-    ) {
+    if (achievementTimer) {
 
         clearTimeout(
             achievementTimer
         );
-
     }
-
 
     achievementTimer =
         setTimeout(
-
             function () {
 
                 box.classList.remove(
@@ -3814,30 +3019,22 @@ function showAchievement(
                 );
 
             },
-
             3000
-
         );
-
 }
 
-
 /* =====================================================
-   MAP
+   MAP DRAW
 ===================================================== */
 
 function drawMap() {
 
-    if (!player) {
-
+    if (!player || !mapCanvas) {
         return;
-
     }
-
 
     const rect =
         mapCanvas.getBoundingClientRect();
-
 
     const width =
         Math.max(
@@ -3845,25 +3042,20 @@ function drawMap() {
             Math.floor(rect.width)
         );
 
-
     const height =
         Math.max(
             250,
             Math.floor(rect.height)
         );
 
-
     mapCanvas.width =
         width;
-
 
     mapCanvas.height =
         height;
 
-
     mapCtx.fillStyle =
         "#061019";
-
 
     mapCtx.fillRect(
         0,
@@ -3872,95 +3064,60 @@ function drawMap() {
         height
     );
 
-
     const scaleX =
         width /
         WORLD_WIDTH;
-
 
     const scaleY =
         height /
         WORLD_HEIGHT;
 
-
-    /* GRID */
-
     mapCtx.strokeStyle =
         "rgba(100,180,220,0.12)";
 
-
     mapCtx.lineWidth = 1;
 
-
     for (
-
         let x = 0;
-
         x <= WORLD_WIDTH;
-
         x += 200
-
     ) {
 
         mapCtx.beginPath();
 
         mapCtx.moveTo(
-
-            x *
-            scaleX,
-
+            x * scaleX,
             0
-
         );
 
         mapCtx.lineTo(
-
-            x *
-            scaleX,
-
+            x * scaleX,
             height
-
         );
 
         mapCtx.stroke();
-
     }
-
 
     for (
-
         let y = 0;
-
         y <= WORLD_HEIGHT;
-
         y += 200
-
     ) {
 
         mapCtx.beginPath();
 
         mapCtx.moveTo(
-
             0,
-
-            y *
-            scaleY
-
+            y * scaleY
         );
 
         mapCtx.lineTo(
-
             width,
-
-            y *
-            scaleY
-
+            y * scaleY
         );
 
         mapCtx.stroke();
-
     }
-
 
     /* WALLS */
 
@@ -3970,7 +3127,6 @@ function drawMap() {
 
         mapCtx.fillStyle =
             "#395765";
-
 
         mapCtx.fillRect(
 
@@ -3984,13 +3140,8 @@ function drawMap() {
 
         );
 
-
         mapCtx.strokeStyle =
             "#76d8ff";
-
-
-        mapCtx.lineWidth = 1.5;
-
 
         mapCtx.strokeRect(
 
@@ -4003,22 +3154,18 @@ function drawMap() {
             wall.h * scaleY
 
         );
-
     }
-
 
     /* ENEMIES */
 
     mapCtx.fillStyle =
         "#b86cff";
 
-
     for (
         const enemy of enemies
     ) {
 
         mapCtx.beginPath();
-
 
         mapCtx.arc(
 
@@ -4029,25 +3176,19 @@ function drawMap() {
             3,
 
             0,
-
             Math.PI * 2
 
         );
 
-
         mapCtx.fill();
-
     }
-
 
     /* PLAYER */
 
     mapCtx.fillStyle =
         "#72d8ff";
 
-
     mapCtx.beginPath();
-
 
     mapCtx.arc(
 
@@ -4058,29 +3199,22 @@ function drawMap() {
         6,
 
         0,
-
         Math.PI * 2
 
     );
 
-
     mapCtx.fill();
-
 
     mapCtx.strokeStyle =
         "#dff9ff";
 
-
     mapCtx.lineWidth = 2;
 
-
     mapCtx.stroke();
-
 }
 
-
 /* =====================================================
-   UPDATE
+   GAME LOOP
 ===================================================== */
 
 function update() {
@@ -4089,11 +3223,8 @@ function update() {
         !gameRunning ||
         paused
     ) {
-
         return;
-
     }
-
 
     updatePlayer();
 
@@ -4107,36 +3238,20 @@ function update() {
 
     updateCamera();
 
-
-    if (
-        mouse.down
-    ) {
-
+    if (mouse.down) {
         shoot();
-
     }
 
-
     updateHUD();
-
 }
-
-
-/* =====================================================
-   DRAW
-===================================================== */
 
 function draw() {
 
     drawWorld();
 
-
     if (!player) {
-
         return;
-
     }
-
 
     drawPickups();
 
@@ -4147,13 +3262,7 @@ function draw() {
     drawEnemies();
 
     drawPlayer();
-
 }
-
-
-/* =====================================================
-   GAME LOOP
-===================================================== */
 
 function gameLoop() {
 
@@ -4164,15 +3273,8 @@ function gameLoop() {
     requestAnimationFrame(
         gameLoop
     );
-
 }
 
-
 gameLoop();
-
-
-/* =====================================================
-   STARTUP
-===================================================== */
 
 updateHUD();
