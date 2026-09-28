@@ -2,7 +2,7 @@
 
 /* =====================================================
    ECHOBOUND — THE LOST SIGNAL
-   Complete game JavaScript
+   COMPLETE APP.JS
 ===================================================== */
 
 
@@ -89,11 +89,8 @@ const walls = [
 
 
 /* =====================================================
-   SAVE DATA
+   ACHIEVEMENTS
 ===================================================== */
-
-const SAVE_KEY = "echobound_save_v3";
-
 
 let achievements = {
 
@@ -106,6 +103,70 @@ let achievements = {
     explorer: false
 
 };
+
+
+/* =====================================================
+   SAVE
+===================================================== */
+
+const SAVE_KEY =
+    "echobound_save_v4";
+
+
+/* =====================================================
+   RESIZE
+===================================================== */
+
+window.addEventListener(
+    "resize",
+    function () {
+
+        W = window.innerWidth;
+        H = window.innerHeight;
+
+        canvas.width = W;
+        canvas.height = H;
+
+    }
+);
+
+
+/* =====================================================
+   BUTTONS
+===================================================== */
+
+const newGameButton =
+    document.getElementById("newGame");
+
+const loadGameButton =
+    document.getElementById("loadGame");
+
+const achievementsButton =
+    document.getElementById(
+        "achievementsButton"
+    );
+
+const controlsButton =
+    document.getElementById(
+        "controlsButton"
+    );
+
+const resumeButton =
+    document.getElementById("resume");
+
+const saveButton =
+    document.getElementById("save");
+
+const quitButton =
+    document.getElementById("quit");
+
+const closeMapButton =
+    document.getElementById("closeMap");
+
+const closeAchievementsButton =
+    document.getElementById(
+        "closeAchievements"
+    );
 
 
 /* =====================================================
@@ -128,7 +189,6 @@ function circleIntersectsRect(
             )
         );
 
-
     const closestY =
         Math.max(
             rect.y,
@@ -138,21 +198,17 @@ function circleIntersectsRect(
             )
         );
 
-
     const dx =
         cx - closestX;
 
-
     const dy =
         cy - closestY;
-
 
     return (
         dx * dx +
         dy * dy <
         radius * radius
     );
-
 }
 
 
@@ -163,24 +219,13 @@ function pointInRect(
 ) {
 
     return (
-
         x >= rect.x &&
-
         x <= rect.x + rect.w &&
-
         y >= rect.y &&
-
         y <= rect.y + rect.h
-
     );
-
 }
 
-
-/*
-    Controleert of een kogel
-    een muur doorkruist.
-*/
 
 function segmentIntersectsRect(
     x1,
@@ -209,8 +254,11 @@ function segmentIntersectsRect(
     }
 
 
-    const dx = x2 - x1;
-    const dy = y2 - y1;
+    const dx =
+        x2 - x1;
+
+    const dy =
+        y2 - y1;
 
 
     let tMin = 0;
@@ -299,8 +347,7 @@ function collidesWithWall(
 ) {
 
     for (
-        const wall
-        of walls
+        const wall of walls
     ) {
 
         if (
@@ -324,94 +371,6 @@ function collidesWithWall(
 }
 
 
-/*
-    Beweging met collision.
-*/
-
-function moveCircleWithCollision(
-    entity,
-    dx,
-    dy
-) {
-
-    const nextX =
-        entity.x + dx;
-
-
-    const nextY =
-        entity.y + dy;
-
-
-    /*
-        Eerst X
-    */
-
-    if (
-        !collidesWithWall(
-            nextX,
-            entity.y,
-            entity.radius
-        )
-    ) {
-
-        entity.x = nextX;
-
-    }
-
-
-    /*
-        Daarna Y
-    */
-
-    if (
-        !collidesWithWall(
-            entity.x,
-            nextY,
-            entity.radius
-        )
-    ) {
-
-        entity.y = nextY;
-
-    }
-
-
-    /*
-        Wereldgrenzen
-    */
-
-    entity.x =
-        Math.max(
-            entity.radius,
-
-            Math.min(
-                WORLD_WIDTH -
-                entity.radius,
-
-                entity.x
-            )
-        );
-
-
-    entity.y =
-        Math.max(
-            entity.radius,
-
-            Math.min(
-                WORLD_HEIGHT -
-                entity.radius,
-
-                entity.y
-            )
-        );
-
-}
-
-
-/*
-    Kogel tegen muur?
-*/
-
 function bulletHitsWall(
     x1,
     y1,
@@ -420,8 +379,7 @@ function bulletHitsWall(
 ) {
 
     for (
-        const wall
-        of walls
+        const wall of walls
     ) {
 
         if (
@@ -446,79 +404,73 @@ function bulletHitsWall(
 }
 
 
-/* =====================================================
-   RESIZE
-===================================================== */
+function moveCircleWithCollision(
+    entity,
+    dx,
+    dy
+) {
 
-window.addEventListener(
-    "resize",
-    function () {
+    const nextX =
+        entity.x + dx;
 
-        W =
-            window.innerWidth;
-
-
-        H =
-            window.innerHeight;
+    const nextY =
+        entity.y + dy;
 
 
-        canvas.width = W;
-        canvas.height = H;
+    /* X */
+
+    if (
+        !collidesWithWall(
+            nextX,
+            entity.y,
+            entity.radius
+        )
+    ) {
+
+        entity.x = nextX;
 
     }
-);
 
 
-/* =====================================================
-   BUTTONS
-===================================================== */
+    /* Y */
 
-const newGameButton =
-    document.getElementById(
-        "newGame"
-    );
+    if (
+        !collidesWithWall(
+            entity.x,
+            nextY,
+            entity.radius
+        )
+    ) {
 
+        entity.y = nextY;
 
-const loadGameButton =
-    document.getElementById(
-        "loadGame"
-    );
-
-
-const achievementsButton =
-    document.getElementById(
-        "achievementsButton"
-    );
+    }
 
 
-const controlsButton =
-    document.getElementById(
-        "controlsButton"
-    );
+    /* World boundary */
+
+    entity.x =
+        Math.max(
+            entity.radius,
+            Math.min(
+                WORLD_WIDTH -
+                entity.radius,
+                entity.x
+            )
+        );
 
 
-const resumeButton =
-    document.getElementById(
-        "resume"
-    );
+    entity.y =
+        Math.max(
+            entity.radius,
+            Math.min(
+                WORLD_HEIGHT -
+                entity.radius,
+                entity.y
+            )
+        );
 
-
-const saveButton =
-    document.getElementById(
-        "save"
-    );
-
-
-const quitButton =
-    document.getElementById(
-        "quit"
-    );
-
-
-const closeMapButton =
-    document.getElementById(
-        "closeMap"
-    );
+}
 
 
 /* =====================================================
@@ -571,19 +523,12 @@ function startNewGame() {
 
 
     enemies = [];
-
     bullets = [];
-
     particles = [];
-
     pickups = [];
 
     mouse.down = false;
 
-
-    /*
-        Vijanden maken
-    */
 
     for (
         let i = 0;
@@ -597,7 +542,6 @@ function startNewGame() {
 
 
     gameRunning = true;
-
     paused = false;
 
 
@@ -616,13 +560,18 @@ function startNewGame() {
     ).style.display = "none";
 
 
+    document.getElementById(
+        "achievementsScreen"
+    ).style.display = "none";
+
+
     updateHUD();
 
 }
 
 
 /* =====================================================
-   CONTINUE
+   LOAD GAME
 ===================================================== */
 
 loadGameButton.addEventListener(
@@ -669,12 +618,12 @@ function loadGame() {
         }
 
 
-        /*
-            Oude saves aanvullen
-        */
-
         player.radius =
             player.radius || 18;
+
+
+        player.speed =
+            player.speed || 3.5;
 
 
         player.maxHealth =
@@ -685,38 +634,35 @@ function loadGame() {
             player.maxEnergy || 100;
 
 
-        player.speed =
-            player.speed || 3.5;
-
-
         player.ammo =
-            typeof player.ammo === "number"
+            typeof player.ammo ===
+            "number"
                 ? player.ammo
                 : 12;
 
 
         player.kills =
-            typeof player.kills === "number"
+            typeof player.kills ===
+            "number"
                 ? player.kills
                 : 0;
 
 
         player.credits =
-            typeof player.credits === "number"
+            typeof player.credits ===
+            "number"
                 ? player.credits
                 : 0;
 
 
-        player.cooldown = 0;
-
-        player.dashCooldown = 0;
-
-        player.dashTimer = 0;
-
-        player.invincible = 0;
-
         player.distance =
             player.distance || 0;
+
+
+        player.cooldown = 0;
+        player.dashCooldown = 0;
+        player.dashTimer = 0;
+        player.invincible = 0;
 
 
         if (data.achievements) {
@@ -732,11 +678,6 @@ function loadGame() {
         }
 
 
-        /*
-            Mocht de speler in een muur
-            staan door een oude save.
-        */
-
         if (
             collidesWithWall(
                 player.x,
@@ -748,7 +689,6 @@ function loadGame() {
             player.x =
                 WORLD_WIDTH / 2;
 
-
             player.y =
                 WORLD_HEIGHT / 2;
 
@@ -756,14 +696,9 @@ function loadGame() {
 
 
         enemies = [];
-
         bullets = [];
-
         particles = [];
-
         pickups = [];
-
-        mouse.down = false;
 
 
         for (
@@ -778,7 +713,6 @@ function loadGame() {
 
 
         gameRunning = true;
-
         paused = false;
 
 
@@ -794,6 +728,11 @@ function loadGame() {
 
         document.getElementById(
             "map"
+        ).style.display = "none";
+
+
+        document.getElementById(
+            "achievementsScreen"
         ).style.display = "none";
 
 
@@ -813,7 +752,7 @@ function loadGame() {
 
 
 /* =====================================================
-   SAVE
+   SAVE GAME
 ===================================================== */
 
 saveButton.addEventListener(
@@ -854,9 +793,7 @@ function saveGame() {
         !achievements.firstSave
     ) {
 
-        achievements.firstSave =
-            true;
-
+        achievements.firstSave = true;
 
         showAchievement(
             "FIRST SAVE"
@@ -870,11 +807,14 @@ function saveGame() {
 
     }
 
+
+    updateAchievementsScreen();
+
 }
 
 
 /* =====================================================
-   ACHIEVEMENTS
+   ACHIEVEMENTS PAGE
 ===================================================== */
 
 achievementsButton.addEventListener(
@@ -883,53 +823,118 @@ achievementsButton.addEventListener(
 );
 
 
+closeAchievementsButton.addEventListener(
+    "click",
+    closeAchievements
+);
+
+
 function showAchievements() {
 
-    let text =
-        "ACHIEVEMENTS\n\n";
+    const screen =
+        document.getElementById(
+            "achievementsScreen"
+        );
 
 
-    text +=
+    screen.style.display =
+        "flex";
+
+
+    updateAchievementsScreen();
+
+}
+
+
+function closeAchievements() {
+
+    document.getElementById(
+        "achievementsScreen"
+    ).style.display =
+        "none";
+
+}
+
+
+function updateAchievementsScreen() {
+
+    updateAchievementCard(
+        "achievementFirstEcho",
         achievements.firstEcho
-            ? "✓ FIRST ECHO\n"
-            : "□ FIRST ECHO\n";
+    );
 
 
-    text +=
-        "Versla je eerste vijand.\n\n";
-
-
-    text +=
+    updateAchievementCard(
+        "achievementTenEchoes",
         achievements.tenEchoes
-            ? "✓ TEN ECHOES\n"
-            : "□ TEN ECHOES\n";
+    );
 
 
-    text +=
-        "Versla 10 vijanden.\n\n";
-
-
-    text +=
+    updateAchievementCard(
+        "achievementFirstSave",
         achievements.firstSave
-            ? "✓ FIRST SAVE\n"
-            : "□ FIRST SAVE\n";
+    );
 
 
-    text +=
-        "Sla je run op.\n\n";
-
-
-    text +=
+    updateAchievementCard(
+        "achievementExplorer",
         achievements.explorer
-            ? "✓ EXPLORER\n"
-            : "□ EXPLORER\n";
+    );
+
+}
 
 
-    text +=
-        "Leg een grote afstand af.";
+function updateAchievementCard(
+    id,
+    unlocked
+) {
+
+    const card =
+        document.getElementById(id);
 
 
-    alert(text);
+    if (!card) {
+
+        return;
+
+    }
+
+
+    const status =
+        card.querySelector(
+            ".achievementStatus"
+        );
+
+
+    if (unlocked) {
+
+        card.classList.add(
+            "unlocked"
+        );
+
+
+        if (status) {
+
+            status.textContent =
+                "UNLOCKED";
+
+        }
+
+    } else {
+
+        card.classList.remove(
+            "unlocked"
+        );
+
+
+        if (status) {
+
+            status.textContent =
+                "LOCKED";
+
+        }
+
+    }
 
 }
 
@@ -962,10 +967,7 @@ controlsButton.addEventListener(
             "Kaart\n\n" +
 
             "ESC\n" +
-            "Pauzeren\n\n" +
-
-            "MUREN\n" +
-            "Blokkeren beweging en kogels"
+            "Pauzeren"
 
         );
 
@@ -982,7 +984,6 @@ resumeButton.addEventListener(
     function () {
 
         paused = false;
-
 
         document.getElementById(
             "pause"
@@ -1005,7 +1006,6 @@ quitButton.addEventListener(
 
 
         gameRunning = false;
-
         paused = false;
 
         mouse.down = false;
@@ -1019,6 +1019,12 @@ quitButton.addEventListener(
 
         document.getElementById(
             "map"
+        ).style.display =
+            "none";
+
+
+        document.getElementById(
+            "achievementsScreen"
         ).style.display =
             "none";
 
@@ -1047,10 +1053,6 @@ window.addEventListener(
         keys[key] = true;
 
 
-        /*
-            SPACE
-        */
-
         if (
             event.code === "Space"
         ) {
@@ -1062,28 +1064,49 @@ window.addEventListener(
         }
 
 
-        /*
-            ESC
-        */
+        /* ESC */
 
         if (
             key === "escape"
         ) {
 
+            const achievementsScreen =
+                document.getElementById(
+                    "achievementsScreen"
+                );
+
+
+            const map =
+                document.getElementById(
+                    "map"
+                );
+
+
+            if (
+                achievementsScreen.style.display
+                === "flex"
+            ) {
+
+                closeAchievements();
+
+                return;
+
+            }
+
+
+            if (
+                map.style.display ===
+                "flex"
+            ) {
+
+                closeMap();
+
+                return;
+
+            }
+
+
             if (gameRunning) {
-
-                if (
-                    document.getElementById(
-                        "map"
-                    ).style.display === "flex"
-                ) {
-
-                    closeMap();
-
-                    return;
-
-                }
-
 
                 paused =
                     !paused;
@@ -1101,11 +1124,11 @@ window.addEventListener(
         }
 
 
-        /*
-            MAP
-        */
+        /* M */
 
-        if (key === "m") {
+        if (
+            key === "m"
+        ) {
 
             if (
                 gameRunning &&
@@ -1295,7 +1318,6 @@ function createEnemy() {
 
         attempts++;
 
-
     } while (
 
         (
@@ -1358,7 +1380,6 @@ function createEnemy() {
 
     }
 
-
     else if (
         type > 0.6
     ) {
@@ -1388,7 +1409,6 @@ function createEnemy() {
 
     }
 
-
     else {
 
         enemy = {
@@ -1417,15 +1437,13 @@ function createEnemy() {
     }
 
 
-    enemies.push(
-        enemy
-    );
+    enemies.push(enemy);
 
 }
 
 
 /* =====================================================
-   PLAYER
+   PLAYER UPDATE
 ===================================================== */
 
 function updatePlayer() {
@@ -1475,17 +1493,12 @@ function updatePlayer() {
 
 
         dx /= length;
-
         dy /= length;
 
 
         let speed =
             player.speed;
 
-
-        /*
-            DASH
-        */
 
         if (
             player.dashTimer > 0
@@ -1532,7 +1545,7 @@ function updatePlayer() {
 
 
         if (
-            player.distance > 5000 &&
+            player.distance >= 5000 &&
             !achievements.explorer
         ) {
 
@@ -1544,14 +1557,15 @@ function updatePlayer() {
                 "EXPLORER"
             );
 
+
+            updateAchievementsScreen();
+
         }
 
     }
 
 
-    /*
-        DASH START
-    */
+    /* DASH */
 
     if (
 
@@ -1568,13 +1582,20 @@ function updatePlayer() {
 
     ) {
 
-        player.dashTimer = 10;
+        player.dashTimer =
+            10;
 
-        player.energy -= 25;
 
-        player.dashCooldown = 70;
+        player.energy -=
+            25;
 
-        player.invincible = 25;
+
+        player.dashCooldown =
+            70;
+
+
+        player.invincible =
+            25;
 
 
         createParticles(
@@ -1728,14 +1749,13 @@ function shoot() {
 
 
 /* =====================================================
-   ENEMIES
+   ENEMIES UPDATE
 ===================================================== */
 
 function updateEnemies() {
 
     for (
-        const enemy
-        of enemies
+        const enemy of enemies
     ) {
 
         const dx =
@@ -1755,10 +1775,7 @@ function updateEnemies() {
             );
 
 
-        /*
-            Vijanden lopen ook
-            niet door muren.
-        */
+        /* MOVE */
 
         if (
             distance > 65 &&
@@ -1782,9 +1799,7 @@ function updateEnemies() {
         }
 
 
-        /*
-            SHOOT
-        */
+        /* SHOOT */
 
         if (
             distance < 650
@@ -1841,11 +1856,9 @@ function updateEnemies() {
 
                 bullets.push({
 
-                    x:
-                        enemy.x,
+                    x: enemy.x,
 
-                    y:
-                        enemy.y,
+                    y: enemy.y,
 
                     vx:
                         Math.cos(angle) *
@@ -1866,9 +1879,7 @@ function updateEnemies() {
         }
 
 
-        /*
-            CONTACT
-        */
+        /* CONTACT */
 
         if (
 
@@ -1891,7 +1902,7 @@ function updateEnemies() {
 
 
 /* =====================================================
-   BULLETS
+   BULLET UPDATE
 ===================================================== */
 
 function updateBullets() {
@@ -1928,9 +1939,7 @@ function updateBullets() {
         bullet.life--;
 
 
-        /*
-            MUUR HIT
-        */
+        /* WALL */
 
         if (
             bulletHitsWall(
@@ -1964,9 +1973,7 @@ function updateBullets() {
         }
 
 
-        /*
-            ENEMY BULLET
-        */
+        /* ENEMY BULLET */
 
         if (
             bullet.enemy
@@ -1990,7 +1997,9 @@ function updateBullets() {
 
             ) {
 
-                damagePlayer(8);
+                damagePlayer(
+                    8
+                );
 
 
                 bullets.splice(
@@ -2006,9 +2015,7 @@ function updateBullets() {
         }
 
 
-        /*
-            PLAYER BULLET
-        */
+        /* PLAYER BULLET */
 
         else {
 
@@ -2097,10 +2104,6 @@ function updateBullets() {
         }
 
 
-        /*
-            BULLET VERWIJDEREN
-        */
-
         if (
 
             bullet.life <= 0 ||
@@ -2145,36 +2148,27 @@ function enemyDefeated(
 
 
     if (
-        enemy.type ===
-        "heavy"
+        enemy.type === "heavy"
     ) {
 
-        player.credits +=
-            30;
+        player.credits += 30;
 
     }
 
     else if (
-        enemy.type ===
-        "mid"
+        enemy.type === "mid"
     ) {
 
-        player.credits +=
-            20;
+        player.credits += 20;
 
     }
 
     else {
 
-        player.credits +=
-            10;
+        player.credits += 10;
 
     }
 
-
-    /*
-        Achievement 1
-    */
 
     if (
         !achievements.firstEcho
@@ -2190,10 +2184,6 @@ function enemyDefeated(
 
     }
 
-
-    /*
-        Achievement 2
-    */
 
     if (
 
@@ -2214,21 +2204,15 @@ function enemyDefeated(
     }
 
 
-    /*
-        Pickup
-    */
-
     if (
         Math.random() < 0.25
     ) {
 
         pickups.push({
 
-            x:
-                enemy.x,
+            x: enemy.x,
 
-            y:
-                enemy.y,
+            y: enemy.y,
 
             type:
 
@@ -2251,11 +2235,14 @@ function enemyDefeated(
 
     createEnemy();
 
+
+    updateAchievementsScreen();
+
 }
 
 
 /* =====================================================
-   DAMAGE PLAYER
+   DAMAGE
 ===================================================== */
 
 function damagePlayer(
@@ -2282,11 +2269,9 @@ function damagePlayer(
 
 
     createParticles(
-
         player.x,
         player.y,
         10
-
     );
 
 
@@ -2295,7 +2280,6 @@ function damagePlayer(
     ) {
 
         player.health = 0;
-
 
         gameOver();
 
@@ -2311,6 +2295,10 @@ function damagePlayer(
 function gameOver() {
 
     gameRunning =
+        false;
+
+
+    paused =
         false;
 
 
@@ -2342,9 +2330,7 @@ function gameOver() {
 
                 startNewGame();
 
-            }
-
-            else {
+            } else {
 
                 document.getElementById(
                     "menu"
@@ -2407,8 +2393,7 @@ function updatePickups() {
 
                         player.maxEnergy,
 
-                        player.energy +
-                        30
+                        player.energy + 30
 
                     );
 
@@ -2416,8 +2401,7 @@ function updatePickups() {
 
             else {
 
-                player.credits +=
-                    25;
+                player.credits += 25;
 
             }
 
@@ -2516,20 +2500,12 @@ function updateParticles() {
             particles[i];
 
 
-        p.x +=
-            p.vx;
+        p.x += p.vx;
+        p.y += p.vy;
 
 
-        p.y +=
-            p.vy;
-
-
-        p.vx *=
-            0.97;
-
-
-        p.vy *=
-            0.97;
+        p.vx *= 0.97;
+        p.vy *= 0.97;
 
 
         p.life--;
@@ -2581,8 +2557,7 @@ function updateCamera() {
 
             Math.min(
 
-                WORLD_WIDTH -
-                W,
+                WORLD_WIDTH - W,
 
                 camera.x
 
@@ -2598,8 +2573,7 @@ function updateCamera() {
 
             Math.min(
 
-                WORLD_HEIGHT -
-                H,
+                WORLD_HEIGHT - H,
 
                 camera.y
 
@@ -2621,40 +2595,29 @@ function drawWorld() {
 
 
     ctx.fillRect(
-
         0,
         0,
         W,
         H
-
     );
 
 
-    const gridSize =
-        100;
+    const gridSize = 100;
 
 
     const startX =
-
         Math.floor(
-
             camera.x /
             gridSize
-
         ) *
-
         gridSize;
 
 
     const startY =
-
         Math.floor(
-
             camera.y /
             gridSize
-
         ) *
-
         gridSize;
 
 
@@ -2763,9 +2726,7 @@ function drawWorld() {
     }
 
 
-    /*
-        GRID
-    */
+    /* GRID */
 
     ctx.strokeStyle =
         "rgba(120,190,220,0.06)";
@@ -2830,16 +2791,10 @@ function drawWorld() {
     }
 
 
-    /*
-        MUREN
-    */
-
     drawWalls();
 
 
-    /*
-        WORLD BORDER
-    */
+    /* WORLD BORDER */
 
     ctx.strokeStyle =
         "rgba(100,190,230,0.35)";
@@ -2868,20 +2823,16 @@ function drawWorld() {
 function drawWalls() {
 
     const pulse =
-
         0.35 +
-
         Math.sin(
             performance.now() /
             450
         ) *
-
         0.08;
 
 
     for (
-        const wall
-        of walls
+        const wall of walls
     ) {
 
         const x =
@@ -2894,9 +2845,7 @@ function drawWalls() {
             camera.y;
 
 
-        /*
-            Shadow
-        */
+        /* Shadow */
 
         ctx.fillStyle =
             "rgba(0,0,0,0.45)";
@@ -2913,9 +2862,7 @@ function drawWalls() {
         );
 
 
-        /*
-            Wall body
-        */
+        /* Body */
 
         ctx.fillStyle =
             "#1b2c37";
@@ -2932,9 +2879,7 @@ function drawWalls() {
         );
 
 
-        /*
-            Outer border
-        */
+        /* Border */
 
         ctx.strokeStyle =
             "#4e7a8c";
@@ -2954,9 +2899,7 @@ function drawWalls() {
         );
 
 
-        /*
-            Energy stripe
-        */
+        /* Energy line */
 
         ctx.fillStyle =
             `rgba(104,220,255,${pulse})`;
@@ -2980,9 +2923,7 @@ function drawWalls() {
 
             );
 
-        }
-
-        else {
+        } else {
 
             ctx.fillRect(
 
@@ -3001,9 +2942,7 @@ function drawWalls() {
         }
 
 
-        /*
-            Kleine platen
-        */
+        /* Plate lines */
 
         ctx.strokeStyle =
             "rgba(190,230,240,0.16)";
@@ -3032,33 +2971,21 @@ function drawWalls() {
 
                 ctx.beginPath();
 
-
                 ctx.moveTo(
-
                     px,
                     y + 7
-
                 );
-
 
                 ctx.lineTo(
-
                     px,
-
-                    y +
-                    wall.h -
-                    7
-
+                    y + wall.h - 7
                 );
-
 
                 ctx.stroke();
 
             }
 
-        }
-
-        else {
+        } else {
 
             for (
 
@@ -3076,25 +3003,15 @@ function drawWalls() {
 
                 ctx.beginPath();
 
-
                 ctx.moveTo(
-
                     x + 7,
                     py
-
                 );
-
 
                 ctx.lineTo(
-
-                    x +
-                    wall.w -
-                    7,
-
+                    x + wall.w - 7,
                     py
-
                 );
-
 
                 ctx.stroke();
 
@@ -3114,8 +3031,7 @@ function drawWalls() {
 function drawPickups() {
 
     for (
-        const pickup
-        of pickups
+        const pickup of pickups
     ) {
 
         const x =
@@ -3144,16 +3060,13 @@ function drawPickups() {
 
 
         if (
-            pickup.type ===
-            "energy"
+            pickup.type === "energy"
         ) {
 
             ctx.fillStyle =
                 "#60dfff";
 
-        }
-
-        else {
+        } else {
 
             ctx.fillStyle =
                 "#ffd35c";
@@ -3162,31 +3075,10 @@ function drawPickups() {
 
 
         ctx.fillRect(
-
             -7,
             -7,
-
             14,
             14
-
-        );
-
-
-        ctx.strokeStyle =
-            "rgba(255,255,255,0.8)";
-
-
-        ctx.lineWidth = 1;
-
-
-        ctx.strokeRect(
-
-            -7,
-            -7,
-
-            14,
-            14
-
         );
 
 
@@ -3235,9 +3127,7 @@ function drawPlayer() {
         );
 
 
-    /*
-        Shadow
-    */
+    /* Shadow */
 
     ctx.fillStyle =
         "rgba(0,0,0,0.35)";
@@ -3264,9 +3154,7 @@ function drawPlayer() {
     ctx.fill();
 
 
-    /*
-        Energy ring
-    */
+    /* Ring */
 
     ctx.strokeStyle =
         "rgba(90,210,255,0.25)";
@@ -3294,9 +3182,7 @@ function drawPlayer() {
     ctx.stroke();
 
 
-    /*
-        Player
-    */
+    /* Body */
 
     ctx.fillStyle =
 
@@ -3326,9 +3212,7 @@ function drawPlayer() {
     ctx.fill();
 
 
-    /*
-        Weapon
-    */
+    /* Weapon */
 
     ctx.strokeStyle =
         "#e8f8ff";
@@ -3341,10 +3225,8 @@ function drawPlayer() {
 
 
     ctx.moveTo(
-
         x,
         y
-
     );
 
 
@@ -3364,9 +3246,7 @@ function drawPlayer() {
     ctx.stroke();
 
 
-    /*
-        Core
-    */
+    /* Core */
 
     ctx.fillStyle =
         "#dff8ff";
@@ -3400,8 +3280,7 @@ function drawPlayer() {
 function drawEnemies() {
 
     for (
-        const enemy
-        of enemies
+        const enemy of enemies
     ) {
 
         const x =
@@ -3423,8 +3302,7 @@ function drawEnemies() {
 
 
         if (
-            enemy.type ===
-            "mid"
+            enemy.type === "mid"
         ) {
 
             color =
@@ -3438,8 +3316,7 @@ function drawEnemies() {
 
 
         if (
-            enemy.type ===
-            "heavy"
+            enemy.type === "heavy"
         ) {
 
             color =
@@ -3452,9 +3329,7 @@ function drawEnemies() {
         }
 
 
-        /*
-            Shadow
-        */
+        /* Shadow */
 
         ctx.fillStyle =
             "rgba(0,0,0,0.4)";
@@ -3466,7 +3341,6 @@ function drawEnemies() {
         ctx.ellipse(
 
             x,
-
             y + 13,
 
             enemy.radius + 4,
@@ -3474,9 +3348,7 @@ function drawEnemies() {
             8,
 
             0,
-
             0,
-
             Math.PI * 2
 
         );
@@ -3485,9 +3357,7 @@ function drawEnemies() {
         ctx.fill();
 
 
-        /*
-            Glow
-        */
+        /* Glow */
 
         ctx.fillStyle =
             glow;
@@ -3516,13 +3386,10 @@ function drawEnemies() {
         ctx.fill();
 
 
-        ctx.globalAlpha =
-            1;
+        ctx.globalAlpha = 1;
 
 
-        /*
-            Body
-        */
+        /* Body */
 
         ctx.fillStyle =
             color;
@@ -3547,9 +3414,7 @@ function drawEnemies() {
         ctx.fill();
 
 
-        /*
-            Border
-        */
+        /* Border */
 
         ctx.strokeStyle =
             "#f1d7ff";
@@ -3561,9 +3426,7 @@ function drawEnemies() {
         ctx.stroke();
 
 
-        /*
-            Eye
-        */
+        /* Eye */
 
         ctx.fillStyle =
             "#ffffff";
@@ -3588,9 +3451,7 @@ function drawEnemies() {
         ctx.fill();
 
 
-        /*
-            Health
-        */
+        /* Health */
 
         ctx.fillStyle =
             "#080c10";
@@ -3645,8 +3506,7 @@ function drawEnemies() {
 function drawBullets() {
 
     for (
-        const bullet
-        of bullets
+        const bullet of bullets
     ) {
 
         const x =
@@ -3710,8 +3570,7 @@ function drawBullets() {
         ctx.fill();
 
 
-        ctx.globalAlpha =
-            1;
+        ctx.globalAlpha = 1;
 
     }
 
@@ -3725,19 +3584,14 @@ function drawBullets() {
 function drawParticles() {
 
     for (
-        const p
-        of particles
+        const p of particles
     ) {
 
         ctx.globalAlpha =
 
             Math.max(
-
                 0,
-
-                p.life /
-                40
-
+                p.life / 40
             );
 
 
@@ -3754,7 +3608,6 @@ function drawParticles() {
             camera.y,
 
             p.size,
-
             p.size
 
         );
@@ -3762,8 +3615,7 @@ function drawParticles() {
     }
 
 
-    ctx.globalAlpha =
-        1;
+    ctx.globalAlpha = 1;
 
 }
 
@@ -3844,7 +3696,6 @@ function updateHUD() {
 
 
     const zoneX =
-
         Math.floor(
             player.x /
             600
@@ -3852,7 +3703,6 @@ function updateHUD() {
 
 
     const zoneY =
-
         Math.floor(
             player.y /
             600
@@ -3927,6 +3777,13 @@ function showAchievement(
         );
 
 
+    if (!box || !nameBox) {
+
+        return;
+
+    }
+
+
     nameBox.textContent =
         name;
 
@@ -3948,7 +3805,6 @@ function showAchievement(
 
 
     achievementTimer =
-
         setTimeout(
 
             function () {
@@ -3967,10 +3823,17 @@ function showAchievement(
 
 
 /* =====================================================
-   MAP DRAW
+   MAP
 ===================================================== */
 
 function drawMap() {
+
+    if (!player) {
+
+        return;
+
+    }
+
 
     const rect =
         mapCanvas.getBoundingClientRect();
@@ -3978,25 +3841,15 @@ function drawMap() {
 
     const width =
         Math.max(
-
             300,
-
-            Math.floor(
-                rect.width
-            )
-
+            Math.floor(rect.width)
         );
 
 
     const height =
         Math.max(
-
             250,
-
-            Math.floor(
-                rect.height
-            )
-
+            Math.floor(rect.height)
         );
 
 
@@ -4013,13 +3866,10 @@ function drawMap() {
 
 
     mapCtx.fillRect(
-
         0,
         0,
-
         width,
         height
-
     );
 
 
@@ -4033,9 +3883,7 @@ function drawMap() {
         WORLD_HEIGHT;
 
 
-    /*
-        GRID
-    */
+    /* GRID */
 
     mapCtx.strokeStyle =
         "rgba(100,180,220,0.12)";
@@ -4056,7 +3904,6 @@ function drawMap() {
 
         mapCtx.beginPath();
 
-
         mapCtx.moveTo(
 
             x *
@@ -4066,7 +3913,6 @@ function drawMap() {
 
         );
 
-
         mapCtx.lineTo(
 
             x *
@@ -4075,7 +3921,6 @@ function drawMap() {
             height
 
         );
-
 
         mapCtx.stroke();
 
@@ -4094,7 +3939,6 @@ function drawMap() {
 
         mapCtx.beginPath();
 
-
         mapCtx.moveTo(
 
             0,
@@ -4103,7 +3947,6 @@ function drawMap() {
             scaleY
 
         );
-
 
         mapCtx.lineTo(
 
@@ -4114,40 +3957,16 @@ function drawMap() {
 
         );
 
-
         mapCtx.stroke();
 
     }
 
 
-    /*
-        MUREN
-    */
+    /* WALLS */
 
     for (
-        const wall
-        of walls
+        const wall of walls
     ) {
-
-        const x =
-            wall.x *
-            scaleX;
-
-
-        const y =
-            wall.y *
-            scaleY;
-
-
-        const w =
-            wall.w *
-            scaleX;
-
-
-        const h =
-            wall.h *
-            scaleY;
-
 
         mapCtx.fillStyle =
             "#395765";
@@ -4155,10 +3974,13 @@ function drawMap() {
 
         mapCtx.fillRect(
 
-            x,
-            y,
-            w,
-            h
+            wall.x * scaleX,
+
+            wall.y * scaleY,
+
+            wall.w * scaleX,
+
+            wall.h * scaleY
 
         );
 
@@ -4172,27 +3994,27 @@ function drawMap() {
 
         mapCtx.strokeRect(
 
-            x,
-            y,
-            w,
-            h
+            wall.x * scaleX,
+
+            wall.y * scaleY,
+
+            wall.w * scaleX,
+
+            wall.h * scaleY
 
         );
 
     }
 
 
-    /*
-        ENEMIES
-    */
+    /* ENEMIES */
 
     mapCtx.fillStyle =
         "#b86cff";
 
 
     for (
-        const enemy
-        of enemies
+        const enemy of enemies
     ) {
 
         mapCtx.beginPath();
@@ -4200,15 +4022,14 @@ function drawMap() {
 
         mapCtx.arc(
 
-            enemy.x *
-            scaleX,
+            enemy.x * scaleX,
 
-            enemy.y *
-            scaleY,
+            enemy.y * scaleY,
 
             3,
 
             0,
+
             Math.PI * 2
 
         );
@@ -4219,9 +4040,7 @@ function drawMap() {
     }
 
 
-    /*
-        PLAYER
-    */
+    /* PLAYER */
 
     mapCtx.fillStyle =
         "#72d8ff";
@@ -4232,15 +4051,14 @@ function drawMap() {
 
     mapCtx.arc(
 
-        player.x *
-        scaleX,
+        player.x * scaleX,
 
-        player.y *
-        scaleY,
+        player.y * scaleY,
 
         6,
 
         0,
+
         Math.PI * 2
 
     );
@@ -4342,7 +4160,6 @@ function gameLoop() {
     update();
 
     draw();
-
 
     requestAnimationFrame(
         gameLoop
