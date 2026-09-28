@@ -3,49 +3,437 @@
 
 /* =========================================================
    ECHOBOUND — THE LOST SIGNAL
-   EXPANDED EDITION
+   COMPLETE GAME ENGINE
    ========================================================= */
 
-if (window.__ECHOboundExpandedLoaded) return;
-window.__ECHOboundExpandedLoaded = true;
+if (window.__ECHOBoundLoaded) return;
+window.__ECHOBoundLoaded = true;
 
 /* =========================================================
    DOM
    ========================================================= */
 
 const canvas = document.getElementById("game");
-if (!canvas) return;
+const ctx = canvas ? canvas.getContext("2d") : null;
 
-const ctx = canvas.getContext("2d");
+if (!canvas || !ctx) {
+    document.body.innerHTML =
+        "<h1 style='color:white;background:#05070a;padding:30px'>Game canvas ontbreekt.</h1>";
+    return;
+}
 
 const menu = document.getElementById("menu");
 const hud = document.getElementById("hud");
 const pauseScreen = document.getElementById("pause");
-const achievementBox = document.getElementById("achievement");
 const mapScreen = document.getElementById("map");
-const mapCanvas = document.getElementById("mapCanvas");
 
-const newGameBtn = document.getElementById("newGame");
-const loadGameBtn = document.getElementById("loadGame");
-const achievementsBtn = document.getElementById("achievementsButton");
-const controlsBtn = document.getElementById("controlsButton");
+const newGameButton = document.getElementById("newGame");
+const loadGameButton = document.getElementById("loadGame");
+const achievementsButton = document.getElementById("achievementsButton");
+const controlsButton = document.getElementById("controlsButton");
 
-const resumeBtn = document.getElementById("resume");
-const saveBtn = document.getElementById("save");
-const quitBtn = document.getElementById("quit");
+const resumeButton = document.getElementById("resume");
+const saveButton = document.getElementById("save");
+const quitButton = document.getElementById("quit");
 
-const closeMapBtn = document.getElementById("closeMap");
+const closeMapButton = document.getElementById("closeMap");
 
 const healthBar = document.getElementById("healthBar");
 const energyBar = document.getElementById("energyBar");
-const objectiveText = document.getElementById("objective");
-const zoneText = document.getElementById("zone");
-const killsText = document.getElementById("kills");
-const creditsText = document.getElementById("credits");
-const ammoText = document.getElementById("ammo");
+const objectiveElement = document.getElementById("objective");
+const zoneElement = document.getElementById("zone");
+const killsElement = document.getElementById("kills");
+const creditsElement = document.getElementById("credits");
+const ammoElement = document.getElementById("ammo");
+
+const mapCanvas = document.getElementById("mapCanvas");
+const mapCtx = mapCanvas ? mapCanvas.getContext("2d") : null;
+
+canvas.tabIndex = 1;
 
 /* =========================================================
-   CANVAS
+   EXTRA CSS
+   ========================================================= */
+
+const extraStyle = document.createElement("style");
+
+extraStyle.textContent = `
+#extraUI {
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:400;
+    font-family:Arial,sans-serif;
+}
+
+#crosshair {
+    position:fixed;
+    width:22px;
+    height:22px;
+    margin:-11px 0 0 -11px;
+    border:1px solid rgba(120,220,255,.9);
+    border-radius:50%;
+    box-sizing:border-box;
+    pointer-events:none;
+}
+
+#crosshair:before,
+#crosshair:after {
+    content:"";
+    position:absolute;
+    background:rgba(120,220,255,.8);
+}
+
+#crosshair:before {
+    left:9px;
+    top:-5px;
+    width:2px;
+    height:30px;
+}
+
+#crosshair:after {
+    left:-5px;
+    top:9px;
+    width:30px;
+    height:2px;
+}
+
+#gameInfo {
+    position:fixed;
+    left:20px;
+    bottom:70px;
+    color:#9db6c8;
+    font-size:12px;
+    letter-spacing:1px;
+    text-shadow:0 2px 4px #000;
+}
+
+#levelInfo {
+    position:fixed;
+    left:20px;
+    top:155px;
+    color:#d9f5ff;
+    font-size:13px;
+    letter-spacing:1px;
+}
+
+#weaponInfo {
+    position:fixed;
+    right:25px;
+    bottom:85px;
+    color:#bfeeff;
+    text-align:right;
+    font-size:13px;
+}
+
+.overlayPanel {
+    position:fixed;
+    inset:0;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(2,5,8,.86);
+    pointer-events:auto;
+    z-index:500;
+}
+
+.panelBox {
+    width:min(850px,90vw);
+    max-height:85vh;
+    overflow:auto;
+    background:
+        linear-gradient(135deg,rgba(18,28,36,.98),rgba(5,10,15,.98));
+    border:1px solid #496878;
+    box-shadow:
+        0 0 80px rgba(0,180,255,.08),
+        inset 0 0 40px rgba(255,255,255,.02);
+    padding:30px;
+    color:#dcecf3;
+}
+
+.panelBox h2 {
+    margin-top:0;
+    color:#8edcff;
+    letter-spacing:4px;
+}
+
+.panelButton {
+    display:block;
+    width:100%;
+    margin:10px 0;
+    padding:13px;
+    background:#101d25;
+    color:#ccefff;
+    border:1px solid #345362;
+    cursor:pointer;
+    text-align:left;
+    font-weight:bold;
+}
+
+.panelButton:hover {
+    background:#18303d;
+    border-color:#66d5ff;
+}
+
+.slotGrid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+}
+
+.slot {
+    background:#0b141a;
+    border:1px solid #304954;
+    padding:18px;
+    min-height:100px;
+}
+
+.slot strong {
+    color:#7edcff;
+}
+
+.achievementGrid {
+    display:grid;
+    grid-template-columns:repeat(2,1fr);
+    gap:10px;
+}
+
+.achievementCard {
+    border:1px solid #304550;
+    padding:14px;
+    background:#0a1217;
+}
+
+.achievementCard.unlocked {
+    border-color:#71cce9;
+    box-shadow:inset 0 0 25px rgba(70,190,230,.08);
+}
+
+.achievementCard .name {
+    font-weight:bold;
+    color:#9de7ff;
+}
+
+.achievementCard .desc {
+    color:#78909b;
+    font-size:12px;
+    margin-top:5px;
+}
+
+#interactHint {
+    position:fixed;
+    left:50%;
+    bottom:110px;
+    transform:translateX(-50%);
+    color:#c9f4ff;
+    background:rgba(3,8,12,.82);
+    border:1px solid #446574;
+    padding:10px 18px;
+    font-size:12px;
+    letter-spacing:1px;
+    display:none;
+}
+
+#damageFlash {
+    position:fixed;
+    inset:0;
+    background:rgba(255,80,50,.15);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .1s;
+}
+
+#messageBox {
+    position:fixed;
+    left:50%;
+    top:24%;
+    transform:translate(-50%,-50%);
+    color:#c8efff;
+    background:rgba(4,10,14,.9);
+    border:1px solid #4e7483;
+    padding:14px 24px;
+    letter-spacing:2px;
+    font-size:13px;
+    opacity:0;
+    transition:opacity .2s;
+    pointer-events:none;
+}
+
+#bossBar {
+    position:fixed;
+    left:50%;
+    top:25px;
+    transform:translateX(-50%);
+    width:min(550px,70vw);
+    display:none;
+}
+
+#bossName {
+    color:#ffcc99;
+    text-align:center;
+    font-size:12px;
+    letter-spacing:3px;
+    margin-bottom:5px;
+}
+
+#bossOuter {
+    height:10px;
+    background:#161b20;
+    border:1px solid #6b4a38;
+}
+
+#bossInner {
+    height:100%;
+    width:100%;
+    background:#e07b48;
+}
+
+#weatherText {
+    position:fixed;
+    right:25px;
+    top:125px;
+    color:#718692;
+    font-size:11px;
+    letter-spacing:2px;
+}
+
+@media(max-width:700px){
+    .achievementGrid,
+    .slotGrid {
+        grid-template-columns:1fr;
+    }
+}
+`;
+
+document.head.appendChild(extraStyle);
+
+/* =========================================================
+   EXTRA UI
+   ========================================================= */
+
+const extraUI = document.createElement("div");
+extraUI.id = "extraUI";
+
+extraUI.innerHTML = `
+    <div id="crosshair"></div>
+
+    <div id="levelInfo">
+        LEVEL <span id="levelValue">1</span>
+        &nbsp; • &nbsp;
+        XP <span id="xpValue">0</span>/<span id="xpMax">100</span>
+    </div>
+
+    <div id="gameInfo">
+        WASD / PIJLTJES = BEWEGEN
+        &nbsp; • &nbsp;
+        MOUSE = RICHTEN
+        &nbsp; • &nbsp;
+        CLICK = SCHIETEN
+    </div>
+
+    <div id="weaponInfo">
+        <span id="weaponNameExtra">PULSE</span>
+        <br>
+        [1-6] WAPEN &nbsp; [R] HERLADEN
+    </div>
+
+    <div id="interactHint">
+        [E] INTERACTEREN
+    </div>
+
+    <div id="damageFlash"></div>
+
+    <div id="messageBox"></div>
+
+    <div id="weatherText">CLEAR</div>
+
+    <div id="bossBar">
+        <div id="bossName">BOSS</div>
+        <div id="bossOuter">
+            <div id="bossInner"></div>
+        </div>
+    </div>
+`;
+
+document.body.appendChild(extraUI);
+
+function makeOverlay(id, html) {
+    const div = document.createElement("div");
+    div.id = id;
+    div.className = "overlayPanel";
+    div.innerHTML = `<div class="panelBox">${html}</div>`;
+    document.body.appendChild(div);
+    return div;
+}
+
+const achievementsOverlay = makeOverlay(
+    "achievementsOverlay",
+    `
+        <h2>ACHIEVEMENTS</h2>
+        <div id="achievementGrid" class="achievementGrid"></div>
+        <button class="panelButton" id="closeAchievements">TERUG</button>
+    `
+);
+
+const controlsOverlay = makeOverlay(
+    "controlsOverlay",
+    `
+        <h2>CONTROLS</h2>
+        <p><b>W A S D</b> — bewegen</p>
+        <p><b>PIJLTJES</b> — bewegen</p>
+        <p><b>MOUSE</b> — richten</p>
+        <p><b>LINKER MUISKNOP</b> — schieten</p>
+        <p><b>SPACE</b> — dash</p>
+        <p><b>E</b> — interactie / kist / deur</p>
+        <p><b>1 t/m 6</b> — wapens</p>
+        <p><b>R</b> — herladen</p>
+        <p><b>M</b> — kaart</p>
+        <p><b>I</b> — inventaris</p>
+        <p><b>ESC</b> — pauze</p>
+        <button class="panelButton" id="closeControls">TERUG</button>
+    `
+);
+
+const inventoryOverlay = makeOverlay(
+    "inventoryOverlay",
+    `
+        <h2>INVENTORY</h2>
+        <div id="inventoryContent"></div>
+        <button class="panelButton" id="closeInventory">SLUITEN</button>
+    `
+);
+
+const saveOverlay = makeOverlay(
+    "saveOverlay",
+    `
+        <h2>SAVE SLOTS</h2>
+        <div class="slotGrid" id="slotGrid"></div>
+        <button class="panelButton" id="closeSaveSlots">ANNULEREN</button>
+    `
+);
+
+const gameOverOverlay = makeOverlay(
+    "gameOverOverlay",
+    `
+        <h2>SIGNAL LOST</h2>
+        <p id="gameOverText">Je run is voorbij.</p>
+        <button class="panelButton" id="retryButton">OPNIEUW</button>
+        <button class="panelButton" id="gameOverMenu">MENU</button>
+    `
+);
+
+const victoryOverlay = makeOverlay(
+    "victoryOverlay",
+    `
+        <h2>SIGNAL FOUND</h2>
+        <p>Je hebt de verloren signalen bereikt.</p>
+        <p id="victoryStats"></p>
+        <button class="panelButton" id="victoryMenu">TERUG NAAR MENU</button>
+    `
+);
+
+/* =========================================================
+   SCREEN
    ========================================================= */
 
 let W = window.innerWidth;
@@ -55,12 +443,18 @@ function resize() {
     W = window.innerWidth;
     H = window.innerHeight;
 
-    canvas.width = W;
-    canvas.height = H;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     if (mapCanvas) {
-        mapCanvas.width = Math.min(850, W - 80);
-        mapCanvas.height = Math.min(620, H - 160);
+        mapCanvas.width = 600;
+        mapCanvas.height = 400;
     }
 }
 
@@ -68,1339 +462,1074 @@ window.addEventListener("resize", resize);
 resize();
 
 /* =========================================================
-   EXTRA CSS
-   ========================================================= */
-
-const extraStyle = document.createElement("style");
-
-extraStyle.textContent = `
-#game {
-    image-rendering: auto;
-}
-
-#extraUI {
-    position:fixed;
-    inset:0;
-    pointer-events:none;
-    z-index:500;
-    font-family:Arial,Helvetica,sans-serif;
-}
-
-.extraPanel {
-    position:absolute;
-    left:50%;
-    top:50%;
-    transform:translate(-50%,-50%);
-    width:min(900px,90vw);
-    max-height:85vh;
-    overflow:auto;
-    background:
-        linear-gradient(135deg,rgba(10,16,25,.98),rgba(4,8,14,.98));
-    border:1px solid rgba(120,190,255,.45);
-    box-shadow:
-        0 0 60px rgba(0,140,255,.12),
-        inset 0 0 40px rgba(80,150,255,.04);
-    padding:28px;
-    pointer-events:auto;
-    color:#dcecff;
-}
-
-.extraPanel h2 {
-    margin-top:0;
-    letter-spacing:5px;
-    font-size:28px;
-}
-
-.extraPanel button,
-.saveSlot {
-    display:block;
-    width:100%;
-    box-sizing:border-box;
-    margin:10px 0;
-    padding:14px;
-    background:linear-gradient(180deg,#162b40,#0b1725);
-    border:1px solid #37658a;
-    color:#d9efff;
-    cursor:pointer;
-    text-align:left;
-}
-
-.extraPanel button:hover,
-.saveSlot:hover {
-    background:linear-gradient(180deg,#21415d,#102237);
-    border-color:#7dc8ff;
-}
-
-.panelClose {
-    float:right;
-    width:auto!important;
-    padding:8px 14px!important;
-}
-
-.gridList {
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
-    gap:10px;
-}
-
-.card {
-    background:rgba(255,255,255,.035);
-    border:1px solid rgba(120,180,220,.16);
-    padding:14px;
-}
-
-.card.locked {
-    opacity:.38;
-}
-
-.card strong {
-    display:block;
-    color:#fff;
-    margin-bottom:6px;
-}
-
-#toast {
-    position:absolute;
-    left:50%;
-    top:82%;
-    transform:translate(-50%,0);
-    padding:12px 22px;
-    background:rgba(5,12,20,.92);
-    border:1px solid rgba(100,200,255,.4);
-    color:#dff4ff;
-    opacity:0;
-    transition:.25s;
-}
-
-#toast.show {
-    opacity:1;
-}
-
-#bossBar {
-    position:absolute;
-    left:50%;
-    top:72px;
-    transform:translateX(-50%);
-    width:min(650px,70vw);
-    display:none;
-}
-
-#bossName {
-    text-align:center;
-    letter-spacing:4px;
-    font-weight:bold;
-    color:#ffb8b8;
-    margin-bottom:5px;
-}
-
-#bossBarOuter {
-    height:12px;
-    background:#150a0a;
-    border:1px solid #8b4d4d;
-}
-
-#bossBarInner {
-    height:100%;
-    width:100%;
-    background:linear-gradient(90deg,#ff4d4d,#ff9b5e);
-}
-
-#inventoryMini {
-    position:absolute;
-    right:20px;
-    bottom:75px;
-    font-size:12px;
-    color:#9eb7c9;
-    text-align:right;
-}
-
-#levelText {
-    position:absolute;
-    left:50%;
-    top:16px;
-    transform:translateX(-50%);
-    color:#b8dfff;
-    font-size:12px;
-    letter-spacing:2px;
-}
-
-@media(max-width:700px) {
-    .extraPanel {
-        padding:18px;
-    }
-}
-`;
-
-document.head.appendChild(extraStyle);
-
-const extraUI = document.createElement("div");
-extraUI.id = "extraUI";
-
-const toast = document.createElement("div");
-toast.id = "toast";
-
-const bossBar = document.createElement("div");
-bossBar.id = "bossBar";
-
-bossBar.innerHTML = `
-    <div id="bossName">BOSS</div>
-    <div id="bossBarOuter">
-        <div id="bossBarInner"></div>
-    </div>
-`;
-
-const levelText = document.createElement("div");
-levelText.id = "levelText";
-
-const inventoryMini = document.createElement("div");
-inventoryMini.id = "inventoryMini";
-
-extraUI.appendChild(toast);
-extraUI.appendChild(bossBar);
-extraUI.appendChild(levelText);
-extraUI.appendChild(inventoryMini);
-
-document.body.appendChild(extraUI);
-
-/* =========================================================
    GAME CONSTANTS
    ========================================================= */
 
-const WORLD = {
-    width: 4200,
-    height: 4200
-};
+const WORLD_WIDTH = 5200;
+const WORLD_HEIGHT = 4200;
 
-const SAVE_KEY = "echobound_expanded_v3";
+const TILE = 100;
 
-const MAX_PARTICLES = 900;
+const MAX_ENEMIES = 55;
+const MAX_PARTICLES = 500;
 
-const keys = {};
-const mouse = {
-    x: W / 2,
-    y: H / 2,
-    down: false
-};
+const PLAYER_RADIUS = 18;
 
-let camera = {
-    x: 0,
-    y: 0,
-    shake: 0
-};
+const ENEMY_DETECT_RANGE = 950;
+const ENEMY_SHOOT_RANGE = 600;
 
-let gameState = "menu";
+const SPAWN_MIN_DISTANCE = 650;
+const SPAWN_MAX_DISTANCE = 1050;
+
+/* =========================================================
+   GAME STATE
+   ========================================================= */
+
+let state = "menu";
+
 let lastTime = performance.now();
+let elapsed = 0;
 
-let particles = [];
-let bullets = [];
-let enemyBullets = [];
-let enemies = [];
-let pickups = [];
-let walls = [];
-let doors = [];
-let props = [];
-let terminals = [];
-let chests = [];
-let beacons = [];
-let floatingTexts = [];
+let mouseX = W / 2;
+let mouseY = H / 2;
 
-let currentSector = 0;
-let wave = 1;
-let missionProgress = 0;
-let missionTarget = 10;
+let mouseDown = false;
 
-let weather = {
-    rain: true,
-    intensity: 0.25
-};
-
-let worldTime = 0;
-
-let unlockedAchievements = {};
-
-let saveSlots = [
-    null,
-    null,
-    null
-];
-
-let activeSaveSlot = 0;
+const keys = Object.create(null);
 
 /* =========================================================
-   PLAYER
+   ROBUST INPUT
    ========================================================= */
 
-const player = {
-    x: 600,
-    y: 600,
+window.addEventListener("keydown", event => {
+    keys[event.code] = true;
 
-    w: 30,
-    h: 30,
-
-    speed: 230,
-
-    maxHealth: 100,
-    health: 100,
-
-    maxEnergy: 100,
-    energy: 100,
-
-    armor: 0,
-
-    level: 1,
-    xp: 0,
-    nextXP: 100,
-
-    credits: 0,
-    kills: 0,
-
-    dashCooldown: 0,
-    dashTimer: 0,
-
-    invincible: 0,
-
-    fireCooldown: 0,
-
-    weapon: "pulse",
-
-    weaponsUnlocked: {
-        pulse: true,
-        burst: false,
-        heavy: false,
-        shotgun: false,
-        rail: false,
-        plasma: false
-    },
-
-    inventory: {
-        medkit: 2,
-        energyCell: 2,
-        armorPlate: 0,
-        keycardA: 0,
-        keycardB: 0,
-        dataCore: 0
-    },
-
-    upgrades: {
-        damage: 0,
-        speed: 0,
-        maxHealth: 0,
-        maxEnergy: 0,
-        dash: 0,
-        armor: 0
-    },
-
-    visitedDistance: 0,
-    lastX: 600,
-    lastY: 600,
-
-    signalFound: false,
-    finalBossDefeated: false
-};
-
-/* =========================================================
-   WEAPONS
-   ========================================================= */
-
-const weapons = {
-    pulse: {
-        name: "PULSE",
-        damage: 18,
-        speed: 800,
-        cooldown: 0.22,
-        spread: 0.025,
-        bullets: 1,
-        energy: 0,
-        color: "#8bdcff",
-        size: 4
-    },
-
-    burst: {
-        name: "BURST",
-        damage: 13,
-        speed: 850,
-        cooldown: 0.38,
-        spread: 0.055,
-        bullets: 3,
-        energy: 2,
-        color: "#9bffce",
-        size: 3
-    },
-
-    heavy: {
-        name: "HEAVY",
-        damage: 48,
-        speed: 670,
-        cooldown: 0.75,
-        spread: 0.02,
-        bullets: 1,
-        energy: 5,
-        color: "#ffc56b",
-        size: 7
-    },
-
-    shotgun: {
-        name: "SHOTGUN",
-        damage: 15,
-        speed: 720,
-        cooldown: 0.9,
-        spread: 0.3,
-        bullets: 7,
-        energy: 5,
-        color: "#ffdc9c",
-        size: 4
-    },
-
-    rail: {
-        name: "RAIL",
-        damage: 105,
-        speed: 1400,
-        cooldown: 1.25,
-        spread: 0,
-        bullets: 1,
-        energy: 14,
-        color: "#c8eaff",
-        size: 5
-    },
-
-    plasma: {
-        name: "PLASMA",
-        damage: 30,
-        speed: 500,
-        cooldown: 0.32,
-        spread: 0.04,
-        bullets: 1,
-        energy: 8,
-        color: "#dba8ff",
-        size: 8
+    if (event.key) {
+        keys[event.key.toLowerCase()] = true;
     }
-};
 
-/* =========================================================
-   ENEMY TYPES
-   ========================================================= */
+    const blocked = [
+        "KeyW",
+        "KeyA",
+        "KeyS",
+        "KeyD",
+        "ArrowUp",
+        "ArrowDown",
+        "ArrowLeft",
+        "ArrowRight",
+        "Space"
+    ];
 
-const enemyTypes = {
-
-    scout: {
-        name: "SCOUT",
-        hp: 45,
-        speed: 95,
-        damage: 8,
-        radius: 17,
-        color: "#6fd0ff",
-        shoot: true,
-        cooldown: 2.3
-    },
-
-    hunter: {
-        name: "HUNTER",
-        hp: 80,
-        speed: 125,
-        damage: 12,
-        radius: 20,
-        color: "#ffce69",
-        shoot: true,
-        cooldown: 1.7
-    },
-
-    guardian: {
-        name: "GUARDIAN",
-        hp: 170,
-        speed: 55,
-        damage: 18,
-        radius: 27,
-        color: "#ff7c7c",
-        shoot: true,
-        cooldown: 1.2
-    },
-
-    sniper: {
-        name: "SNIPER",
-        hp: 90,
-        speed: 40,
-        damage: 27,
-        radius: 19,
-        color: "#cda4ff",
-        shoot: true,
-        cooldown: 3.2
-    },
-
-    brute: {
-        name: "BRUTE",
-        hp: 260,
-        speed: 38,
-        damage: 26,
-        radius: 34,
-        color: "#ff9866",
-        shoot: false,
-        cooldown: 0
-    },
-
-    drone: {
-        name: "DRONE",
-        hp: 65,
-        speed: 145,
-        damage: 10,
-        radius: 15,
-        color: "#70ffd2",
-        shoot: true,
-        cooldown: 1.5
+    if (blocked.includes(event.code)) {
+        event.preventDefault();
     }
-};
 
-/* =========================================================
-   SECTORS
-   ========================================================= */
+    if (event.repeat) return;
 
-const sectors = [
-    {
-        name: "SECTOR 01 — OUTER RING",
-        color: "#5fa8d3",
-        minX: 0,
-        minY: 0,
-        maxX: 1400,
-        maxY: 1400
-    },
-    {
-        name: "SECTOR 02 — INDUSTRIAL",
-        color: "#d19a55",
-        minX: 1400,
-        minY: 0,
-        maxX: 2800,
-        maxY: 1400
-    },
-    {
-        name: "SECTOR 03 — RESEARCH",
-        color: "#b38cff",
-        minX: 2800,
-        minY: 0,
-        maxX: 4200,
-        maxY: 1400
-    },
-    {
-        name: "SECTOR 04 — FLOOD ZONE",
-        color: "#4ed5bd",
-        minX: 0,
-        minY: 1400,
-        maxX: 1400,
-        maxY: 2800
-    },
-    {
-        name: "SECTOR 05 — UNDERGROUND",
-        color: "#7888a8",
-        minX: 1400,
-        minY: 1400,
-        maxX: 2800,
-        maxY: 2800
-    },
-    {
-        name: "SECTOR 06 — SIGNAL CORE",
-        color: "#ff6c79",
-        minX: 2800,
-        minY: 1400,
-        maxX: 4200,
-        maxY: 2800
-    },
-    {
-        name: "SECTOR 07 — DEAD CITY",
-        color: "#a6a6a6",
-        minX: 0,
-        minY: 2800,
-        maxX: 1400,
-        maxY: 4200
-    },
-    {
-        name: "SECTOR 08 — FINAL ARRAY",
-        color: "#e7d36a",
-        minX: 1400,
-        minY: 2800,
-        maxX: 2800,
-        maxY: 4200
-    },
-    {
-        name: "SECTOR 09 — THE SOURCE",
-        color: "#ff668d",
-        minX: 2800,
-        minY: 2800,
-        maxX: 4200,
-        maxY: 4200
+    if (event.code === "Escape") {
+        handleEscape();
     }
-];
+
+    if (event.code === "KeyM") {
+        toggleMap();
+    }
+
+    if (event.code === "KeyI") {
+        toggleInventory();
+    }
+
+    if (event.code === "KeyE") {
+        interact();
+    }
+
+    if (event.code === "KeyR") {
+        reload();
+    }
+
+    const number = Number(event.key);
+
+    if (number >= 1 && number <= 6) {
+        selectWeapon(number - 1);
+    }
+});
+
+window.addEventListener("keyup", event => {
+    keys[event.code] = false;
+
+    if (event.key) {
+        keys[event.key.toLowerCase()] = false;
+    }
+});
+
+window.addEventListener("blur", () => {
+    for (const key in keys) {
+        keys[key] = false;
+    }
+
+    mouseDown = false;
+});
+
+function down(...names) {
+    return names.some(name => keys[name]);
+}
 
 /* =========================================================
-   UTILITY
+   MOUSE
    ========================================================= */
 
-function rand(min, max) {
-    return Math.random() * (max - min) + min;
-}
+window.addEventListener("mousemove", event => {
+    mouseX = event.clientX;
+    mouseY = event.clientY;
 
-function randi(min, max) {
-    return Math.floor(rand(min, max + 1));
-}
+    const crosshair = document.getElementById("crosshair");
 
-function clamp(v, min, max) {
-    return Math.max(min, Math.min(max, v));
-}
+    if (crosshair) {
+        crosshair.style.left = mouseX + "px";
+        crosshair.style.top = mouseY + "px";
+    }
+});
 
-function distance(a, b) {
-    return Math.hypot(a.x - b.x, a.y - b.y);
-}
+window.addEventListener("mousedown", event => {
+    if (event.button === 0) {
+        mouseDown = true;
+    }
+});
 
-function angleTo(a, b) {
-    return Math.atan2(b.y - a.y, b.x - a.x);
-}
-
-function rectsOverlap(a, b) {
-    return (
-        a.x < b.x + b.w &&
-        a.x + a.w > b.x &&
-        a.y < b.y + b.h &&
-        a.y + a.h > b.y
-    );
-}
-
-function circleRectCollision(cx, cy, radius, rect) {
-    const closestX = clamp(cx, rect.x, rect.x + rect.w);
-    const closestY = clamp(cy, rect.y, rect.y + rect.h);
-
-    const dx = cx - closestX;
-    const dy = cy - closestY;
-
-    return dx * dx + dy * dy < radius * radius;
-}
-
-function pointInRect(x, y, r) {
-    return (
-        x >= r.x &&
-        x <= r.x + r.w &&
-        y >= r.y &&
-        y <= r.y + r.h
-    );
-}
+window.addEventListener("mouseup", event => {
+    if (event.button === 0) {
+        mouseDown = false;
+    }
+});
 
 /* =========================================================
    AUDIO
    ========================================================= */
 
-let audioCtx = null;
+let audioContext = null;
 
-function initAudio() {
-    if (!audioCtx) {
-        try {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-            audioCtx = null;
+function startAudio() {
+    try {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext ||
+                window.webkitAudioContext)();
         }
+
+        if (audioContext.state === "suspended") {
+            audioContext.resume();
+        }
+    } catch (error) {
+        audioContext = null;
     }
-
-    if (audioCtx && audioCtx.state === "suspended") {
-        audioCtx.resume();
-    }
 }
 
-function beep(freq = 440, duration = 0.08, type = "sine", volume = 0.035) {
-    if (!audioCtx) return;
+function sound(type) {
+    if (!audioContext) return;
 
-    const oscillator = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
+    try {
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
 
-    oscillator.type = type;
-    oscillator.frequency.value = freq;
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
 
-    gain.gain.setValueAtTime(volume, audioCtx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(
-        0.001,
-        audioCtx.currentTime + duration
-    );
+        let frequency = 200;
+        let duration = .08;
 
-    oscillator.connect(gain);
-    gain.connect(audioCtx.destination);
+        if (type === "shoot") {
+            frequency = 380;
+            duration = .045;
+        }
 
-    oscillator.start();
-    oscillator.stop(audioCtx.currentTime + duration);
-}
+        if (type === "hit") {
+            frequency = 110;
+            duration = .06;
+        }
 
-function soundShoot() {
-    beep(180, 0.05, "square", 0.025);
-}
+        if (type === "dash") {
+            frequency = 80;
+            duration = .16;
+        }
 
-function soundHit() {
-    beep(90, 0.08, "sawtooth", 0.025);
-}
+        if (type === "pickup") {
+            frequency = 650;
+            duration = .12;
+        }
 
-function soundPickup() {
-    beep(720, 0.07, "sine", 0.035);
-    setTimeout(() => beep(980, 0.08, "sine", 0.025), 45);
-}
+        if (type === "level") {
+            frequency = 520;
+            duration = .25;
+        }
 
-function soundDash() {
-    beep(250, 0.13, "triangle", 0.04);
-}
+        if (type === "boss") {
+            frequency = 70;
+            duration = .3;
+        }
 
-function soundLevel() {
-    beep(500, 0.08, "sine", 0.035);
-    setTimeout(() => beep(700, 0.08, "sine", 0.035), 80);
-    setTimeout(() => beep(950, 0.12, "sine", 0.035), 160);
-}
+        osc.frequency.value = frequency;
 
-function soundBoss() {
-    beep(70, 0.4, "sawtooth", 0.05);
+        gain.gain.setValueAtTime(.035, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(
+            .001,
+            audioContext.currentTime + duration
+        );
+
+        osc.start();
+        osc.stop(audioContext.currentTime + duration);
+    } catch (error) {}
 }
 
 /* =========================================================
-   TOAST
+   UTILS
    ========================================================= */
 
-let toastTimer = 0;
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
 
-function showToast(text) {
-    toast.textContent = text;
-    toast.classList.add("show");
+function lerp(a, b, t) {
+    return a + (b - a) * t;
+}
 
-    toastTimer = 2.5;
+function dist(a, b) {
+    return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function random(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function randomInt(min, max) {
+    return Math.floor(random(min, max + 1));
+}
+
+function chance(value) {
+    return Math.random() < value;
+}
+
+function angleBetween(a, b) {
+    return Math.atan2(b.y - a.y, b.x - a.x);
+}
+
+function normalize(x, y) {
+    const length = Math.hypot(x, y);
+
+    if (!length) {
+        return { x: 0, y: 0 };
+    }
+
+    return {
+        x: x / length,
+        y: y / length
+    };
+}
+
+/* =========================================================
+   SAVE DATA
+   ========================================================= */
+
+const SAVE_PREFIX = "echobound_save_";
+
+const defaultMeta = {
+    achievements: {},
+    totalKills: 0,
+    totalDistance: 0,
+    weaponsUsed: {}
+};
+
+let meta = loadMeta();
+
+function loadMeta() {
+    try {
+        const raw = localStorage.getItem("echobound_meta");
+
+        if (!raw) return { ...defaultMeta };
+
+        const parsed = JSON.parse(raw);
+
+        return {
+            ...defaultMeta,
+            ...parsed,
+            achievements: parsed.achievements || {},
+            weaponsUsed: parsed.weaponsUsed || {}
+        };
+    } catch {
+        return { ...defaultMeta };
+    }
+}
+
+function saveMeta() {
+    try {
+        localStorage.setItem(
+            "echobound_meta",
+            JSON.stringify(meta)
+        );
+    } catch {}
+}
+
+function saveExists(slot) {
+    try {
+        return !!localStorage.getItem(SAVE_PREFIX + slot);
+    } catch {
+        return false;
+    }
+}
+
+function saveGame(slot) {
+    if (!player) return;
+
+    const save = {
+        version: 3,
+        player: {
+            x: player.x,
+            y: player.y,
+            hp: player.hp,
+            energy: player.energy,
+            level: player.level,
+            xp: player.xp,
+            credits: player.credits,
+            kills: player.kills,
+            shots: player.shots,
+            dashes: player.dashes
+        },
+
+        sector: currentSector,
+        discovered: [...discoveredSectors],
+
+        inventory: { ...inventory },
+
+        weapons: weapons.map(w => ({
+            ammo: w.ammo,
+            unlocked: w.unlocked
+        })),
+
+        mission: {
+            signalFound: mission.signalFound,
+            killsNeeded: mission.killsNeeded,
+            kills: mission.kills
+        },
+
+        time: elapsed,
+        savedAt: Date.now()
+    };
+
+    try {
+        localStorage.setItem(
+            SAVE_PREFIX + slot,
+            JSON.stringify(save)
+        );
+
+        showMessage("RUN OPGESLAGEN IN SLOT " + slot);
+
+        meta.achievements.firstSave = true;
+        saveMeta();
+        updateAchievements();
+    } catch {
+        showMessage("OPSLAAN MISLUKT");
+    }
+}
+
+function loadGame(slot) {
+    try {
+        const raw = localStorage.getItem(SAVE_PREFIX + slot);
+
+        if (!raw) {
+            showMessage("SLOT IS LEEG");
+            return false;
+        }
+
+        const save = JSON.parse(raw);
+
+        resetWorld();
+
+        player.x = Number(save.player.x) || 500;
+        player.y = Number(save.player.y) || 500;
+        player.hp = Number(save.player.hp) || player.maxHp;
+        player.energy = Number(save.player.energy) || player.maxEnergy;
+        player.level = Number(save.player.level) || 1;
+        player.xp = Number(save.player.xp) || 0;
+        player.credits = Number(save.player.credits) || 0;
+        player.kills = Number(save.player.kills) || 0;
+        player.shots = Number(save.player.shots) || 0;
+        player.dashes = Number(save.player.dashes) || 0;
+
+        currentSector = Number(save.sector) || 0;
+
+        discoveredSectors.clear();
+
+        if (Array.isArray(save.discovered)) {
+            save.discovered.forEach(s => discoveredSectors.add(s));
+        }
+
+        inventory = {
+            ...inventory,
+            ...(save.inventory || {})
+        };
+
+        if (Array.isArray(save.weapons)) {
+            save.weapons.forEach((w, i) => {
+                if (!weapons[i]) return;
+
+                weapons[i].ammo =
+                    typeof w.ammo === "number"
+                        ? w.ammo
+                        : weapons[i].maxAmmo;
+
+                weapons[i].unlocked =
+                    !!w.unlocked;
+            });
+        }
+
+        mission.signalFound =
+            !!save.mission?.signalFound;
+
+        mission.killsNeeded =
+            Number(save.mission?.killsNeeded) || 8;
+
+        mission.kills =
+            Number(save.mission?.kills) || 0;
+
+        elapsed = Number(save.time) || 0;
+
+        discoverSector(currentSector, true);
+
+        state = "playing";
+
+        hideAllOverlays();
+
+        menu.style.display = "none";
+        pauseScreen.style.display = "none";
+        hud.style.display = "block";
+
+        showMessage("RUN GELADEN");
+
+        return true;
+
+    } catch (error) {
+        console.error(error);
+        showMessage("SAVE KON NIET WORDEN GELADEN");
+        return false;
+    }
 }
 
 /* =========================================================
    ACHIEVEMENTS
    ========================================================= */
 
-const achievements = {
-    firstEcho: {
+const achievementList = [
+    {
+        id: "firstEcho",
         name: "FIRST ECHO",
-        description: "Defeat your first enemy."
+        description: "Versla je eerste monster."
     },
-
-    tenEchoes: {
+    {
+        id: "tenEchoes",
         name: "TEN ECHOES",
-        description: "Defeat 10 enemies."
+        description: "Versla 10 monsters."
     },
-
-    fiftyEchoes: {
-        name: "ECHO HUNTER",
-        description: "Defeat 50 enemies."
+    {
+        id: "fiftyEchoes",
+        name: "DEEP SIGNAL",
+        description: "Versla 50 monsters."
     },
-
-    explorer: {
+    {
+        id: "firstSave",
+        name: "ANCHOR",
+        description: "Sla een run op."
+    },
+    {
+        id: "explorer",
         name: "EXPLORER",
-        description: "Travel 5,000 meters."
+        description: "Leg 5000 meter af."
     },
-
-    deepExplorer: {
-        name: "DEEP EXPLORER",
-        description: "Reach Sector 06."
-    },
-
-    survivor: {
+    {
+        id: "survivor",
         name: "SURVIVOR",
-        description: "Reach wave 5."
+        description: "Bereik level 5."
     },
-
-    arsenal: {
+    {
+        id: "arsenal",
         name: "ARSENAL",
-        description: "Unlock every weapon."
+        description: "Gebruik alle wapens."
     },
-
-    rich: {
-        name: "RESOURCEFUL",
-        description: "Collect 1,000 credits."
+    {
+        id: "boss",
+        name: "BREAK THE GIANT",
+        description: "Versla een boss."
     },
-
-    levelFive: {
-        name: "ADAPTED",
-        description: "Reach level 5."
-    },
-
-    bossHunter: {
-        name: "BOSS HUNTER",
-        description: "Defeat a boss."
-    },
-
-    signal: {
+    {
+        id: "signal",
         name: "THE SIGNAL",
-        description: "Find the lost signal."
+        description: "Vind het verloren signal."
     },
-
-    source: {
-        name: "THE SOURCE",
-        description: "Defeat the final boss."
-    },
-
-    survivorNoDash: {
-        name: "LAST STAND",
-        description: "Survive a boss encounter."
+    {
+        id: "rich",
+        name: "SALVAGER",
+        description: "Verzamel 1000 credits."
     }
-};
+];
 
 function unlockAchievement(id) {
-    if (unlockedAchievements[id]) return;
+    if (meta.achievements[id]) return;
 
-    if (!achievements[id]) return;
+    meta.achievements[id] = true;
+    saveMeta();
 
-    unlockedAchievements[id] = true;
+    const achievement = achievementList.find(
+        a => a.id === id
+    );
 
-    const achievement = achievements[id];
+    if (!achievement) return;
 
-    if (achievementBox) {
-        const name = document.getElementById("achievementName");
+    const nameElement =
+        document.getElementById("achievementName");
 
-        if (name) {
-            name.textContent = achievement.name;
-        }
+    if (nameElement) {
+        nameElement.textContent = achievement.name;
+    }
 
-        achievementBox.style.display = "block";
+    const popup = document.getElementById("achievement");
+
+    if (popup) {
+        popup.style.display = "block";
 
         setTimeout(() => {
-            achievementBox.style.display = "";
-        }, 3200);
+            popup.style.display = "none";
+        }, 3000);
     }
 
-    showToast("ACHIEVEMENT: " + achievement.name);
-    beep(900, 0.12, "sine", 0.04);
+    sound("level");
+    updateAchievements();
+}
 
-    savePersistentData();
+function updateAchievements() {
+    if (!player) return;
+
+    meta.totalKills = Math.max(
+        meta.totalKills || 0,
+        player.kills
+    );
+
+    if (player.kills >= 1)
+        unlockAchievement("firstEcho");
+
+    if (player.kills >= 10)
+        unlockAchievement("tenEchoes");
+
+    if (player.kills >= 50)
+        unlockAchievement("fiftyEchoes");
+
+    if (meta.totalDistance >= 5000)
+        unlockAchievement("explorer");
+
+    if (player.level >= 5)
+        unlockAchievement("survivor");
+
+    if (player.credits >= 1000)
+        unlockAchievement("rich");
+
+    const allWeapons =
+        weapons.every(w => meta.weaponsUsed[w.id]);
+
+    if (allWeapons)
+        unlockAchievement("arsenal");
+}
+
+function renderAchievementPanel() {
+    const grid =
+        document.getElementById("achievementGrid");
+
+    if (!grid) return;
+
+    grid.innerHTML = "";
+
+    achievementList.forEach(a => {
+        const unlocked =
+            !!meta.achievements[a.id];
+
+        const card =
+            document.createElement("div");
+
+        card.className =
+            "achievementCard" +
+            (unlocked ? " unlocked" : "");
+
+        card.innerHTML = `
+            <div class="name">
+                ${unlocked ? "✓ " : "○ "}
+                ${a.name}
+            </div>
+            <div class="desc">
+                ${a.description}
+            </div>
+        `;
+
+        grid.appendChild(card);
+    });
 }
 
 /* =========================================================
-   SAVE SYSTEM
+   PLAYER
    ========================================================= */
 
-function persistentData() {
+let player;
+
+function createPlayer() {
     return {
-        unlockedAchievements
+        x: 500,
+        y: 500,
+
+        radius: PLAYER_RADIUS,
+
+        speed: 245,
+
+        maxHp: 100,
+        hp: 100,
+
+        maxEnergy: 100,
+        energy: 100,
+
+        energyRegen: 18,
+
+        level: 1,
+        xp: 0,
+
+        credits: 0,
+
+        kills: 0,
+        shots: 0,
+        dashes: 0,
+
+        invulnerable: 0,
+
+        dashCooldown: 0,
+        dashTimer: 0,
+
+        angle: 0,
+
+        damageBoost: 0,
+        speedBoost: 0,
+
+        flash: 0
     };
-}
-
-function savePersistentData() {
-    try {
-        localStorage.setItem(
-            SAVE_KEY + "_global",
-            JSON.stringify(persistentData())
-        );
-    } catch (e) {}
-}
-
-function loadPersistentData() {
-    try {
-        const raw = localStorage.getItem(SAVE_KEY + "_global");
-
-        if (raw) {
-            const data = JSON.parse(raw);
-
-            if (data.unlockedAchievements) {
-                unlockedAchievements = data.unlockedAchievements;
-            }
-        }
-    } catch (e) {}
-}
-
-function makeSaveData() {
-    return {
-        version: 3,
-
-        player: JSON.parse(JSON.stringify(player)),
-
-        currentSector,
-        wave,
-        missionProgress,
-        missionTarget,
-
-        doors: doors.map(d => ({
-            x: d.x,
-            y: d.y,
-            w: d.w,
-            h: d.h,
-            locked: d.locked,
-            open: d.open,
-            key: d.key
-        })),
-
-        chests: chests.map(c => ({
-            x: c.x,
-            y: c.y,
-            opened: c.opened
-        })),
-
-        terminals: terminals.map(t => ({
-            x: t.x,
-            y: t.y,
-            used: t.used
-        })),
-
-        beacons: beacons.map(b => ({
-            x: b.x,
-            y: b.y,
-            active: b.active
-        })),
-
-        timestamp: Date.now()
-    };
-}
-
-function saveSlot(slot = activeSaveSlot) {
-    saveSlots[slot] = makeSaveData();
-
-    try {
-        localStorage.setItem(
-            SAVE_KEY + "_slot_" + slot,
-            JSON.stringify(saveSlots[slot])
-        );
-    } catch (e) {}
-
-    showToast("RUN SAVED — SLOT " + (slot + 1));
-    unlockAchievement("firstSave");
-}
-
-function loadSlot(slot) {
-    try {
-        const raw = localStorage.getItem(
-            SAVE_KEY + "_slot_" + slot
-        );
-
-        if (!raw) {
-            showToast("NO SAVE IN SLOT " + (slot + 1));
-            return false;
-        }
-
-        const data = JSON.parse(raw);
-
-        applySaveData(data);
-
-        activeSaveSlot = slot;
-
-        showToast("SAVE LOADED — SLOT " + (slot + 1));
-
-        return true;
-
-    } catch (e) {
-        console.error(e);
-        showToast("SAVE COULD NOT BE LOADED");
-        return false;
-    }
-}
-
-function applySaveData(data) {
-
-    if (data.player) {
-        Object.assign(player, data.player);
-
-        player.inventory = Object.assign({
-            medkit: 0,
-            energyCell: 0,
-            armorPlate: 0,
-            keycardA: 0,
-            keycardB: 0,
-            dataCore: 0
-        }, player.inventory || {});
-
-        player.weaponsUnlocked = Object.assign({
-            pulse: true,
-            burst: false,
-            heavy: false,
-            shotgun: false,
-            rail: false,
-            plasma: false
-        }, player.weaponsUnlocked || {});
-
-        player.upgrades = Object.assign({
-            damage: 0,
-            speed: 0,
-            maxHealth: 0,
-            maxEnergy: 0,
-            dash: 0,
-            armor: 0
-        }, player.upgrades || {});
-    }
-
-    currentSector = data.currentSector || 0;
-    wave = data.wave || 1;
-    missionProgress = data.missionProgress || 0;
-    missionTarget = data.missionTarget || 10;
-
-    if (data.doors) {
-        for (const savedDoor of data.doors) {
-            const door = doors.find(
-                d =>
-                    Math.abs(d.x - savedDoor.x) < 2 &&
-                    Math.abs(d.y - savedDoor.y) < 2
-            );
-
-            if (door) {
-                door.locked = savedDoor.locked;
-                door.open = savedDoor.open;
-            }
-        }
-    }
-
-    if (data.chests) {
-        for (const savedChest of data.chests) {
-            const chest = chests.find(
-                c =>
-                    Math.abs(c.x - savedChest.x) < 2 &&
-                    Math.abs(c.y - savedChest.y) < 2
-            );
-
-            if (chest) {
-                chest.opened = savedChest.opened;
-            }
-        }
-    }
-
-    if (data.terminals) {
-        for (const savedTerminal of data.terminals) {
-            const terminal = terminals.find(
-                t =>
-                    Math.abs(t.x - savedTerminal.x) < 2 &&
-                    Math.abs(t.y - savedTerminal.y) < 2
-            );
-
-            if (terminal) {
-                terminal.used = savedTerminal.used;
-            }
-        }
-    }
-
-    if (data.beacons) {
-        for (const savedBeacon of data.beacons) {
-            const beacon = beacons.find(
-                b =>
-                    Math.abs(b.x - savedBeacon.x) < 2 &&
-                    Math.abs(b.y - savedBeacon.y) < 2
-            );
-
-            if (beacon) {
-                beacon.active = savedBeacon.active;
-            }
-        }
-    }
 }
 
 /* =========================================================
-   WORLD GENERATION
+   WEAPONS
    ========================================================= */
 
-function createWall(x, y, w, h, type = "concrete") {
-    walls.push({
-        x,
-        y,
-        w,
-        h,
-        type,
-        visible: true
-    });
+const weapons = [
+    {
+        id: "pulse",
+        name: "PULSE",
+        damage: 25,
+        speed: 900,
+        fireRate: .18,
+        maxAmmo: 12,
+        ammo: 12,
+        reload: 1.1,
+        spread: .025,
+        pellets: 1,
+        color: "#77ddff"
+    },
+
+    {
+        id: "burst",
+        name: "BURST",
+        damage: 18,
+        speed: 1000,
+        fireRate: .35,
+        maxAmmo: 18,
+        ammo: 18,
+        reload: 1.3,
+        spread: .055,
+        pellets: 3,
+        color: "#b0a4ff"
+    },
+
+    {
+        id: "scatter",
+        name: "SCATTER",
+        damage: 12,
+        speed: 850,
+        fireRate: .7,
+        maxAmmo: 6,
+        ammo: 6,
+        reload: 1.5,
+        spread: .23,
+        pellets: 7,
+        color: "#ffd27a"
+    },
+
+    {
+        id: "heavy",
+        name: "HEAVY",
+        damage: 60,
+        speed: 720,
+        fireRate: .75,
+        maxAmmo: 5,
+        ammo: 5,
+        reload: 1.8,
+        spread: .015,
+        pellets: 1,
+        color: "#ff9d62"
+    },
+
+    {
+        id: "rail",
+        name: "RAIL",
+        damage: 120,
+        speed: 1500,
+        fireRate: 1.4,
+        maxAmmo: 3,
+        ammo: 3,
+        reload: 2.1,
+        spread: 0,
+        pellets: 1,
+        color: "#f4f6ff"
+    },
+
+    {
+        id: "plasma",
+        name: "PLASMA",
+        damage: 40,
+        speed: 650,
+        fireRate: .3,
+        maxAmmo: 10,
+        ammo: 10,
+        reload: 1.6,
+        spread: .04,
+        pellets: 1,
+        color: "#70ffbd"
+    }
+];
+
+let weaponIndex = 0;
+let fireCooldown = 0;
+let reloadTimer = 0;
+
+function currentWeapon() {
+    return weapons[weaponIndex];
 }
 
-function createDoor(x, y, w, h, key = null) {
-    doors.push({
-        x,
-        y,
-        w,
-        h,
-        key,
-        locked: !!key,
-        open: false,
-        progress: 0
-    });
+function selectWeapon(index) {
+    if (!weapons[index]) return;
+
+    const weapon = weapons[index];
+
+    if (!weapon.unlocked && index !== 0) {
+        if (player && player.level < index + 1) {
+            showMessage(
+                "WAPEN VRIJGESPEELD OP LEVEL " +
+                (index + 1)
+            );
+            return;
+        }
+
+        weapon.unlocked = true;
+    }
+
+    weaponIndex = index;
+
+    if (meta.weaponsUsed) {
+        meta.weaponsUsed[weapon.id] = true;
+        saveMeta();
+    }
+
+    updateHUD();
 }
 
-function createProp(x, y, type, size = 30) {
-    props.push({
-        x,
-        y,
-        type,
-        size,
-        rotation: rand(0, Math.PI * 2)
-    });
+function reload() {
+    if (!player || state !== "playing") return;
+
+    const weapon = currentWeapon();
+
+    if (reloadTimer > 0) return;
+
+    if (weapon.ammo >= weapon.maxAmmo) return;
+
+    reloadTimer = weapon.reload;
+
+    showMessage("HERLADEN...");
 }
 
-function createTerminal(x, y, key = "A") {
-    terminals.push({
-        x,
-        y,
-        key,
-        used: false
-    });
+function finishReload() {
+    const weapon = currentWeapon();
+
+    weapon.ammo = weapon.maxAmmo;
+
+    reloadTimer = 0;
+
+    showMessage("KLAAR");
 }
 
-function createChest(x, y) {
-    chests.push({
-        x,
-        y,
-        opened: false
-    });
-}
+/* =========================================================
+   WORLD
+   ========================================================= */
 
-function createBeacon(x, y) {
-    beacons.push({
-        x,
-        y,
-        active: false
-    });
-}
+let walls = [];
+let doors = [];
+let props = [];
+let chests = [];
+let terminals = [];
+let beacons = [];
 
 function buildWorld() {
 
     walls = [];
-    doors = [];
-    props = [];
-    terminals = [];
-    chests = [];
-    beacons = [];
 
-    /* OUTER WALLS */
+    /*
+       BUITENRANDEN
+    */
 
-    createWall(0, 0, WORLD.width, 35);
-    createWall(0, WORLD.height - 35, WORLD.width, 35);
-    createWall(0, 0, 35, WORLD.height);
-    createWall(WORLD.width - 35, 0, 35, WORLD.height);
+    walls.push({
+        x: -50,
+        y: -50,
+        w: WORLD_WIDTH + 100,
+        h: 50
+    });
 
-    /* MAJOR SECTOR WALLS */
+    walls.push({
+        x: -50,
+        y: WORLD_HEIGHT,
+        w: WORLD_WIDTH + 100,
+        h: 50
+    });
 
-    createWall(1380, 0, 40, 1050);
-    createWall(1380, 1150, 40, 1250);
-    createWall(1380, 2550, 40, 1650);
+    walls.push({
+        x: -50,
+        y: 0,
+        w: 50,
+        h: WORLD_HEIGHT
+    });
 
-    createWall(2780, 0, 40, 1400);
-    createWall(2780, 1500, 40, 2700);
+    walls.push({
+        x: WORLD_WIDTH,
+        y: 0,
+        w: 50,
+        h: WORLD_HEIGHT
+    });
 
-    createWall(0, 1380, 1050, 40);
-    createWall(1150, 1380, 1250, 40);
-    createWall(2550, 1380, 1650, 40);
+    /*
+       GROTE ZICHTBARE MUREN
+    */
 
-    createWall(0, 2780, 1400, 40);
-    createWall(1420, 2780, 1360, 40);
-    createWall(2820, 2780, 1380, 40);
+    const fixedWalls = [
+        {x: 220, y: 350, w: 520, h: 55},
+        {x: 850, y: 150, w: 55, h: 500},
 
-    /* SECTOR DOORS */
+        {x: 1200, y: 300, w: 500, h: 55},
+        {x: 1850, y: 300, w: 55, h: 600},
 
-    createDoor(1380, 1050, 40, 100, "A");
-    createDoor(2780, 1400, 40, 100, "B");
-    createDoor(1400, 2780, 100, 40, "B");
-    createDoor(2780, 2780, 100, 40, "C");
+        {x: 450, y: 800, w: 55, h: 600},
+        {x: 700, y: 850, w: 550, h: 55},
 
-    /* SECTOR 1 */
+        {x: 1450, y: 700, w: 55, h: 500},
 
-    createWall(250, 220, 720, 40);
-    createWall(250, 220, 40, 430);
-    createWall(930, 220, 40, 430);
+        {x: 250, y: 1650, w: 700, h: 55},
 
-    createWall(250, 610, 240, 40);
-    createWall(610, 610, 360, 40);
+        {x: 1100, y: 1450, w: 55, h: 500},
 
-    createWall(460, 820, 650, 40);
-    createWall(460, 820, 40, 310);
-    createWall(1070, 820, 40, 310);
+        {x: 1500, y: 1700, w: 600, h: 55},
 
-    createWall(180, 1080, 400, 40);
-    createWall(750, 1050, 400, 40);
+        {x: 2050, y: 1250, w: 55, h: 600},
 
-    /* SECTOR 2 */
+        {x: 2600, y: 400, w: 700, h: 55},
+        {x: 3150, y: 450, w: 55, h: 500},
 
-    createWall(1650, 180, 850, 40);
-    createWall(1650, 180, 40, 420);
-    createWall(2460, 180, 40, 420);
+        {x: 2800, y: 1050, w: 500, h: 55},
+        {x: 3500, y: 850, w: 55, h: 700},
 
-    createWall(1550, 680, 400, 45);
-    createWall(2150, 680, 350, 45);
+        {x: 2350, y: 1900, w: 700, h: 55},
+        {x: 3050, y: 2000, w: 55, h: 600},
 
-    createWall(1600, 900, 700, 45);
-    createWall(1600, 900, 45, 350);
-    createWall(2255, 900, 45, 350);
+        {x: 900, y: 2450, w: 700, h: 55},
+        {x: 1600, y: 2500, w: 55, h: 550},
 
-    createWall(1700, 1150, 350, 40);
-    createWall(2150, 1150, 350, 40);
+        {x: 2200, y: 3000, w: 600, h: 55},
+        {x: 2800, y: 2850, w: 55, h: 600},
 
-    /* SECTOR 3 */
+        {x: 3600, y: 2500, w: 650, h: 55},
+        {x: 4200, y: 2050, w: 55, h: 650},
 
-    createWall(3050, 220, 800, 40);
-    createWall(3050, 220, 40, 480);
-    createWall(3810, 220, 40, 480);
-
-    createWall(3000, 760, 350, 45);
-    createWall(3600, 760, 250, 45);
-
-    createWall(3150, 980, 650, 45);
-    createWall(3150, 980, 45, 300);
-    createWall(3755, 980, 45, 300);
-
-    createWall(3000, 1200, 400, 40);
-    createWall(3500, 1200, 350, 40);
-
-    /* SECTOR 4 */
-
-    createWall(180, 1600, 650, 40);
-    createWall(180, 1600, 40, 520);
-    createWall(790, 1600, 40, 520);
-
-    createWall(300, 2250, 500, 45);
-    createWall(300, 2250, 45, 300);
-    createWall(755, 2250, 45, 300);
-
-    createWall(900, 1800, 350, 45);
-    createWall(900, 2150, 350, 45);
-
-    /* SECTOR 5 */
-
-    createWall(1600, 1600, 850, 45);
-    createWall(1600, 1600, 45, 400);
-    createWall(2405, 1600, 45, 400);
-
-    createWall(1500, 2150, 500, 45);
-    createWall(2250, 2150, 250, 45);
-
-    createWall(1600, 2350, 850, 45);
-    createWall(1600, 2350, 45, 300);
-    createWall(2405, 2350, 45, 300);
-
-    /* SECTOR 6 */
-
-    createWall(3000, 1600, 850, 45);
-    createWall(3000, 1600, 45, 400);
-    createWall(3805, 1600, 45, 400);
-
-    createWall(2900, 2150, 450, 45);
-    createWall(3500, 2150, 350, 45);
-
-    createWall(3100, 2400, 700, 45);
-    createWall(3100, 2400, 45, 250);
-    createWall(3755, 2400, 45, 250);
-
-    /* SECTOR 7 */
-
-    createWall(180, 3000, 850, 45);
-    createWall(180, 3000, 45, 500);
-    createWall(985, 3000, 45, 500);
-
-    createWall(250, 3650, 700, 45);
-    createWall(250, 3350, 45, 345);
-    createWall(905, 3350, 45, 345);
-
-    /* SECTOR 8 */
-
-    createWall(1600, 3000, 850, 45);
-    createWall(1600, 3000, 45, 500);
-    createWall(2405, 3000, 45, 500);
-
-    createWall(1500, 3650, 900, 45);
-    createWall(1500, 3350, 45, 345);
-    createWall(2355, 3350, 45, 345);
-
-    /* SECTOR 9 */
-
-    createWall(3000, 3000, 850, 45);
-    createWall(3000, 3000, 45, 500);
-    createWall(3805, 3000, 45, 500);
-
-    createWall(2900, 3650, 1000, 45);
-    createWall(2900, 3350, 45, 345);
-    createWall(3855, 3350, 45, 345);
-
-    /* PROPS */
-
-    const propTypes = [
-        "crate",
-        "container",
-        "generator",
-        "console",
-        "lamp",
-        "barrel",
-        "debris"
+        {x: 3650, y: 1250, w: 600, h: 55},
+        {x: 4300, y: 900, w: 55, h: 650}
     ];
 
-    for (let i = 0; i < 220; i++) {
+    fixedWalls.forEach(w => {
+        walls.push({
+            ...w,
+            type: "wall"
+        });
+    });
 
-        const x = rand(100, WORLD.width - 100);
-        const y = rand(100, WORLD.height - 100);
+    /*
+       DEUREN
+    */
 
-        const p = {
+    doors = [
+        {
+            x: 740,
+            y: 350,
+            w: 110,
+            h: 55,
+            open: false
+        },
+
+        {
+            x: 1450,
+            y: 700,
+            w: 55,
+            h: 110,
+            open: false
+        },
+
+        {
+            x: 3050,
+            y: 2000,
+            w: 55,
+            h: 110,
+            open: false
+        },
+
+        {
+            x: 3600,
+            y: 1250,
+            w: 110,
+            h: 55,
+            open: false
+        }
+    ];
+
+    /*
+       PROPS
+    */
+
+    props = [];
+
+    for (let i = 0; i < 180; i++) {
+
+        let x = random(100, WORLD_WIDTH - 100);
+        let y = random(100, WORLD_HEIGHT - 100);
+
+        if (nearWall(x, y, 50)) continue;
+
+        const type =
+            chance(.35)
+                ? "crate"
+                : chance(.45)
+                    ? "rock"
+                    : "plant";
+
+        props.push({
             x,
             y,
-            w: rand(22, 55),
-            h: rand(22, 55)
-        };
-
-        let blocked = false;
-
-        for (const wall of walls) {
-            if (rectsOverlap(p, wall)) {
-                blocked = true;
-                break;
-            }
-        }
-
-        if (!blocked) {
-            createProp(
-                x,
-                y,
-                propTypes[randi(0, propTypes.length - 1)],
-                rand(22, 55)
-            );
-        }
+            type,
+            size: random(14, 35),
+            rotation: random(0, Math.PI * 2)
+        });
     }
 
-    /* TERMINALS */
+    /*
+       CHESTS
+    */
 
-    createTerminal(550, 470, "A");
-    createTerminal(1850, 480, "B");
-    createTerminal(3300, 500, "C");
+    chests = [];
 
-    /* CHESTS */
+    for (let i = 0; i < 28; i++) {
 
-    createChest(1100, 1100);
-    createChest(2400, 1100);
-    createChest(3650, 1100);
-    createChest(1000, 2500);
-    createChest(2350, 2500);
-    createChest(3650, 2500);
-    createChest(1100, 3900);
-    createChest(2300, 3900);
+        const p = findOpenPosition(400);
 
-    /* BEACONS */
+        if (!p) continue;
 
-    createBeacon(650, 1100);
-    createBeacon(2050, 1150);
-    createBeacon(3400, 1150);
-    createBeacon(700, 2500);
-    createBeacon(2050, 2500);
-    createBeacon(3450, 2500);
-    createBeacon(700, 3900);
-    createBeacon(2050, 3900);
-    createBeacon(3400, 3900);
+        chests.push({
+            x: p.x,
+            y: p.y,
+            opened: false
+        });
+    }
+
+    /*
+       TERMINALS
+    */
+
+    terminals = [];
+
+    for (let i = 0; i < 15; i++) {
+
+        const p = findOpenPosition(450);
+
+        if (!p) continue;
+
+        terminals.push({
+            x: p.x,
+            y: p.y,
+            used: false
+        });
+    }
+
+    /*
+       SIGNAL BEACONS
+    */
+
+    beacons = [
+        {
+            x: 4700,
+            y: 3500,
+            active: false
+        },
+
+        {
+            x: 3900,
+            y: 600,
+            active: false
+        },
+
+        {
+            x: 1200,
+            y: 3600,
+            active: false
+        }
+    ];
 }
 
 /* =========================================================
    COLLISION
    ========================================================= */
 
-function solidWalls() {
+function circleRectCollision(circle, rect) {
 
-    const result = [];
+    const nearestX =
+        clamp(circle.x, rect.x, rect.x + rect.w);
 
-    for (const wall of walls) {
-        result.push(wall);
-    }
+    const nearestY =
+        clamp(circle.y, rect.y, rect.y + rect.h);
 
-    for (const door of doors) {
-        if (!door.open) {
-            result.push(door);
-        }
-    }
+    const dx = circle.x - nearestX;
+    const dy = circle.y - nearestY;
 
-    return result;
+    return dx * dx + dy * dy <
+        circle.radius * circle.radius;
 }
 
-function collidesPlayer(x, y) {
+function solidDoors() {
+    return doors.filter(d => !d.open);
+}
 
-    const box = {
-        x: x - player.w / 2,
-        y: y - player.h / 2,
-        w: player.w,
-        h: player.h
+function allSolids() {
+    return walls.concat(solidDoors());
+}
+
+function collidesAt(x, y, radius) {
+
+    const circle = {
+        x,
+        y,
+        radius
     };
 
-    for (const wall of solidWalls()) {
-        if (rectsOverlap(box, wall)) {
+    for (const wall of allSolids()) {
+
+        if (circleRectCollision(circle, wall)) {
             return true;
         }
     }
@@ -1408,1272 +1537,1211 @@ function collidesPlayer(x, y) {
     return false;
 }
 
-function movePlayer(dx, dy) {
+function moveWithCollision(entity, dx, dy) {
 
-    const nx = player.x + dx;
+    const oldX = entity.x;
+    const oldY = entity.y;
 
-    if (!collidesPlayer(nx, player.y)) {
-        player.x = nx;
+    entity.x += dx;
+
+    if (collidesAt(
+        entity.x,
+        entity.y,
+        entity.radius
+    )) {
+        entity.x = oldX;
     }
 
-    const ny = player.y + dy;
+    entity.y += dy;
 
-    if (!collidesPlayer(player.x, ny)) {
-        player.y = ny;
+    if (collidesAt(
+        entity.x,
+        entity.y,
+        entity.radius
+    )) {
+        entity.y = oldY;
     }
-
-    player.x = clamp(
-        player.x,
-        55,
-        WORLD.width - 55
-    );
-
-    player.y = clamp(
-        player.y,
-        55,
-        WORLD.height - 55
-    );
 }
 
-function lineBlocked(x1, y1, x2, y2) {
+function pointInWall(x, y) {
 
-    const steps = Math.ceil(
-        Math.hypot(x2 - x1, y2 - y1) / 20
-    );
+    for (const wall of allSolids()) {
 
-    for (let i = 0; i <= steps; i++) {
-
-        const t = i / steps;
-
-        const x = x1 + (x2 - x1) * t;
-        const y = y1 + (y2 - y1) * t;
-
-        for (const wall of solidWalls()) {
-
-            if (pointInRect(x, y, wall)) {
-                return true;
-            }
+        if (
+            x >= wall.x &&
+            x <= wall.x + wall.w &&
+            y >= wall.y &&
+            y <= wall.y + wall.h
+        ) {
+            return true;
         }
     }
 
     return false;
 }
 
-/* =========================================================
-   PLAYER RESET
-   ========================================================= */
+function lineBlocked(x1, y1, x2, y2) {
 
-function resetPlayer() {
+    const distance =
+        Math.hypot(x2 - x1, y2 - y1);
 
-    player.x = 600;
-    player.y = 600;
+    const steps =
+        Math.ceil(distance / 18);
 
-    player.health = player.maxHealth;
-    player.energy = player.maxEnergy;
+    for (let i = 1; i < steps; i++) {
 
-    player.armor =
-        player.upgrades.armor * 10;
+        const t = i / steps;
 
-    player.dashCooldown = 0;
-    player.dashTimer = 0;
+        const x = lerp(x1, x2, t);
+        const y = lerp(y1, y2, t);
 
-    player.invincible = 0;
-    player.fireCooldown = 0;
-
-    player.kills = 0;
-    player.credits = 0;
-
-    player.level = 1;
-    player.xp = 0;
-    player.nextXP = 100;
-
-    player.inventory = {
-        medkit: 2,
-        energyCell: 2,
-        armorPlate: 0,
-        keycardA: 0,
-        keycardB: 0,
-        dataCore: 0
-    };
-
-    player.weaponsUnlocked = {
-        pulse: true,
-        burst: false,
-        heavy: false,
-        shotgun: false,
-        rail: false,
-        plasma: false
-    };
-
-    player.upgrades = {
-        damage: 0,
-        speed: 0,
-        maxHealth: 0,
-        maxEnergy: 0,
-        dash: 0,
-        armor: 0
-    };
-
-    player.weapon = "pulse";
-
-    player.visitedDistance = 0;
-    player.lastX = player.x;
-    player.lastY = player.y;
-
-    player.signalFound = false;
-    player.finalBossDefeated = false;
-}
-
-/* =========================================================
-   START GAME
-   ========================================================= */
-
-function startNewGame() {
-
-    initAudio();
-
-    resetPlayer();
-
-    currentSector = 0;
-    wave = 1;
-    missionProgress = 0;
-    missionTarget = 10;
-
-    bullets = [];
-    enemyBullets = [];
-    enemies = [];
-    pickups = [];
-    particles = [];
-    floatingTexts = [];
-
-    buildWorld();
-
-    gameState = "playing";
-
-    menu.style.display = "none";
-
-    if (pauseScreen) {
-        pauseScreen.style.display = "none";
+        if (pointInWall(x, y)) {
+            return true;
+        }
     }
 
-    if (mapScreen) {
-        mapScreen.style.display = "none";
-    }
-
-    spawnInitialEnemies();
-
-    showToast("MISSION STARTED");
-
-    updateHUD();
+    return false;
 }
 
-/* =========================================================
-   SPAWN ENEMIES
-   ========================================================= */
+function nearWall(x, y, distance) {
 
-function spawnInitialEnemies() {
+    for (const wall of walls) {
 
-    enemies = [];
+        const nearestX =
+            clamp(x, wall.x, wall.x + wall.w);
 
-    for (let i = 0; i < 12; i++) {
-        spawnEnemyNearSector(0);
-    }
-}
-
-function randomPositionInSector(sectorIndex) {
-
-    const s = sectors[
-        clamp(sectorIndex, 0, sectors.length - 1)
-    ];
-
-    for (let attempt = 0; attempt < 80; attempt++) {
-
-        const x = rand(s.minX + 90, s.maxX - 90);
-        const y = rand(s.minY + 90, s.maxY - 90);
+        const nearestY =
+            clamp(y, wall.y, wall.y + wall.h);
 
         if (
             Math.hypot(
-                x - player.x,
-                y - player.y
-            ) < 450
+                x - nearestX,
+                y - nearestY
+            ) < distance
+        ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function findOpenPosition(minDistance = 0) {
+
+    for (let attempt = 0; attempt < 100; attempt++) {
+
+        const p = {
+            x: random(150, WORLD_WIDTH - 150),
+            y: random(150, WORLD_HEIGHT - 150)
+        };
+
+        if (collidesAt(p.x, p.y, 25)) {
+            continue;
+        }
+
+        if (
+            player &&
+            Math.hypot(
+                p.x - player.x,
+                p.y - player.y
+            ) < minDistance
         ) {
             continue;
         }
 
-        if (collidesPlayer(x, y)) {
-            continue;
-        }
-
-        let blocked = false;
-
-        for (const wall of walls) {
-            if (circleRectCollision(x, y, 25, wall)) {
-                blocked = true;
-                break;
-            }
-        }
-
-        if (!blocked) {
-            return { x, y };
-        }
+        return p;
     }
 
-    return {
-        x: s.minX + 150,
-        y: s.minY + 150
-    };
-}
-
-function spawnEnemy(type = null, sectorIndex = currentSector) {
-
-    if (!type) {
-
-        const roll = Math.random();
-
-        if (wave >= 8 && roll < 0.08) {
-            type = "brute";
-        } else if (wave >= 5 && roll < 0.16) {
-            type = "sniper";
-        } else if (roll < 0.3) {
-            type = "guardian";
-        } else if (roll < 0.58) {
-            type = "hunter";
-        } else if (roll < 0.75) {
-            type = "drone";
-        } else {
-            type = "scout";
-        }
-    }
-
-    const template = enemyTypes[type];
-
-    if (!template) return;
-
-    const pos = randomPositionInSector(sectorIndex);
-
-    const scale = 1 + (wave - 1) * 0.08;
-
-    enemies.push({
-        id: Math.random(),
-
-        type,
-
-        x: pos.x,
-        y: pos.y,
-
-        radius: template.radius,
-
-        hp: template.hp * scale,
-        maxHp: template.hp * scale,
-
-        speed:
-            template.speed *
-            (1 + Math.min(0.4, wave * 0.015)),
-
-        damage: template.damage,
-
-        color: template.color,
-
-        cooldown: rand(0.2, template.cooldown || 1),
-
-        flash: 0,
-
-        angle: rand(0, Math.PI * 2),
-
-        phase: rand(0, Math.PI * 2),
-
-        alive: true,
-
-        elite: Math.random() < Math.min(0.1, wave * 0.01)
-    });
-}
-
-function spawnEnemyNearSector(sectorIndex) {
-    spawnEnemy(null, sectorIndex);
+    return null;
 }
 
 /* =========================================================
-   BOSS
+   SECTORS
    ========================================================= */
 
-function spawnBoss() {
+let currentSector = 0;
 
-    const sector = sectors[currentSector];
+const discoveredSectors = new Set();
 
-    const x =
-        (sector.minX + sector.maxX) / 2;
+function sectorFromPosition(x, y) {
 
-    const y =
-        (sector.minY + sector.maxY) / 2;
+    const sx = Math.floor(x / 1000);
+    const sy = Math.floor(y / 1000);
 
-    const boss = {
-        id: Math.random(),
+    return sy * 6 + sx;
+}
 
-        type: "boss",
+function sectorName(sector) {
 
+    const names = [
+        "ENTRY ZONE",
+        "DARK INDUSTRIAL",
+        "BROKEN FACILITY",
+        "OVERGROWN SECTOR",
+        "DEAD CHANNEL",
+        "OLD REACTOR",
+        "LOWER COMPLEX",
+        "ECHO FIELDS",
+        "SIGNAL CORRIDOR",
+        "NORTH WASTES",
+        "WESTERN RUINS",
+        "DEEP SIGNAL",
+        "ABANDONED GRID",
+        "RED SECTOR",
+        "FROZEN ARRAY",
+        "LOST COMPLEX"
+    ];
+
+    return names[sector % names.length];
+}
+
+function discoverSector(sector, quiet = false) {
+
+    if (discoveredSectors.has(sector)) {
+        return;
+    }
+
+    discoveredSectors.add(sector);
+
+    if (!quiet) {
+        showMessage(
+            "NIEUW GEBIED: " +
+            sectorName(sector)
+        );
+    }
+
+    spawnSectorEnemies(sector);
+}
+
+/* =========================================================
+   ENEMIES
+   ========================================================= */
+
+const enemyTypes = {
+
+    scout: {
+        hp: 55,
+        speed: 85,
+        radius: 18,
+        damage: 8,
+        fireRate: 2.2,
+        range: 450,
+        color: "#7bdcff",
+        reward: 20
+    },
+
+    hunter: {
+        hp: 85,
+        speed: 105,
+        radius: 20,
+        damage: 11,
+        fireRate: 1.7,
+        range: 500,
+        color: "#bd91ff",
+        reward: 35
+    },
+
+    guardian: {
+        hp: 180,
+        speed: 55,
+        radius: 27,
+        damage: 18,
+        fireRate: 2.5,
+        range: 550,
+        color: "#ffb46e",
+        reward: 70
+    },
+
+    sniper: {
+        hp: 70,
+        speed: 45,
+        radius: 17,
+        damage: 28,
+        fireRate: 3.8,
+        range: 850,
+        color: "#ff779c",
+        reward: 90
+    },
+
+    brute: {
+        hp: 330,
+        speed: 42,
+        radius: 35,
+        damage: 25,
+        fireRate: 3.2,
+        range: 450,
+        color: "#ff884f",
+        reward: 130
+    },
+
+    drone: {
+        hp: 100,
+        speed: 145,
+        radius: 16,
+        damage: 10,
+        fireRate: 1.4,
+        range: 480,
+        color: "#7dffb2",
+        reward: 60
+    }
+};
+
+let enemies = [];
+
+function chooseEnemyType() {
+
+    const level =
+        player ? player.level : 1;
+
+    const roll = Math.random();
+
+    if (level >= 8 && roll < .08)
+        return "brute";
+
+    if (level >= 5 && roll < .18)
+        return "sniper";
+
+    if (level >= 4 && roll < .32)
+        return "guardian";
+
+    if (roll < .55)
+        return "hunter";
+
+    if (roll < .75)
+        return "drone";
+
+    return "scout";
+}
+
+function createEnemy(x, y, typeName) {
+
+    const type =
+        enemyTypes[typeName] ||
+        enemyTypes.scout;
+
+    const difficulty =
+        1 + Math.max(
+            0,
+            currentSector * .025
+        );
+
+    return {
         x,
         y,
 
-        radius: 70,
+        radius: type.radius,
 
-        hp: 2200 + wave * 180,
-        maxHp: 2200 + wave * 180,
+        type: typeName,
 
-        speed: 55,
+        hp: type.hp * difficulty,
+        maxHp: type.hp * difficulty,
 
-        damage: 32,
+        speed: type.speed * (
+            1 + Math.min(.3, currentSector * .005)
+        ),
 
-        color: "#ff5577",
+        damage: type.damage * difficulty,
 
-        cooldown: 0.5,
+        fireRate: type.fireRate,
 
-        flash: 0,
+        shootCd: random(0.5, 2.5),
 
-        phase: 0,
+        color: type.color,
 
-        alive: true,
+        reward: Math.floor(
+            type.reward * difficulty
+        ),
 
-        boss: true
+        angle: random(0, Math.PI * 2),
+
+        wanderAngle: random(
+            0,
+            Math.PI * 2
+        ),
+
+        wanderTimer: random(1, 4),
+
+        hitFlash: 0,
+
+        dead: false
     };
+}
 
-    enemies.push(boss);
+/*
+    BELANGRIJK:
 
-    bossBar.style.display = "block";
+    Monsters worden niet alleen bij het starten
+    van de game gemaakt.
 
-    soundBoss();
+    Wanneer de speler naar een nieuwe sector loopt,
+    worden daar automatisch nieuwe monsters geplaatst.
+*/
 
-    showToast("WARNING — HOSTILE SIGNAL DETECTED");
+function spawnSectorEnemies(sector) {
 
-    unlockAchievement("bossHunter");
+    if (!player) return;
+
+    const existingNearby =
+        enemies.filter(e => {
+            return (
+                Math.floor(e.x / 1000) +
+                Math.floor(e.y / 1000) * 6
+            ) === sector;
+        }).length;
+
+    const targetCount =
+        clamp(
+            5 + Math.floor(player.level * .8),
+            5,
+            12
+        );
+
+    const amount =
+        Math.max(
+            0,
+            targetCount - existingNearby
+        );
+
+    for (let i = 0; i < amount; i++) {
+
+        const position =
+            findSpawnNearPlayerForSector(
+                sector
+            );
+
+        if (!position) continue;
+
+        enemies.push(
+            createEnemy(
+                position.x,
+                position.y,
+                chooseEnemyType()
+            )
+        );
+    }
+}
+
+function findSpawnNearPlayerForSector(sector) {
+
+    const sx = sector % 6;
+    const sy = Math.floor(sector / 6);
+
+    const minX = sx * 1000 + 100;
+    const maxX = Math.min(
+        WORLD_WIDTH - 100,
+        sx * 1000 + 900
+    );
+
+    const minY = sy * 1000 + 100;
+    const maxY = Math.min(
+        WORLD_HEIGHT - 100,
+        sy * 1000 + 900
+    );
+
+    for (let attempt = 0; attempt < 100; attempt++) {
+
+        const p = {
+            x: random(minX, maxX),
+            y: random(minY, maxY)
+        };
+
+        if (collidesAt(p.x, p.y, 30))
+            continue;
+
+        if (Math.hypot(
+            p.x - player.x,
+            p.y - player.y
+        ) < SPAWN_MIN_DISTANCE)
+            continue;
+
+        if (Math.hypot(
+            p.x - player.x,
+            p.y - player.y
+        ) > SPAWN_MAX_DISTANCE)
+            continue;
+
+        if (lineBlocked(
+            player.x,
+            player.y,
+            p.x,
+            p.y
+        )) {
+            /*
+               Monsters mogen achter muren
+               verschijnen. Dat voorkomt dat
+               ze recht voor je neus verschijnen.
+            */
+        }
+
+        return p;
+    }
+
+    return null;
+}
+
+/*
+   Dit zorgt ervoor dat als de speler ver weg loopt,
+   de game monsters blijft genereren.
+*/
+
+function maintainDistantEnemies() {
+
+    if (!player) return;
+
+    if (enemies.length >= MAX_ENEMIES)
+        return;
+
+    const sector =
+        sectorFromPosition(
+            player.x,
+            player.y
+        );
+
+    discoverSector(sector);
+
+    /*
+       Niet alleen de huidige sector.
+       Ook aangrenzende gebieden kunnen
+       alvast vijanden bevatten.
+    */
+
+    const sx = sector % 6;
+    const sy = Math.floor(sector / 6);
+
+    for (let oy = -1; oy <= 1; oy++) {
+
+        for (let ox = -1; ox <= 1; ox++) {
+
+            const nx = sx + ox;
+            const ny = sy + oy;
+
+            if (
+                nx < 0 ||
+                ny < 0 ||
+                nx >= 6 ||
+                ny >= 5
+            ) {
+                continue;
+            }
+
+            const nearbySector =
+                ny * 6 + nx;
+
+            if (
+                nearbySector !== sector &&
+                Math.random() > .35
+            ) {
+                continue;
+            }
+
+            const count =
+                enemies.filter(e =>
+                    sectorFromPosition(
+                        e.x,
+                        e.y
+                    ) === nearbySector
+                ).length;
+
+            if (count < 3) {
+
+                const position =
+                    findSpawnNearPlayerForSector(
+                        nearbySector
+                    );
+
+                if (position) {
+
+                    enemies.push(
+                        createEnemy(
+                            position.x,
+                            position.y,
+                            chooseEnemyType()
+                        )
+                    );
+                }
+            }
+        }
+    }
+}
+
+/* =========================================================
+   PROJECTILES
+   ========================================================= */
+
+let bullets = [];
+let enemyBullets = [];
+
+function shoot() {
+
+    if (!player) return;
+
+    if (state !== "playing") return;
+
+    if (reloadTimer > 0) return;
+
+    const weapon = currentWeapon();
+
+    if (weapon.ammo <= 0) {
+
+        sound("hit");
+        reload();
+
+        return;
+    }
+
+    if (fireCooldown > 0) return;
+
+    weapon.ammo--;
+
+    player.shots++;
+
+    fireCooldown =
+        weapon.fireRate;
+
+    const worldMouse =
+        screenToWorld(
+            mouseX,
+            mouseY
+        );
+
+    const baseAngle =
+        Math.atan2(
+            worldMouse.y - player.y,
+            worldMouse.x - player.x
+        );
+
+    player.angle = baseAngle;
+
+    const damageMultiplier =
+        1 + player.damageBoost;
+
+    for (
+        let i = 0;
+        i < weapon.pellets;
+        i++
+    ) {
+
+        const angle =
+            baseAngle +
+            random(
+                -weapon.spread,
+                weapon.spread
+            );
+
+        bullets.push({
+            x: player.x +
+                Math.cos(angle) * 24,
+
+            y: player.y +
+                Math.sin(angle) * 24,
+
+            vx: Math.cos(angle) *
+                weapon.speed,
+
+            vy: Math.sin(angle) *
+                weapon.speed,
+
+            damage:
+                weapon.damage *
+                damageMultiplier,
+
+            life: 1.5,
+
+            radius:
+                weapon.id === "rail"
+                    ? 4
+                    : 3,
+
+            color:
+                weapon.color,
+
+            weapon:
+                weapon.id
+        });
+    }
+
+    sound("shoot");
+}
+
+function enemyShoot(enemy) {
+
+    if (!player) return;
+
+    const angle =
+        Math.atan2(
+            player.y - enemy.y,
+            player.x - enemy.x
+        );
+
+    enemyBullets.push({
+        x: enemy.x,
+        y: enemy.y,
+
+        vx: Math.cos(angle) * 330,
+        vy: Math.sin(angle) * 330,
+
+        damage: enemy.damage,
+
+        life: 2.5,
+
+        radius: 5,
+
+        color: enemy.color
+    });
 }
 
 /* =========================================================
    PICKUPS
    ========================================================= */
 
-function spawnPickup(x, y, type = null) {
+let pickups = [];
 
-    if (!type) {
+const inventoryDefaults = {
+    medkits: 2,
+    energyCells: 3,
+    scrap: 0,
+    keys: 0
+};
 
-        const roll = Math.random();
+let inventory = {
+    ...inventoryDefaults
+};
 
-        if (roll < 0.25) {
-            type = "credits";
-        } else if (roll < 0.45) {
-            type = "health";
-        } else if (roll < 0.65) {
-            type = "energy";
-        } else if (roll < 0.8) {
-            type = "armor";
-        } else if (roll < 0.92) {
-            type = "xp";
-        } else {
-            type = "weapon";
-        }
-    }
+function spawnPickup(x, y, type, amount = 1) {
 
     pickups.push({
         x,
         y,
         type,
-        amount:
-            type === "credits" ? randi(15, 60) :
-            type === "xp" ? randi(20, 50) :
-            1,
-
+        amount,
         life: 30,
-        phase: rand(0, Math.PI * 2)
+        pulse: random(0, 10)
     });
 }
 
 function collectPickup(pickup) {
 
-    if (pickup.type === "credits") {
-
+    if (pickup.type === "credit") {
         player.credits += pickup.amount;
-
-        if (player.credits >= 1000) {
-            unlockAchievement("rich");
-        }
-
-        showToast("+" + pickup.amount + " CREDITS");
     }
 
-    if (pickup.type === "health") {
-
-        player.health = Math.min(
-            player.maxHealth,
-            player.health + 30
-        );
-
-        showToast("HEALTH RESTORED");
+    if (pickup.type === "medkit") {
+        inventory.medkits += pickup.amount;
     }
 
     if (pickup.type === "energy") {
+        inventory.energyCells += pickup.amount;
+    }
 
-        player.energy = Math.min(
-            player.maxEnergy,
-            player.energy + 35
+    if (pickup.type === "scrap") {
+        inventory.scrap += pickup.amount;
+    }
+
+    sound("pickup");
+
+    pickups =
+        pickups.filter(
+            p => p !== pickup
         );
 
-        showToast("ENERGY RESTORED");
-    }
-
-    if (pickup.type === "armor") {
-
-        player.inventory.armorPlate++;
-
-        showToast("ARMOR PLATE");
-    }
-
-    if (pickup.type === "xp") {
-
-        gainXP(pickup.amount);
-    }
-
-    if (pickup.type === "weapon") {
-
-        unlockRandomWeapon();
-    }
-
-    soundPickup();
-}
-
-/* =========================================================
-   WEAPON UNLOCK
-   ========================================================= */
-
-function unlockRandomWeapon() {
-
-    const locked = Object.keys(
-        player.weaponsUnlocked
-    ).filter(k => !player.weaponsUnlocked[k]);
-
-    if (locked.length === 0) {
-        player.credits += 100;
-        showToast("+100 CREDITS");
-        return;
-    }
-
-    const weapon = locked[
-        randi(0, locked.length - 1)
-    ];
-
-    player.weaponsUnlocked[weapon] = true;
-
-    showToast(
-        "WEAPON UNLOCKED: " +
-        weapons[weapon].name
-    );
-
-    const allUnlocked = Object.values(
-        player.weaponsUnlocked
-    ).every(Boolean);
-
-    if (allUnlocked) {
-        unlockAchievement("arsenal");
-    }
-}
-
-/* =========================================================
-   XP
-   ========================================================= */
-
-function gainXP(amount) {
-
-    player.xp += amount;
-
-    while (player.xp >= player.nextXP) {
-
-        player.xp -= player.nextXP;
-
-        player.level++;
-
-        player.nextXP =
-            Math.floor(player.nextXP * 1.28);
-
-        player.maxHealth += 5;
-        player.maxEnergy += 5;
-
-        player.health = player.maxHealth;
-        player.energy = player.maxEnergy;
-
-        showToast(
-            "LEVEL UP — LEVEL " +
-            player.level
-        );
-
-        soundLevel();
-
-        if (player.level >= 5) {
-            unlockAchievement("levelFive");
-        }
-    }
-}
-
-/* =========================================================
-   SHOOTING
-   ========================================================= */
-
-function shoot() {
-
-    if (gameState !== "playing") return;
-
-    const weapon = weapons[player.weapon];
-
-    if (!weapon) return;
-
-    if (player.fireCooldown > 0) return;
-
-    if (player.energy < weapon.energy) {
-        showToast("NOT ENOUGH ENERGY");
-        player.fireCooldown = 0.2;
-        return;
-    }
-
-    player.energy -= weapon.energy;
-
-    player.fireCooldown = weapon.cooldown;
-
-    const worldMouseX =
-        mouse.x + camera.x;
-
-    const worldMouseY =
-        mouse.y + camera.y;
-
-    const baseAngle = Math.atan2(
-        worldMouseY - player.y,
-        worldMouseX - player.x
-    );
-
-    for (let i = 0; i < weapon.bullets; i++) {
-
-        const angle =
-            baseAngle +
-            rand(
-                -weapon.spread,
-                weapon.spread
-            );
-
-        bullets.push({
-            x: player.x,
-            y: player.y,
-
-            vx: Math.cos(angle) * weapon.speed,
-            vy: Math.sin(angle) * weapon.speed,
-
-            damage:
-                weapon.damage +
-                player.upgrades.damage * 5,
-
-            size: weapon.size,
-
-            color: weapon.color,
-
-            life: 1.6,
-
-            rail: player.weapon === "rail",
-
-            plasma:
-                player.weapon === "plasma"
-        });
-    }
-
-    createMuzzleFlash(
-        player.x +
-        Math.cos(baseAngle) * 20,
-        player.y +
-        Math.sin(baseAngle) * 20,
-        weapon.color
-    );
-
-    soundShoot();
-}
-
-/* =========================================================
-   ENEMY SHOOTING
-   ========================================================= */
-
-function enemyShoot(enemy) {
-
-    const a = angleTo(enemy, player);
-
-    const speed =
-        enemy.boss ? 360 :
-        enemy.type === "sniper" ? 520 :
-        enemy.type === "guardian" ? 360 :
-        300;
-
-    enemyBullets.push({
-        x: enemy.x,
-        y: enemy.y,
-
-        vx: Math.cos(a) * speed,
-        vy: Math.sin(a) * speed,
-
-        damage:
-            enemy.boss ? 24 :
-            enemy.damage,
-
-        size:
-            enemy.boss ? 8 : 5,
-
-        color:
-            enemy.boss ? "#ff6688" : enemy.color,
-
-        life: 4
-    });
+    updateAchievements();
 }
 
 /* =========================================================
    PARTICLES
    ========================================================= */
 
-function addParticle(p) {
+let particles = [];
 
-    if (particles.length >= MAX_PARTICLES) {
-        particles.shift();
-    }
+function particle(
+    x,
+    y,
+    color,
+    count = 5,
+    speed = 80
+) {
 
-    particles.push(p);
-}
+    for (let i = 0; i < count; i++) {
 
-function createMuzzleFlash(x, y, color) {
+        if (particles.length >= MAX_PARTICLES)
+            particles.shift();
 
-    for (let i = 0; i < 9; i++) {
+        const angle =
+            random(0, Math.PI * 2);
 
-        addParticle({
+        const velocity =
+            random(speed * .3, speed);
+
+        particles.push({
             x,
             y,
 
-            vx: rand(-90, 90),
-            vy: rand(-90, 90),
+            vx:
+                Math.cos(angle) *
+                velocity,
 
-            size: rand(2, 6),
+            vy:
+                Math.sin(angle) *
+                velocity,
 
-            life: rand(.12, .3),
-            maxLife: .3,
+            life: random(.25, .7),
+
+            maxLife: .7,
+
+            size: random(2, 6),
 
             color
         });
     }
-
-    camera.shake =
-        Math.min(9, camera.shake + 2);
-}
-
-function createExplosion(x, y, color = "#8fdcff") {
-
-    for (let i = 0; i < 30; i++) {
-
-        const a = rand(0, Math.PI * 2);
-        const speed = rand(30, 260);
-
-        addParticle({
-            x,
-            y,
-
-            vx: Math.cos(a) * speed,
-            vy: Math.sin(a) * speed,
-
-            size: rand(2, 7),
-
-            life: rand(.3, .9),
-            maxLife: .9,
-
-            color
-        });
-    }
-
-    camera.shake =
-        Math.min(16, camera.shake + 5);
 }
 
 /* =========================================================
-   DAMAGE
+   WEATHER
    ========================================================= */
 
-function damagePlayer(amount) {
+let weather = "clear";
 
-    if (player.invincible > 0) return;
+let weatherTimer = 0;
 
-    let damage = amount;
+let rain = [];
 
-    if (player.armor > 0) {
+function changeWeather() {
 
-        const absorbed =
-            Math.min(
-                player.armor,
-                damage * 0.45
-            );
+    const options = [
+        "clear",
+        "fog",
+        "rain"
+    ];
 
-        player.armor -= absorbed;
-        damage -= absorbed;
-    }
+    weather =
+        options[
+            randomInt(
+                0,
+                options.length - 1
+            )
+        ];
 
-    damage *= 1 -
-        Math.min(
-            0.35,
-            player.upgrades.armor * 0.03
-        );
+    document.getElementById(
+        "weatherText"
+    ).textContent =
+        weather.toUpperCase();
 
-    player.health -= damage;
+    if (weather === "rain") {
 
-    player.invincible = 0.35;
+        rain = [];
 
-    camera.shake =
-        Math.min(
-            15,
-            camera.shake + 5
-        );
+        for (let i = 0; i < 250; i++) {
 
-    soundHit();
-
-    if (player.health <= 0) {
-
-        player.health = 0;
-
-        gameOver();
+            rain.push({
+                x: random(0, W),
+                y: random(0, H),
+                speed: random(500, 850)
+            });
+        }
+    } else {
+        rain = [];
     }
 }
 
 /* =========================================================
-   ENEMY DEATH
+   MISSION
    ========================================================= */
 
-function killEnemy(enemy) {
+const mission = {
+    signalFound: false,
+    killsNeeded: 8,
+    kills: 0
+};
 
-    if (!enemy.alive) return;
+function updateMission() {
 
-    enemy.alive = false;
+    if (!player) return;
 
-    player.kills++;
-
-    missionProgress++;
-
-    player.credits +=
-        enemy.boss ? 400 :
-        enemy.type === "brute" ? 60 :
-        enemy.type === "guardian" ? 45 :
-        20;
-
-    gainXP(
-        enemy.boss ? 500 :
-        enemy.type === "brute" ? 80 :
-        35
-    );
-
-    createExplosion(
-        enemy.x,
-        enemy.y,
-        enemy.color
-    );
-
-    if (Math.random() < 0.7) {
-        spawnPickup(
-            enemy.x,
-            enemy.y
-        );
-    }
-
-    if (player.kills >= 1) {
-        unlockAchievement("firstEcho");
-    }
-
-    if (player.kills >= 10) {
-        unlockAchievement("tenEchoes");
-    }
-
-    if (player.kills >= 50) {
-        unlockAchievement("fiftyEchoes");
-    }
-
-    if (enemy.boss) {
-
-        bossBar.style.display = "none";
-
-        player.signalFound = true;
-
-        unlockAchievement("signal");
-
-        showToast(
-            "BOSS DEFEATED — SIGNAL RECOVERED"
-        );
-
-        createBeacon(
-            enemy.x,
-            enemy.y
-        );
-
-        if (currentSector >= 8) {
-
-            player.finalBossDefeated = true;
-
-            unlockAchievement("source");
-
-            victory();
-        }
-    }
-}
-
-/* =========================================================
-   BULLET UPDATE
-   ========================================================= */
-
-function updateBullets(dt) {
-
-    for (let i = bullets.length - 1; i >= 0; i--) {
-
-        const b = bullets[i];
-
-        b.x += b.vx * dt;
-        b.y += b.vy * dt;
-
-        b.life -= dt;
-
-        let remove = false;
-
-        for (const wall of solidWalls()) {
-
-            if (
-                pointInRect(
-                    b.x,
-                    b.y,
-                    wall
-                )
-            ) {
-
-                createExplosion(
-                    b.x,
-                    b.y,
-                    b.color
-                );
-
-                remove = true;
-                break;
-            }
-        }
-
-        if (remove) {
-            bullets.splice(i, 1);
-            continue;
-        }
-
-        for (const enemy of enemies) {
-
-            if (!enemy.alive) continue;
-
-            const dx =
-                b.x - enemy.x;
-
-            const dy =
-                b.y - enemy.y;
-
-            const r =
-                enemy.radius + b.size;
-
-            if (
-                dx * dx +
-                dy * dy <
-                r * r
-            ) {
-
-                enemy.hp -= b.damage;
-
-                enemy.flash = 0.1;
-
-                floatingTexts.push({
-                    x: enemy.x,
-                    y: enemy.y - enemy.radius,
-                    text: "-" + Math.round(b.damage),
-                    life: .7
-                });
-
-                createMuzzleFlash(
-                    b.x,
-                    b.y,
-                    b.color
-                );
-
-                if (enemy.hp <= 0) {
-                    killEnemy(enemy);
-                }
-
-                remove = true;
-                break;
-            }
-        }
-
-        if (
-            b.life <= 0 ||
-            b.x < 0 ||
-            b.y < 0 ||
-            b.x > WORLD.width ||
-            b.y > WORLD.height
-        ) {
-            remove = true;
-        }
-
-        if (remove) {
-            bullets.splice(i, 1);
-        }
-    }
-}
-
-/* =========================================================
-   ENEMY BULLET UPDATE
-   ========================================================= */
-
-function updateEnemyBullets(dt) {
-
-    for (
-        let i = enemyBullets.length - 1;
-        i >= 0;
-        i--
+    if (
+        !mission.signalFound &&
+        mission.kills >=
+        mission.killsNeeded
     ) {
 
-        const b = enemyBullets[i];
+        objectiveElement.textContent =
+            "OBJECTIVE: FIND THE SIGNAL";
+    }
 
-        b.x += b.vx * dt;
-        b.y += b.vy * dt;
+    if (
+        mission.signalFound
+    ) {
+        objectiveElement.textContent =
+            "SIGNAL SECURED";
+    } else {
+        objectiveElement.textContent =
+            "DEFEAT ECHOES: " +
+            mission.kills +
+            "/" +
+            mission.killsNeeded;
+    }
+}
 
-        b.life -= dt;
+function checkBeacons() {
 
-        let remove = false;
+    if (!player || mission.signalFound)
+        return;
 
-        for (const wall of solidWalls()) {
+    for (const beacon of beacons) {
+
+        if (
+            Math.hypot(
+                player.x - beacon.x,
+                player.y - beacon.y
+            ) < 70
+        ) {
 
             if (
-                pointInRect(
-                    b.x,
-                    b.y,
-                    wall
-                )
-            ) {
-                remove = true;
-                break;
-            }
-        }
-
-        if (!remove) {
-
-            const dx =
-                b.x - player.x;
-
-            const dy =
-                b.y - player.y;
-
-            if (
-                dx * dx +
-                dy * dy <
-                (player.w / 2 + b.size) ** 2
+                mission.kills >=
+                mission.killsNeeded
             ) {
 
-                damagePlayer(b.damage);
+                mission.signalFound = true;
+                beacon.active = true;
 
-                remove = true;
+                unlockAchievement("signal");
+
+                state = "victory";
+
+                showVictory();
+
+                sound("level");
+
+                return;
             }
-        }
-
-        if (b.life <= 0) {
-            remove = true;
-        }
-
-        if (remove) {
-            enemyBullets.splice(i, 1);
         }
     }
 }
 
 /* =========================================================
-   ENEMY UPDATE
+   CHESTS / INTERACTION
    ========================================================= */
 
-function updateEnemies(dt) {
+function interact() {
 
-    for (const enemy of enemies) {
+    if (!player || state !== "playing")
+        return;
 
-        if (!enemy.alive) continue;
+    /*
+       DEUREN
+    */
 
-        enemy.phase += dt;
+    for (const door of doors) {
 
-        if (enemy.flash > 0) {
-            enemy.flash -= dt;
+        if (
+            Math.hypot(
+                player.x -
+                (door.x + door.w / 2),
+
+                player.y -
+                (door.y + door.h / 2)
+            ) < 100
+        ) {
+
+            door.open = !door.open;
+
+            showMessage(
+                door.open
+                    ? "DEUR GEOPEND"
+                    : "DEUR GESLOTEN"
+            );
+
+            sound("pickup");
+
+            return;
         }
+    }
 
-        const dx =
-            player.x - enemy.x;
+    /*
+       CHESTS
+    */
 
-        const dy =
-            player.y - enemy.y;
+    for (const chest of chests) {
 
-        const dist =
-            Math.hypot(dx, dy);
+        if (chest.opened) continue;
 
-        if (dist > 1) {
+        if (
+            Math.hypot(
+                player.x - chest.x,
+                player.y - chest.y
+            ) < 85
+        ) {
 
-            let desiredAngle =
-                Math.atan2(dy, dx);
+            chest.opened = true;
 
-            if (enemy.type === "sniper") {
+            const reward =
+                randomInt(30, 120);
 
-                if (dist < 600) {
-                    desiredAngle += Math.PI;
-                }
+            player.credits += reward;
 
-            } else if (enemy.type === "brute") {
+            inventory.scrap +=
+                randomInt(2, 8);
 
-                desiredAngle =
-                    Math.atan2(dy, dx);
+            if (chance(.25)) {
+                inventory.medkits++;
+            }
+
+            particle(
+                chest.x,
+                chest.y,
+                "#ffd36b",
+                20,
+                150
+            );
+
+            showMessage(
+                "KIST: +" +
+                reward +
+                " CREDITS"
+            );
+
+            sound("pickup");
+
+            return;
+        }
+    }
+
+    /*
+       TERMINALS
+    */
+
+    for (const terminal of terminals) {
+
+        if (
+            Math.hypot(
+                player.x - terminal.x,
+                player.y - terminal.y
+            ) < 85
+        ) {
+
+            if (!terminal.used) {
+
+                terminal.used = true;
+
+                player.xp += 35;
+
+                inventory.energyCells++;
+
+                showMessage(
+                    "TERMINAL GEACTIVEERD +35 XP"
+                );
+
+                sound("pickup");
+
+                checkLevelUp();
 
             } else {
 
-                desiredAngle +=
-                    Math.sin(
-                        worldTime * 1.5 +
-                        enemy.phase
-                    ) * 0.15;
+                showMessage(
+                    "TERMINAL AL GEBRUIKT"
+                );
             }
 
-            const speed =
-                enemy.speed *
-                (enemy.boss ? 0.8 : 1);
-
-            const vx =
-                Math.cos(desiredAngle) *
-                speed *
-                dt;
-
-            const vy =
-                Math.sin(desiredAngle) *
-                speed *
-                dt;
-
-            const oldX = enemy.x;
-            const oldY = enemy.y;
-
-            enemy.x += vx;
-
-            if (
-                circleHitsWalls(
-                    enemy.x,
-                    enemy.y,
-                    enemy.radius
-                )
-            ) {
-                enemy.x = oldX;
-            }
-
-            enemy.y += vy;
-
-            if (
-                circleHitsWalls(
-                    enemy.x,
-                    enemy.y,
-                    enemy.radius
-                )
-            ) {
-                enemy.y = oldY;
-            }
+            return;
         }
-
-        enemy.cooldown -= dt;
-
-        if (
-            enemy.cooldown <= 0 &&
-            enemy.type !== "brute"
-        ) {
-
-            if (
-                dist < 950 &&
-                !lineBlocked(
-                    enemy.x,
-                    enemy.y,
-                    player.x,
-                    player.y
-                )
-            ) {
-
-                enemyShoot(enemy);
-
-                enemy.cooldown =
-                    enemy.boss
-                        ? rand(.35, .8)
-                        : enemyTypes[enemy.type].cooldown;
-            }
-        }
-
-        if (
-            dist <
-            enemy.radius +
-            player.w / 2
-        ) {
-
-            damagePlayer(
-                enemy.damage * dt
-            );
-        }
-
-        if (enemy.boss) {
-            updateBoss(enemy, dt);
-        }
-    }
-
-    enemies =
-        enemies.filter(e => e.alive);
-
-    const desiredEnemyCount =
-        10 + Math.min(18, wave * 2);
-
-    if (
-        enemies.length <
-        desiredEnemyCount &&
-        Math.random() < dt * 0.7
-    ) {
-
-        spawnEnemy(
-            null,
-            currentSector
-        );
-    }
-}
-
-function circleHitsWalls(x, y, radius) {
-
-    for (const wall of solidWalls()) {
-
-        if (
-            circleRectCollision(
-                x,
-                y,
-                radius,
-                wall
-            )
-        ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-/* =========================================================
-   BOSS UPDATE
-   ========================================================= */
-
-function updateBoss(boss, dt) {
-
-    boss.phase += dt;
-
-    if (
-        Math.floor(boss.phase) %
-        4 === 0
-    ) {
-
-        if (
-            Math.random() <
-            dt * 0.8
-        ) {
-
-            for (let i = 0; i < 8; i++) {
-
-                const angle =
-                    (Math.PI * 2 / 8) * i;
-
-                enemyBullets.push({
-                    x: boss.x,
-                    y: boss.y,
-
-                    vx: Math.cos(angle) * 250,
-                    vy: Math.sin(angle) * 250,
-
-                    damage: 15,
-
-                    size: 7,
-
-                    color: "#ff7b9c",
-
-                    life: 3
-                });
-            }
-        }
-    }
-
-    bossBar.style.display = "block";
-
-    const inner =
-        document.getElementById("bossBarInner");
-
-    const name =
-        document.getElementById("bossName");
-
-    if (inner) {
-        inner.style.width =
-            clamp(
-                boss.hp / boss.maxHp * 100,
-                0,
-                100
-            ) + "%";
-    }
-
-    if (name) {
-        name.textContent =
-            "HOSTILE SIGNAL — " +
-            Math.round(boss.hp) +
-            " HP";
     }
 }
 
 /* =========================================================
-   PLAYER UPDATE
+   PLAYER MOVEMENT
    ========================================================= */
 
 function updatePlayer(dt) {
 
-    let dx = 0;
-    let dy = 0;
+    if (!player) return;
 
-    if (keys.KeyW || keys.w) dy -= 1;
-    if (keys.KeyS || keys.s) dy += 1;
-    if (keys.KeyA || keys.a) dx -= 1;
-    if (keys.KeyD || keys.d) dx += 1;
+    if (state !== "playing") return;
 
-    const length =
-        Math.hypot(dx, dy);
+    let moveX = 0;
+    let moveY = 0;
 
-    if (length > 0) {
+    /*
+       BELANGRIJKE FIX:
 
-        dx /= length;
-        dy /= length;
+       We controleren zowel event.code
+       als de normale letter.
+    */
 
-        const speed =
-            player.speed +
-            player.upgrades.speed * 18;
+    if (
+        down(
+            "KeyW",
+            "w",
+            "ArrowUp"
+        )
+    ) {
+        moveY -= 1;
+    }
 
-        movePlayer(
-            dx * speed * dt,
-            dy * speed * dt
-        );
+    if (
+        down(
+            "KeyS",
+            "s",
+            "ArrowDown"
+        )
+    ) {
+        moveY += 1;
+    }
 
-        const travelled =
-            Math.hypot(
-                player.x - player.lastX,
-                player.y - player.lastY
+    if (
+        down(
+            "KeyA",
+            "a",
+            "ArrowLeft"
+        )
+    ) {
+        moveX -= 1;
+    }
+
+    if (
+        down(
+            "KeyD",
+            "d",
+            "ArrowRight"
+        )
+    ) {
+        moveX += 1;
+    }
+
+    if (moveX !== 0 || moveY !== 0) {
+
+        const direction =
+            normalize(
+                moveX,
+                moveY
             );
 
-        player.visitedDistance +=
-            travelled;
+        let speed =
+            player.speed *
+            (1 + player.speedBoost);
 
-        player.lastX = player.x;
-        player.lastY = player.y;
+        if (player.dashTimer > 0) {
+            speed *= 4.5;
+        }
 
-        if (player.visitedDistance >= 5000) {
-            unlockAchievement("explorer");
+        const oldX = player.x;
+        const oldY = player.y;
+
+        moveWithCollision(
+            player,
+            direction.x *
+            speed *
+            dt,
+
+            direction.y *
+            speed *
+            dt
+        );
+
+        const moved =
+            Math.hypot(
+                player.x - oldX,
+                player.y - oldY
+            );
+
+        meta.totalDistance += moved;
+
+        player.dashes += moved;
+
+        if (moved > 0) {
+            player.angle =
+                Math.atan2(
+                    direction.y,
+                    direction.x
+                );
         }
     }
 
-    if (player.fireCooldown > 0) {
-        player.fireCooldown -= dt;
+    /*
+       ENERGY
+    */
+
+    player.energy =
+        clamp(
+            player.energy +
+            player.energyRegen * dt,
+            0,
+            player.maxEnergy
+        );
+
+    /*
+       DASH
+    */
+
+    if (
+        down("Space") &&
+        player.dashCooldown <= 0 &&
+        player.energy >= 30
+    ) {
+
+        let dx = 0;
+        let dy = 0;
+
+        if (
+            down("KeyW","w","ArrowUp")
+        ) dy--;
+
+        if (
+            down("KeyS","s","ArrowDown")
+        ) dy++;
+
+        if (
+            down("KeyA","a","ArrowLeft")
+        ) dx--;
+
+        if (
+            down("KeyD","d","ArrowRight")
+        ) dx++;
+
+        if (dx === 0 && dy === 0) {
+
+            const target =
+                screenToWorld(
+                    mouseX,
+                    mouseY
+                );
+
+            const d =
+                normalize(
+                    target.x - player.x,
+                    target.y - player.y
+                );
+
+            dx = d.x;
+            dy = d.y;
+
+        } else {
+
+            const d =
+                normalize(dx, dy);
+
+            dx = d.x;
+            dy = d.y;
+        }
+
+        player.energy -= 30;
+        player.dashCooldown = 1;
+        player.dashTimer = .16;
+        player.invulnerable = .25;
+
+        moveWithCollision(
+            player,
+            dx * 130,
+            dy * 130
+        );
+
+        particle(
+            player.x,
+            player.y,
+            "#74dfff",
+            25,
+            170
+        );
+
+        sound("dash");
     }
 
     if (player.dashCooldown > 0) {
@@ -2684,444 +2752,770 @@ function updatePlayer(dt) {
         player.dashTimer -= dt;
     }
 
-    if (player.invincible > 0) {
-        player.invincible -= dt;
+    if (player.invulnerable > 0) {
+        player.invulnerable -= dt;
     }
 
-    player.energy =
-        Math.min(
-            player.maxEnergy,
-            player.energy + dt * 7
-        );
-
-    if (mouse.down) {
-        shoot();
-    }
-
-    if (keys.Space) {
-        keys.Space = false;
-        dash();
+    if (player.flash > 0) {
+        player.flash -= dt;
     }
 }
 
 /* =========================================================
-   DASH
+   CAMERA
    ========================================================= */
 
-function dash() {
+const camera = {
+    x: 0,
+    y: 0
+};
 
-    if (gameState !== "playing") return;
+function updateCamera() {
 
-    if (player.dashCooldown > 0) return;
+    if (!player) return;
 
-    if (player.energy < 18) return;
+    const targetX =
+        player.x - W / 2;
 
-    let dx = 0;
-    let dy = 0;
+    const targetY =
+        player.y - H / 2;
 
-    if (keys.KeyW) dy--;
-    if (keys.KeyS) dy++;
-    if (keys.KeyA) dx--;
-    if (keys.KeyD) dx++;
-
-    if (dx === 0 && dy === 0) {
-
-        const worldMouseX =
-            mouse.x + camera.x;
-
-        const worldMouseY =
-            mouse.y + camera.y;
-
-        const a =
-            Math.atan2(
-                worldMouseY - player.y,
-                worldMouseX - player.x
-            );
-
-        dx = Math.cos(a);
-        dy = Math.sin(a);
-
-    } else {
-
-        const l = Math.hypot(dx, dy);
-
-        dx /= l;
-        dy /= l;
-    }
-
-    const distance =
-        150 +
-        player.upgrades.dash * 35;
-
-    const steps = 12;
-
-    for (let i = 0; i < steps; i++) {
-
-        movePlayer(
-            dx * distance / steps,
-            dy * distance / steps
-        );
-    }
-
-    player.energy -= 18;
-    player.dashCooldown =
-        Math.max(
-            0.7,
-            2.3 -
-            player.upgrades.dash * .25
+    camera.x =
+        lerp(
+            camera.x,
+            targetX,
+            .12
         );
 
-    player.invincible = .35;
+    camera.y =
+        lerp(
+            camera.y,
+            targetY,
+            .12
+        );
 
-    createExplosion(
-        player.x,
-        player.y,
-        "#72d7ff"
-    );
+    camera.x =
+        clamp(
+            camera.x,
+            0,
+            WORLD_WIDTH - W
+        );
 
-    soundDash();
+    camera.y =
+        clamp(
+            camera.y,
+            0,
+            WORLD_HEIGHT - H
+        );
+}
+
+function screenToWorld(x, y) {
+
+    return {
+        x: x + camera.x,
+        y: y + camera.y
+    };
+}
+
+function worldToScreen(x, y) {
+
+    return {
+        x: x - camera.x,
+        y: y - camera.y
+    };
 }
 
 /* =========================================================
-   WORLD INTERACTION
+   ENEMY UPDATE
    ========================================================= */
 
-function interact() {
+function updateEnemies(dt) {
 
-    if (gameState !== "playing") return;
+    if (!player) return;
 
-    /* DOORS */
+    for (const enemy of enemies) {
 
-    for (const door of doors) {
+        if (enemy.dead) continue;
 
-        const d =
-            Math.hypot(
-                player.x - door.x,
-                player.y - door.y
-            );
+        const dx =
+            player.x - enemy.x;
 
-        if (
-            d < 100 &&
-            !door.open
-        ) {
+        const dy =
+            player.y - enemy.y;
 
-            if (!door.locked) {
+        const distance =
+            Math.hypot(dx, dy);
 
-                door.open = true;
-
-                showToast("DOOR OPEN");
-
-                continue;
-            }
-
-            if (door.key === "A" &&
-                player.inventory.keycardA > 0) {
-
-                player.inventory.keycardA--;
-
-                door.locked = false;
-                door.open = true;
-
-                showToast("ACCESS CARD A ACCEPTED");
-                continue;
-            }
-
-            if (door.key === "B" &&
-                player.inventory.keycardB > 0) {
-
-                player.inventory.keycardB--;
-
-                door.locked = false;
-                door.open = true;
-
-                showToast("ACCESS CARD B ACCEPTED");
-                continue;
-            }
-
-            showToast(
-                "ACCESS REQUIRED: " +
-                door.key
-            );
-        }
-    }
-
-    /* TERMINALS */
-
-    for (const terminal of terminals) {
-
-        const d =
-            Math.hypot(
-                player.x - terminal.x,
-                player.y - terminal.y
-            );
+        /*
+           MONSTERS BUITEN DEZE AFSTAND
+           DOEN NIET ZOMAAR IETS.
+        */
 
         if (
-            d < 90 &&
-            !terminal.used
+            distance <=
+            ENEMY_DETECT_RANGE
         ) {
 
-            terminal.used = true;
+            enemy.angle =
+                Math.atan2(
+                    dy,
+                    dx
+                );
 
-            if (terminal.key === "A") {
-                player.inventory.keycardA++;
-            }
-
-            if (terminal.key === "B") {
-                player.inventory.keycardB++;
-            }
-
-            if (terminal.key === "C") {
-                player.inventory.dataCore++;
-            }
-
-            player.credits += 100;
-
-            showToast(
-                "TERMINAL HACKED — ACCESS GRANTED"
-            );
-
-            beep(600, .12, "sine", .04);
-        }
-    }
-
-    /* CHESTS */
-
-    for (const chest of chests) {
-
-        const d =
-            Math.hypot(
-                player.x - chest.x,
-                player.y - chest.y
-            );
-
-        if (
-            d < 80 &&
-            !chest.opened
-        ) {
-
-            chest.opened = true;
-
-            const reward =
-                Math.random();
-
-            if (reward < .25) {
-                player.inventory.medkit++;
-                showToast("MEDKIT FOUND");
-            } else if (reward < .5) {
-                player.inventory.energyCell++;
-                showToast("ENERGY CELL FOUND");
-            } else if (reward < .7) {
-                player.inventory.armorPlate++;
-                showToast("ARMOR PLATE FOUND");
-            } else if (reward < .9) {
-                player.credits += 150;
-                showToast("+150 CREDITS");
-            } else {
-                unlockRandomWeapon();
-            }
-
-            soundPickup();
-        }
-    }
-
-    /* BEACONS */
-
-    for (const beacon of beacons) {
-
-        const d =
-            Math.hypot(
-                player.x - beacon.x,
-                player.y - beacon.y
-            );
-
-        if (
-            d < 100 &&
-            !beacon.active
-        ) {
-
-            beacon.active = true;
-
-            player.health =
-                player.maxHealth;
-
-            player.energy =
-                player.maxEnergy;
-
-            showToast("SIGNAL BEACON ACTIVATED");
+            /*
+               Alleen bewegen als er geen
+               directe botsing met de speler is.
+            */
 
             if (
-                currentSector === 5
+                distance >
+                enemy.radius +
+                player.radius +
+                45
             ) {
-                unlockAchievement("deepExplorer");
+
+                let moveX =
+                    Math.cos(
+                        enemy.angle
+                    );
+
+                let moveY =
+                    Math.sin(
+                        enemy.angle
+                    );
+
+                /*
+                   Simpele muurvermijding
+                */
+
+                const futureX =
+                    enemy.x +
+                    moveX *
+                    enemy.speed *
+                    dt;
+
+                const futureY =
+                    enemy.y +
+                    moveY *
+                    enemy.speed *
+                    dt;
+
+                if (
+                    !collidesAt(
+                        futureX,
+                        futureY,
+                        enemy.radius
+                    )
+                ) {
+
+                    enemy.x =
+                        futureX;
+
+                    enemy.y =
+                        futureY;
+
+                } else {
+
+                    /*
+                       Probeer zijwaarts
+                    */
+
+                    const sideX = -moveY;
+                    const sideY = moveX;
+
+                    const sx =
+                        enemy.x +
+                        sideX *
+                        enemy.speed *
+                        dt;
+
+                    const sy =
+                        enemy.y +
+                        sideY *
+                        enemy.speed *
+                        dt;
+
+                    if (
+                        !collidesAt(
+                            sx,
+                            sy,
+                            enemy.radius
+                        )
+                    ) {
+
+                        enemy.x = sx;
+                        enemy.y = sy;
+                    }
+                }
+            }
+
+            /*
+               SCHIETEN
+
+               Ze moeten dichtbij genoeg zijn
+               en een zichtlijn hebben.
+            */
+
+            enemy.shootCd -= dt;
+
+            if (
+                distance <=
+                Math.min(
+                    ENEMY_SHOOT_RANGE,
+                    enemy.range
+                ) &&
+
+                !lineBlocked(
+                    enemy.x,
+                    enemy.y,
+                    player.x,
+                    player.y
+                ) &&
+
+                enemy.shootCd <= 0
+            ) {
+
+                enemyShoot(enemy);
+
+                enemy.shootCd =
+                    enemy.fireRate +
+                    random(-.3, .4);
+            }
+
+        } else {
+
+            /*
+               Ver weg:
+               rustig rondlopen in plaats
+               van meteen achter de speler
+               aan te teleporteren.
+            */
+
+            enemy.wanderTimer -= dt;
+
+            if (enemy.wanderTimer <= 0) {
+
+                enemy.wanderTimer =
+                    random(1, 4);
+
+                enemy.wanderAngle =
+                    random(
+                        0,
+                        Math.PI * 2
+                    );
+            }
+
+            const wx =
+                Math.cos(
+                    enemy.wanderAngle
+                );
+
+            const wy =
+                Math.sin(
+                    enemy.wanderAngle
+                );
+
+            const nx =
+                enemy.x +
+                wx *
+                enemy.speed *
+                .25 *
+                dt;
+
+            const ny =
+                enemy.y +
+                wy *
+                enemy.speed *
+                .25 *
+                dt;
+
+            if (
+                !collidesAt(
+                    nx,
+                    ny,
+                    enemy.radius
+                )
+            ) {
+
+                enemy.x = nx;
+                enemy.y = ny;
             }
         }
+
+        /*
+           CONTACT DAMAGE
+        */
+
+        if (
+            distance <
+            enemy.radius +
+            player.radius
+        ) {
+
+            damagePlayer(
+                enemy.damage *
+                dt
+            );
+        }
+
+        if (enemy.hitFlash > 0) {
+            enemy.hitFlash -= dt;
+        }
+    }
+
+    /*
+       Verwijder dode enemies
+    */
+
+    enemies =
+        enemies.filter(
+            e => !e.dead
+        );
+}
+
+/* =========================================================
+   BULLET UPDATE
+   ========================================================= */
+
+function updateBullets(dt) {
+
+    for (const bullet of bullets) {
+
+        bullet.x +=
+            bullet.vx * dt;
+
+        bullet.y +=
+            bullet.vy * dt;
+
+        bullet.life -= dt;
+
+        if (
+            bullet.life <= 0 ||
+            pointInWall(
+                bullet.x,
+                bullet.y
+            )
+        ) {
+
+            bullet.life = 0;
+
+            particle(
+                bullet.x,
+                bullet.y,
+                bullet.color,
+                4,
+                40
+            );
+
+            continue;
+        }
+
+        for (const enemy of enemies) {
+
+            if (enemy.dead) continue;
+
+            const d =
+                Math.hypot(
+                    bullet.x - enemy.x,
+                    bullet.y - enemy.y
+                );
+
+            if (
+                d <
+                enemy.radius +
+                bullet.radius
+            ) {
+
+                enemy.hp -=
+                    bullet.damage;
+
+                enemy.hitFlash = .1;
+
+                bullet.life = 0;
+
+                particle(
+                    bullet.x,
+                    bullet.y,
+                    bullet.color,
+                    7,
+                    80
+                );
+
+                if (enemy.hp <= 0) {
+                    killEnemy(enemy);
+                }
+
+                break;
+            }
+        }
+    }
+
+    bullets =
+        bullets.filter(
+            b => b.life > 0
+        );
+
+    /*
+       ENEMY BULLETS
+    */
+
+    for (const bullet of enemyBullets) {
+
+        bullet.x +=
+            bullet.vx * dt;
+
+        bullet.y +=
+            bullet.vy * dt;
+
+        bullet.life -= dt;
+
+        if (
+            bullet.life <= 0 ||
+            pointInWall(
+                bullet.x,
+                bullet.y
+            )
+        ) {
+            bullet.life = 0;
+            continue;
+        }
+
+        if (player) {
+
+            const d =
+                Math.hypot(
+                    bullet.x - player.x,
+                    bullet.y - player.y
+                );
+
+            if (
+                d <
+                player.radius +
+                bullet.radius
+            ) {
+
+                bullet.life = 0;
+
+                damagePlayer(
+                    bullet.damage
+                );
+            }
+        }
+    }
+
+    enemyBullets =
+        enemyBullets.filter(
+            b => b.life > 0
+        );
+}
+
+/* =========================================================
+   ENEMY DEATH
+   ========================================================= */
+
+function killEnemy(enemy) {
+
+    if (enemy.dead) return;
+
+    enemy.dead = true;
+
+    player.kills++;
+
+    mission.kills++;
+
+    player.xp +=
+        Math.floor(
+            enemy.reward * .7
+        );
+
+    player.credits +=
+        enemy.reward;
+
+    meta.totalKills =
+        Math.max(
+            meta.totalKills || 0,
+            player.kills
+        );
+
+    particle(
+        enemy.x,
+        enemy.y,
+        enemy.color,
+        25,
+        160
+    );
+
+    sound("hit");
+
+    /*
+       LOOT
+    */
+
+    if (chance(.55)) {
+
+        spawnPickup(
+            enemy.x,
+            enemy.y,
+            "credit",
+            randomInt(5, 30)
+        );
+    }
+
+    if (chance(.14)) {
+
+        spawnPickup(
+            enemy.x,
+            enemy.y,
+            "energy",
+            1
+        );
+    }
+
+    if (chance(.08)) {
+
+        spawnPickup(
+            enemy.x,
+            enemy.y,
+            "medkit",
+            1
+        );
+    }
+
+    if (chance(.18)) {
+
+        spawnPickup(
+            enemy.x,
+            enemy.y,
+            "scrap",
+            randomInt(1, 3)
+        );
+    }
+
+    checkLevelUp();
+
+    updateAchievements();
+}
+
+/* =========================================================
+   PLAYER DAMAGE
+   ========================================================= */
+
+function damagePlayer(amount) {
+
+    if (!player) return;
+
+    if (player.invulnerable > 0)
+        return;
+
+    player.hp -= amount;
+
+    player.flash = .15;
+
+    const flash =
+        document.getElementById(
+            "damageFlash"
+        );
+
+    if (flash) {
+
+        flash.style.opacity = "1";
+
+        setTimeout(() => {
+            flash.style.opacity = "0";
+        }, 70);
+    }
+
+    if (player.hp <= 0) {
+
+        player.hp = 0;
+
+        gameOver();
+
     }
 }
 
 /* =========================================================
-   CONSUMABLES
+   LEVELING
+   ========================================================= */
+
+function xpNeeded() {
+
+    return 100 +
+        (player.level - 1) *
+        65;
+}
+
+function checkLevelUp() {
+
+    if (!player) return;
+
+    while (
+        player.xp >= xpNeeded()
+    ) {
+
+        player.xp -= xpNeeded();
+
+        player.level++;
+
+        player.maxHp += 10;
+        player.hp = player.maxHp;
+
+        player.maxEnergy += 5;
+        player.energy =
+            player.maxEnergy;
+
+        player.speed += 3;
+
+        player.damageBoost += .025;
+
+        sound("level");
+
+        showMessage(
+            "LEVEL UP! LEVEL " +
+            player.level
+        );
+
+        if (
+            player.level >= 2
+        ) {
+            weapons[1].unlocked = true;
+        }
+
+        if (
+            player.level >= 3
+        ) {
+            weapons[2].unlocked = true;
+        }
+
+        if (
+            player.level >= 4
+        ) {
+            weapons[3].unlocked = true;
+        }
+
+        if (
+            player.level >= 5
+        ) {
+            weapons[4].unlocked = true;
+        }
+
+        if (
+            player.level >= 6
+        ) {
+            weapons[5].unlocked = true;
+        }
+    }
+
+    updateAchievements();
+}
+
+/* =========================================================
+   INVENTORY
    ========================================================= */
 
 function useMedkit() {
 
     if (
-        player.inventory.medkit <= 0
-    ) {
-        showToast("NO MEDKITS");
-        return;
-    }
+        !player ||
+        inventory.medkits <= 0 ||
+        player.hp >= player.maxHp
+    ) return;
 
-    if (
-        player.health >= player.maxHealth
-    ) {
-        return;
-    }
+    inventory.medkits--;
 
-    player.inventory.medkit--;
-
-    player.health =
+    player.hp =
         Math.min(
-            player.maxHealth,
-            player.health + 55
+            player.maxHp,
+            player.hp + 40
         );
 
-    showToast("MEDKIT USED");
+    showMessage(
+        "MEDKIT GEBRUIKT"
+    );
+
+    sound("pickup");
 }
 
 function useEnergyCell() {
 
     if (
-        player.inventory.energyCell <= 0
-    ) {
-        showToast("NO ENERGY CELLS");
-        return;
-    }
+        !player ||
+        inventory.energyCells <= 0 ||
+        player.energy >= player.maxEnergy
+    ) return;
 
-    player.inventory.energyCell--;
+    inventory.energyCells--;
 
     player.energy =
         Math.min(
             player.maxEnergy,
-            player.energy + 60
+            player.energy + 50
         );
 
-    showToast("ENERGY CELL USED");
+    showMessage(
+        "ENERGIECEL GEBRUIKT"
+    );
+
+    sound("pickup");
+}
+
+function renderInventory() {
+
+    const content =
+        document.getElementById(
+            "inventoryContent"
+        );
+
+    if (!content || !player)
+        return;
+
+    content.innerHTML = `
+        <p>LEVEL: <b>${player.level}</b></p>
+        <p>HP: <b>${Math.floor(player.hp)}/${player.maxHp}</b></p>
+        <p>ENERGY: <b>${Math.floor(player.energy)}/${player.maxEnergy}</b></p>
+        <p>CREDITS: <b>${player.credits}</b></p>
+        <p>SCRAP: <b>${inventory.scrap}</b></p>
+        <p>MEDKITS: <b>${inventory.medkits}</b></p>
+        <p>ENERGIECELLEN: <b>${inventory.energyCells}</b></p>
+        <p>KILLS: <b>${player.kills}</b></p>
+        <hr>
+        <p>1 — ${weapons[0].name}</p>
+        <p>2 — ${weapons[1].name}</p>
+        <p>3 — ${weapons[2].name}</p>
+        <p>4 — ${weapons[3].name}</p>
+        <p>5 — ${weapons[4].name}</p>
+        <p>6 — ${weapons[5].name}</p>
+    `;
 }
 
 /* =========================================================
-   SECTOR DETECTION
-   ========================================================= */
-
-function updateSector() {
-
-    for (let i = 0; i < sectors.length; i++) {
-
-        const s = sectors[i];
-
-        if (
-            player.x >= s.minX &&
-            player.x <= s.maxX &&
-            player.y >= s.minY &&
-            player.y <= s.maxY
-        ) {
-
-            if (currentSector !== i) {
-
-                currentSector = i;
-
-                showToast(
-                    "ENTERED " +
-                    s.name
-                );
-
-                if (i >= 5) {
-                    unlockAchievement("deepExplorer");
-                }
-
-                if (i === 8) {
-
-                    if (
-                        !enemies.some(
-                            e => e.boss
-                        )
-                    ) {
-                        spawnBoss();
-                    }
-                }
-            }
-
-            break;
-        }
-    }
-}
-
-/* =========================================================
-   WAVE SYSTEM
-   ========================================================= */
-
-function updateWave() {
-
-    if (
-        player.kills > 0 &&
-        player.kills % 10 === 0
-    ) {
-
-        const newWave =
-            Math.floor(player.kills / 10) + 1;
-
-        if (newWave > wave) {
-
-            wave = newWave;
-
-            showToast(
-                "WAVE " +
-                wave +
-                " INCOMING"
-            );
-
-            if (wave >= 5) {
-                unlockAchievement("survivor");
-            }
-        }
-    }
-}
-
-/* =========================================================
-   PICKUP UPDATE
+   UPDATE PICKUPS
    ========================================================= */
 
 function updatePickups(dt) {
 
-    for (
-        let i = pickups.length - 1;
-        i >= 0;
-        i--
-    ) {
+    for (const pickup of pickups) {
 
-        const p = pickups[i];
+        pickup.life -= dt;
+        pickup.pulse += dt * 5;
 
-        p.life -= dt;
-        p.phase += dt * 2;
+        if (!player) continue;
 
         const d =
             Math.hypot(
-                player.x - p.x,
-                player.y - p.y
+                player.x - pickup.x,
+                player.y - pickup.y
             );
 
         if (d < 55) {
-
-            collectPickup(p);
-
-            pickups.splice(i, 1);
-
-            continue;
-        }
-
-        if (p.life <= 0) {
-            pickups.splice(i, 1);
+            collectPickup(pickup);
         }
     }
+
+    pickups =
+        pickups.filter(
+            p => p.life > 0
+        );
 }
 
 /* =========================================================
@@ -3130,2442 +3524,137 @@ function updatePickups(dt) {
 
 function updateParticles(dt) {
 
-    for (
-        let i = particles.length - 1;
-        i >= 0;
-        i--
-    ) {
-
-        const p = particles[i];
+    for (const p of particles) {
 
         p.x += p.vx * dt;
         p.y += p.vy * dt;
 
-        p.vx *= 0.97;
-        p.vy *= 0.97;
+        p.vx *= .97;
+        p.vy *= .97;
 
         p.life -= dt;
-
-        if (p.life <= 0) {
-            particles.splice(i, 1);
-        }
     }
+
+    particles =
+        particles.filter(
+            p => p.life > 0
+        );
 }
 
 /* =========================================================
-   FLOATING TEXT
+   GAME FLOW
    ========================================================= */
 
-function updateFloatingTexts(dt) {
+function resetWorld() {
 
-    for (
-        let i = floatingTexts.length - 1;
-        i >= 0;
-        i--
-    ) {
+    player = createPlayer();
 
-        const f =
-            floatingTexts[i];
+    enemies = [];
+    bullets = [];
+    enemyBullets = [];
+    pickups = [];
+    particles = [];
 
-        f.y -= 30 * dt;
-        f.life -= dt;
+    inventory = {
+        ...inventoryDefaults
+    };
 
-        if (f.life <= 0) {
-            floatingTexts.splice(i, 1);
-        }
-    }
-}
-
-/* =========================================================
-   WEATHER
-   ========================================================= */
-
-const rainDrops = [];
-
-for (let i = 0; i < 350; i++) {
-
-    rainDrops.push({
-        x: Math.random(),
-        y: Math.random(),
-        speed: rand(.3, .9),
-        length: rand(8, 22)
+    weapons.forEach(w => {
+        w.ammo = w.maxAmmo;
     });
-}
 
-function updateWeather(dt) {
+    weapons[0].unlocked = true;
 
-    for (const drop of rainDrops) {
-
-        drop.y +=
-            drop.speed *
-            weather.intensity *
-            dt;
-
-        drop.x +=
-            0.08 *
-            weather.intensity *
-            dt;
-
-        if (drop.y > 1) {
-            drop.y = 0;
-            drop.x = Math.random();
-        }
-
-        if (drop.x > 1) {
-            drop.x = 0;
-        }
-    }
-}
-
-/* =========================================================
-   CAMERA
-   ========================================================= */
-
-function updateCamera() {
-
-    const targetX =
-        player.x - W / 2;
-
-    const targetY =
-        player.y - H / 2;
-
-    camera.x +=
-        (targetX - camera.x) * .12;
-
-    camera.y +=
-        (targetY - camera.y) * .12;
-
-    camera.x =
-        clamp(
-            camera.x,
-            0,
-            WORLD.width - W
-        );
-
-    camera.y =
-        clamp(
-            camera.y,
-            0,
-            WORLD.height - H
-        );
-}
-
-/* =========================================================
-   HUD
-   ========================================================= */
-
-function updateHUD() {
-
-    if (healthBar) {
-
-        healthBar.style.width =
-            clamp(
-                player.health /
-                player.maxHealth *
-                100,
-                0,
-                100
-            ) + "%";
+    for (let i = 1; i < weapons.length; i++) {
+        weapons[i].unlocked = false;
     }
 
-    if (energyBar) {
+    weaponIndex = 0;
 
-        energyBar.style.width =
-            clamp(
-                player.energy /
-                player.maxEnergy *
-                100,
-                0,
-                100
-            ) + "%";
-    }
+    fireCooldown = 0;
+    reloadTimer = 0;
 
-    if (killsText) {
-        killsText.textContent =
-            "KILLS: " + player.kills;
-    }
+    currentSector = 0;
 
-    if (creditsText) {
-        creditsText.textContent =
-            "CREDITS: " + player.credits;
-    }
+    discoveredSectors.clear();
 
-    if (zoneText) {
+    mission.signalFound = false;
+    mission.kills = 0;
 
-        zoneText.textContent =
-            sectors[currentSector]
-                ?.name ||
-            "UNKNOWN SECTOR";
-    }
+    meta.totalDistance =
+        meta.totalDistance || 0;
 
-    if (ammoText) {
+    buildWorld();
 
-        const weapon =
-            weapons[player.weapon];
+    discoverSector(0, true);
 
-        ammoText.textContent =
-            weapon.name +
-            " • ENERGY " +
-            Math.floor(player.energy);
-    }
+    /*
+       Eerste groep monsters
+    */
 
-    if (objectiveText) {
+    for (let i = 0; i < 7; i++) {
 
-        if (player.finalBossDefeated) {
+        const p =
+            findSpawnNearPlayerForSector(
+                0
+            );
 
-            objectiveText.textContent =
-                "SIGNAL RESTORED";
+        if (p) {
 
-        } else if (currentSector >= 8) {
-
-            objectiveText.textContent =
-                "DEFEAT THE SOURCE";
-
-        } else if (!player.signalFound) {
-
-            objectiveText.textContent =
-                "FIND THE LOST SIGNAL";
-
-        } else {
-
-            objectiveText.textContent =
-                "RETURN TO THE SIGNAL CORE";
+            enemies.push(
+                createEnemy(
+                    p.x,
+                    p.y,
+                    chooseEnemyType()
+                )
+            );
         }
     }
 
-    levelText.textContent =
-        "LEVEL " +
-        player.level +
-        "  •  XP " +
-        Math.floor(player.xp) +
-        "/" +
-        player.nextXP;
+    camera.x = 0;
+    camera.y = 0;
 
-    inventoryMini.innerHTML =
-        "MEDKIT " +
-        player.inventory.medkit +
-        " &nbsp; ENERGY CELL " +
-        player.inventory.energyCell +
-        " &nbsp; ARMOR " +
-        Math.floor(player.armor);
+    changeWeather();
+
+    elapsed = 0;
 }
 
 /* =========================================================
-   DRAW HELPERS
+   NEW GAME
    ========================================================= */
 
-function screenX(x) {
-    return x - camera.x;
-}
+function newGame() {
 
-function screenY(y) {
-    return y - camera.y;
-}
+    startAudio();
 
-function roundedRect(
-    context,
-    x,
-    y,
-    w,
-    h,
-    r
-) {
+    /*
+       Reset alle toetsen zodat een oude
+       ingedrukte toets niet blijft hangen.
+    */
 
-    context.beginPath();
-
-    context.moveTo(x + r, y);
-
-    context.arcTo(
-        x + w,
-        y,
-        x + w,
-        y + h,
-        r
-    );
-
-    context.arcTo(
-        x + w,
-        y + h,
-        x,
-        y + h,
-        r
-    );
-
-    context.arcTo(
-        x,
-        y + h,
-        x,
-        y,
-        r
-    );
-
-    context.arcTo(
-        x,
-        y,
-        x + w,
-        y,
-        r
-    );
-
-    context.closePath();
-}
-
-/* =========================================================
-   DRAW FLOOR
-   ========================================================= */
-
-function drawFloor() {
-
-    ctx.fillStyle = "#071019";
-    ctx.fillRect(
-        0,
-        0,
-        W,
-        H
-    );
-
-    const grid = 80;
-
-    const startX =
-        Math.floor(camera.x / grid) *
-        grid;
-
-    const startY =
-        Math.floor(camera.y / grid) *
-        grid;
-
-    ctx.lineWidth = 1;
-
-    for (
-        let x = startX;
-        x < camera.x + W + grid;
-        x += grid
-    ) {
-
-        const sx =
-            x - camera.x;
-
-        ctx.strokeStyle =
-            "rgba(110,160,190,.055)";
-
-        ctx.beginPath();
-
-        ctx.moveTo(sx, 0);
-        ctx.lineTo(sx, H);
-
-        ctx.stroke();
+    for (const key in keys) {
+        keys[key] = false;
     }
 
-    for (
-        let y = startY;
-        y < camera.y + H + grid;
-        y += grid
-    ) {
+    mouseDown = false;
 
-        const sy =
-            y - camera.y;
+    resetWorld();
 
-        ctx.strokeStyle =
-            "rgba(110,160,190,.055)";
+    state = "playing";
 
-        ctx.beginPath();
+    menu.style.display = "none";
 
-        ctx.moveTo(0, sy);
-        ctx.lineTo(W, sy);
+    pauseScreen.style.display = "none";
 
-        ctx.stroke();
-    }
+    hud.style.display = "block";
 
-    /* sector tint */
+    hideAllOverlays();
 
-    const s = sectors[currentSector];
+    canvas.focus();
 
-    if (s) {
+    showMessage("SIGNAL SEARCH STARTED");
 
-        const x =
-            s.minX - camera.x;
-
-        const y =
-            s.minY - camera.y;
-
-        const w =
-            s.maxX - s.minX;
-
-        const h =
-            s.maxY - s.minY;
-
-        const gradient =
-            ctx.createLinearGradient(
-                x,
-                y,
-                x + w,
-                y + h
-            );
-
-        gradient.addColorStop(
-            0,
-            "rgba(60,120,180,.045)"
-        );
-
-        gradient.addColorStop(
-            1,
-            "rgba(0,0,0,.08)"
-        );
-
-        ctx.fillStyle = gradient;
-
-        ctx.fillRect(
-            x,
-            y,
-            w,
-            h
-        );
-    }
-}
-
-/* =========================================================
-   DRAW PROPS
-   ========================================================= */
-
-function drawProps() {
-
-    for (const p of props) {
-
-        const x =
-            screenX(p.x);
-
-        const y =
-            screenY(p.y);
-
-        if (
-            x < -100 ||
-            y < -100 ||
-            x > W + 100 ||
-            y > H + 100
-        ) continue;
-
-        ctx.save();
-
-        ctx.translate(x, y);
-        ctx.rotate(p.rotation);
-
-        ctx.shadowBlur = 12;
-        ctx.shadowColor =
-            "rgba(0,0,0,.5)";
-
-        if (p.type === "crate") {
-
-            ctx.fillStyle = "#35434d";
-
-            ctx.fillRect(
-                -p.size / 2,
-                -p.size / 2,
-                p.size,
-                p.size
-            );
-
-            ctx.strokeStyle =
-                "#71818b";
-
-            ctx.strokeRect(
-                -p.size / 2,
-                -p.size / 2,
-                p.size,
-                p.size
-            );
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                -p.size / 2,
-                -p.size / 2
-            );
-
-            ctx.lineTo(
-                p.size / 2,
-                p.size / 2
-            );
-
-            ctx.stroke();
-
-        } else if (p.type === "container") {
-
-            ctx.fillStyle = "#263642";
-
-            ctx.fillRect(
-                -p.size,
-                -p.size / 2,
-                p.size * 2,
-                p.size
-            );
-
-            ctx.strokeStyle =
-                "#58707d";
-
-            ctx.strokeRect(
-                -p.size,
-                -p.size / 2,
-                p.size * 2,
-                p.size
-            );
-
-            for (
-                let i = -1;
-                i <= 1;
-                i++
-            ) {
-
-                ctx.fillStyle =
-                    "rgba(130,180,200,.12)";
-
-                ctx.fillRect(
-                    i * p.size * .45,
-                    -p.size / 2,
-                    2,
-                    p.size
-                );
-            }
-
-        } else if (p.type === "generator") {
-
-            ctx.fillStyle = "#1a2730";
-
-            ctx.fillRect(
-                -p.size / 2,
-                -p.size / 2,
-                p.size,
-                p.size
-            );
-
-            ctx.fillStyle = "#68dfff";
-
-            ctx.fillRect(
-                -p.size * .25,
-                -p.size * .25,
-                p.size * .5,
-                p.size * .18
-            );
-
-            ctx.fillStyle =
-                "rgba(90,220,255,.2)";
-
-            ctx.beginPath();
-
-            ctx.arc(
-                0,
-                0,
-                p.size * .8,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-        } else if (p.type === "console") {
-
-            ctx.fillStyle = "#17222d";
-
-            ctx.fillRect(
-                -p.size / 2,
-                -p.size / 2,
-                p.size,
-                p.size
-            );
-
-            ctx.fillStyle = "#77e4ff";
-
-            ctx.fillRect(
-                -p.size * .28,
-                -p.size * .2,
-                p.size * .56,
-                p.size * .3
-            );
-
-        } else if (p.type === "lamp") {
-
-            ctx.fillStyle = "#252d32";
-
-            ctx.fillRect(
-                -3,
-                -p.size,
-                6,
-                p.size
-            );
-
-            ctx.fillStyle = "#ffe9a0";
-
-            ctx.beginPath();
-
-            ctx.arc(
-                0,
-                -p.size,
-                7,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-        } else if (p.type === "barrel") {
-
-            ctx.fillStyle = "#354550";
-
-            ctx.fillRect(
-                -p.size * .35,
-                -p.size * .5,
-                p.size * .7,
-                p.size
-            );
-
-            ctx.strokeStyle =
-                "#7a8e98";
-
-            ctx.strokeRect(
-                -p.size * .35,
-                -p.size * .5,
-                p.size * .7,
-                p.size
-            );
-
-        } else {
-
-            ctx.fillStyle = "#29333a";
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                -p.size,
-                p.size / 2
-            );
-
-            ctx.lineTo(
-                -p.size / 2,
-                -p.size
-            );
-
-            ctx.lineTo(
-                p.size,
-                -p.size / 3
-            );
-
-            ctx.lineTo(
-                p.size / 2,
-                p.size
-            );
-
-            ctx.closePath();
-
-            ctx.fill();
-        }
-
-        ctx.restore();
-    }
-}
-
-/* =========================================================
-   DRAW WALLS
-   ========================================================= */
-
-function drawWalls() {
-
-    for (const wall of walls) {
-
-        const x =
-            screenX(wall.x);
-
-        const y =
-            screenY(wall.y);
-
-        if (
-            x > W ||
-            y > H ||
-            x + wall.w < 0 ||
-            y + wall.h < 0
-        ) continue;
-
-        const gradient =
-            ctx.createLinearGradient(
-                x,
-                y,
-                x,
-                y + wall.h
-            );
-
-        gradient.addColorStop(
-            0,
-            "#34424c"
-        );
-
-        gradient.addColorStop(
-            .5,
-            "#202c34"
-        );
-
-        gradient.addColorStop(
-            1,
-            "#121a20"
-        );
-
-        ctx.fillStyle = gradient;
-
-        ctx.fillRect(
-            x,
-            y,
-            wall.w,
-            wall.h
-        );
-
-        ctx.strokeStyle =
-            "#627783";
-
-        ctx.lineWidth = 2;
-
-        ctx.strokeRect(
-            x,
-            y,
-            wall.w,
-            wall.h
-        );
-
-        /* strong visible edge */
-
-        ctx.strokeStyle =
-            "rgba(130,220,255,.15)";
-
-        ctx.lineWidth = 1;
-
-        ctx.beginPath();
-
-        if (wall.w > wall.h) {
-
-            ctx.moveTo(
-                x,
-                y + 3
-            );
-
-            ctx.lineTo(
-                x + wall.w,
-                y + 3
-            );
-
-        } else {
-
-            ctx.moveTo(
-                x + 3,
-                y
-            );
-
-            ctx.lineTo(
-                x + 3,
-                y + wall.h
-            );
-        }
-
-        ctx.stroke();
-
-        /* panels */
-
-        ctx.strokeStyle =
-            "rgba(0,0,0,.25)";
-
-        if (wall.w > wall.h) {
-
-            for (
-                let px = x + 25;
-                px < x + wall.w;
-                px += 45
-            ) {
-
-                ctx.beginPath();
-
-                ctx.moveTo(
-                    px,
-                    y + 5
-                );
-
-                ctx.lineTo(
-                    px,
-                    y + wall.h - 5
-                );
-
-                ctx.stroke();
-            }
-
-        } else {
-
-            for (
-                let py = y + 25;
-                py < y + wall.h;
-                py += 45
-            ) {
-
-                ctx.beginPath();
-
-                ctx.moveTo(
-                    x + 5,
-                    py
-                );
-
-                ctx.lineTo(
-                    x + wall.w - 5,
-                    py
-                );
-
-                ctx.stroke();
-            }
-        }
-    }
-
-    /* DOORS */
-
-    for (const door of doors) {
-
-        const x =
-            screenX(door.x);
-
-        const y =
-            screenY(door.y);
-
-        if (door.open) {
-
-            ctx.strokeStyle =
-                "rgba(80,220,255,.25)";
-
-            ctx.lineWidth = 3;
-
-            ctx.strokeRect(
-                x,
-                y,
-                door.w,
-                door.h
-            );
-
-        } else {
-
-            const g =
-                ctx.createLinearGradient(
-                    x,
-                    y,
-                    x + door.w,
-                    y + door.h
-                );
-
-            g.addColorStop(
-                0,
-                "#553d46"
-            );
-
-            g.addColorStop(
-                1,
-                "#211b20"
-            );
-
-            ctx.fillStyle = g;
-
-            ctx.fillRect(
-                x,
-                y,
-                door.w,
-                door.h
-            );
-
-            ctx.strokeStyle =
-                door.locked
-                    ? "#ff7474"
-                    : "#6cdcff";
-
-            ctx.lineWidth = 3;
-
-            ctx.strokeRect(
-                x,
-                y,
-                door.w,
-                door.h
-            );
-
-            ctx.fillStyle =
-                door.locked
-                    ? "#ff7474"
-                    : "#6cdcff";
-
-            ctx.fillRect(
-                x + door.w / 2 - 3,
-                y + door.h / 2 - 3,
-                6,
-                6
-            );
-        }
-    }
-}
-
-/* =========================================================
-   DRAW TERMINALS / CHESTS / BEACONS
-   ========================================================= */
-
-function drawWorldObjects() {
-
-    for (const t of terminals) {
-
-        const x = screenX(t.x);
-        const y = screenY(t.y);
-
-        ctx.save();
-
-        ctx.translate(x, y);
-
-        ctx.fillStyle = "#172a35";
-
-        ctx.fillRect(
-            -18,
-            -20,
-            36,
-            40
-        );
-
-        ctx.strokeStyle =
-            t.used
-                ? "#4b6672"
-                : "#69dcff";
-
-        ctx.lineWidth = 2;
-
-        ctx.strokeRect(
-            -18,
-            -20,
-            36,
-            40
-        );
-
-        ctx.fillStyle =
-            t.used
-                ? "#3d5962"
-                : "#7de7ff";
-
-        ctx.fillRect(
-            -11,
-            -8,
-            22,
-            11
-        );
-
-        ctx.restore();
-    }
-
-    for (const c of chests) {
-
-        const x = screenX(c.x);
-        const y = screenY(c.y);
-
-        ctx.save();
-
-        ctx.translate(x, y);
-
-        ctx.fillStyle =
-            c.opened
-                ? "#343b3e"
-                : "#8c7044";
-
-        ctx.fillRect(
-            -22,
-            -15,
-            44,
-            30
-        );
-
-        ctx.strokeStyle =
-            c.opened
-                ? "#68777b"
-                : "#d9b86a";
-
-        ctx.strokeRect(
-            -22,
-            -15,
-            44,
-            30
-        );
-
-        if (!c.opened) {
-
-            ctx.fillStyle =
-                "#f0ce73";
-
-            ctx.fillRect(
-                -4,
-                -3,
-                8,
-                7
-            );
-        }
-
-        ctx.restore();
-    }
-
-    for (const b of beacons) {
-
-        const x = screenX(b.x);
-        const y = screenY(b.y);
-
-        const pulse =
-            10 +
-            Math.sin(
-                worldTime * 4
-            ) * 3;
-
-        ctx.save();
-
-        ctx.globalAlpha =
-            b.active ? .18 : .07;
-
-        ctx.fillStyle =
-            b.active
-                ? "#64eaff"
-                : "#55707d";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            x,
-            y,
-            35 + pulse,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.globalAlpha = 1;
-
-        ctx.fillStyle =
-            b.active
-                ? "#70edff"
-                : "#506875";
-
-        ctx.fillRect(
-            x - 7,
-            y - 26,
-            14,
-            52
-        );
-
-        ctx.strokeStyle =
-            b.active
-                ? "#a7f5ff"
-                : "#708993";
-
-        ctx.strokeRect(
-            x - 7,
-            y - 26,
-            14,
-            52
-        );
-
-        ctx.restore();
-    }
-}
-
-/* =========================================================
-   DRAW PICKUPS
-   ========================================================= */
-
-function drawPickups() {
-
-    for (const p of pickups) {
-
-        const x =
-            screenX(p.x);
-
-        const y =
-            screenY(p.y) +
-            Math.sin(p.phase) * 5;
-
-        let color = "#fff";
-
-        if (p.type === "credits") {
-            color = "#f3d45f";
-        }
-
-        if (p.type === "health") {
-            color = "#6cffb1";
-        }
-
-        if (p.type === "energy") {
-            color = "#69dfff";
-        }
-
-        if (p.type === "armor") {
-            color = "#b7c4ff";
-        }
-
-        if (p.type === "xp") {
-            color = "#d798ff";
-        }
-
-        if (p.type === "weapon") {
-            color = "#ff9ce4";
-        }
-
-        ctx.save();
-
-        ctx.shadowBlur = 18;
-        ctx.shadowColor = color;
-
-        ctx.fillStyle = color;
-
-        ctx.beginPath();
-
-        ctx.arc(
-            x,
-            y,
-            9,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.restore();
-    }
-}
-
-/* =========================================================
-   DRAW ENEMIES
-   ========================================================= */
-
-function drawEnemies() {
-
-    for (const e of enemies) {
-
-        if (!e.alive) continue;
-
-        const x =
-            screenX(e.x);
-
-        const y =
-            screenY(e.y);
-
-        if (
-            x < -100 ||
-            y < -100 ||
-            x > W + 100 ||
-            y > H + 100
-        ) continue;
-
-        ctx.save();
-
-        ctx.translate(x, y);
-
-        const color =
-            e.flash > 0
-                ? "#ffffff"
-                : e.color;
-
-        ctx.shadowBlur =
-            e.boss ? 30 : 14;
-
-        ctx.shadowColor = color;
-
-        if (e.boss) {
-
-            ctx.fillStyle =
-                "rgba(255,70,110,.15)";
-
-            ctx.beginPath();
-
-            ctx.arc(
-                0,
-                0,
-                e.radius + 20 +
-                Math.sin(worldTime * 4) * 5,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-            ctx.fillStyle = color;
-
-            ctx.beginPath();
-
-            ctx.arc(
-                0,
-                0,
-                e.radius,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-            ctx.strokeStyle =
-                "#ffd0d8";
-
-            ctx.lineWidth = 3;
-
-            ctx.stroke();
-
-            ctx.fillStyle = "#1b0d13";
-
-            ctx.beginPath();
-
-            ctx.arc(
-                0,
-                0,
-                22,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-            ctx.fillStyle =
-                "#ffb4c4";
-
-            ctx.beginPath();
-
-            ctx.arc(
-                0,
-                0,
-                8,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-        } else {
-
-            ctx.fillStyle = color;
-
-            ctx.beginPath();
-
-            ctx.arc(
-                0,
-                0,
-                e.radius,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-            ctx.fillStyle =
-                "rgba(10,20,25,.75)";
-
-            ctx.beginPath();
-
-            ctx.arc(
-                0,
-                0,
-                e.radius * .55,
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-
-            ctx.strokeStyle =
-                "rgba(220,250,255,.55)";
-
-            ctx.lineWidth = 2;
-
-            ctx.stroke();
-
-            /* eye/core */
-
-            ctx.fillStyle = color;
-
-            ctx.beginPath();
-
-            ctx.arc(
-                Math.cos(e.angle) *
-                e.radius * .5,
-
-                Math.sin(e.angle) *
-                e.radius * .5,
-
-                5,
-
-                0,
-                Math.PI * 2
-            );
-
-            ctx.fill();
-        }
-
-        ctx.restore();
-
-        /* health bar */
-
-        if (
-            e.hp < e.maxHp &&
-            !e.boss
-        ) {
-
-            const bw =
-                e.radius * 2;
-
-            const bh = 4;
-
-            const bx =
-                x - bw / 2;
-
-            const by =
-                y - e.radius - 12;
-
-            ctx.fillStyle =
-                "rgba(0,0,0,.65)";
-
-            ctx.fillRect(
-                bx,
-                by,
-                bw,
-                bh
-            );
-
-            ctx.fillStyle =
-                e.color;
-
-            ctx.fillRect(
-                bx,
-                by,
-                bw *
-                clamp(
-                    e.hp /
-                    e.maxHp,
-                    0,
-                    1
-                ),
-                bh
-            );
-        }
-    }
-}
-
-/* =========================================================
-   DRAW PLAYER
-   ========================================================= */
-
-function drawPlayer() {
-
-    const x =
-        screenX(player.x);
-
-    const y =
-        screenY(player.y);
-
-    const worldMouseX =
-        mouse.x + camera.x;
-
-    const worldMouseY =
-        mouse.y + camera.y;
-
-    const angle =
-        Math.atan2(
-            worldMouseY - player.y,
-            worldMouseX - player.x
-        );
-
-    ctx.save();
-
-    ctx.translate(x, y);
-
-    ctx.rotate(angle);
-
-    const flash =
-        player.invincible > 0 &&
-        Math.floor(
-            worldTime * 25
-        ) % 2 === 0;
-
-    ctx.shadowBlur = 22;
-
-    ctx.shadowColor =
-        flash
-            ? "#ffffff"
-            : "#63dfff";
-
-    /* outer suit */
-
-    ctx.fillStyle =
-        flash
-            ? "#ffffff"
-            : "#406579";
-
-    roundedRect(
-        ctx,
-        -17,
-        -14,
-        34,
-        28,
-        8
-    );
-
-    ctx.fill();
-
-    ctx.strokeStyle =
-        "#a5eaff";
-
-    ctx.lineWidth = 2;
-
-    ctx.stroke();
-
-    /* armor plate */
-
-    ctx.fillStyle =
-        "#263b49";
-
-    roundedRect(
-        ctx,
-        -11,
-        -10,
-        22,
-        20,
-        5
-    );
-
-    ctx.fill();
-
-    /* visor */
-
-    ctx.fillStyle =
-        "#8ceaff";
-
-    ctx.fillRect(
-        2,
-        -7,
-        12,
-        14
-    );
-
-    /* weapon */
-
-    ctx.fillStyle =
-        weapons[player.weapon].color;
-
-    ctx.fillRect(
-        8,
-        -3,
-        25,
-        6
-    );
-
-    ctx.restore();
-
-    /* energy ring */
-
-    ctx.save();
-
-    ctx.globalAlpha = .18;
-
-    ctx.strokeStyle =
-        "#64ddff";
-
-    ctx.lineWidth = 2;
-
-    ctx.beginPath();
-
-    ctx.arc(
-        x,
-        y,
-        27 +
-        Math.sin(worldTime * 5) * 2,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-}
-
-/* =========================================================
-   DRAW BULLETS
-   ========================================================= */
-
-function drawBullets() {
-
-    for (const b of bullets) {
-
-        const x =
-            screenX(b.x);
-
-        const y =
-            screenY(b.y);
-
-        ctx.save();
-
-        ctx.shadowBlur =
-            b.rail ? 25 : 12;
-
-        ctx.shadowColor =
-            b.color;
-
-        ctx.fillStyle =
-            b.color;
-
-        ctx.beginPath();
-
-        ctx.arc(
-            x,
-            y,
-            b.size,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    for (const b of enemyBullets) {
-
-        const x =
-            screenX(b.x);
-
-        const y =
-            screenY(b.y);
-
-        ctx.save();
-
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = b.color;
-
-        ctx.fillStyle = b.color;
-
-        ctx.beginPath();
-
-        ctx.arc(
-            x,
-            y,
-            b.size,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.restore();
-    }
-}
-
-/* =========================================================
-   DRAW PARTICLES
-   ========================================================= */
-
-function drawParticles() {
-
-    for (const p of particles) {
-
-        const x =
-            screenX(p.x);
-
-        const y =
-            screenY(p.y);
-
-        const alpha =
-            clamp(
-                p.life /
-                p.maxLife,
-                0,
-                1
-            );
-
-        ctx.globalAlpha = alpha;
-
-        ctx.fillStyle = p.color;
-
-        ctx.beginPath();
-
-        ctx.arc(
-            x,
-            y,
-            p.size,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-    }
-
-    ctx.globalAlpha = 1;
-}
-
-/* =========================================================
-   DRAW LIGHTING
-   ========================================================= */
-
-function drawLighting() {
-
-    const darkness =
-        ctx.createRadialGradient(
-            W / 2,
-            H / 2,
-            80,
-            W / 2,
-            H / 2,
-            Math.max(W, H) * .72
-        );
-
-    darkness.addColorStop(
-        0,
-        "rgba(0,0,0,0)"
-    );
-
-    darkness.addColorStop(
-        .5,
-        "rgba(0,0,0,.08)"
-    );
-
-    darkness.addColorStop(
-        1,
-        "rgba(0,0,0,.58)"
-    );
-
-    ctx.fillStyle = darkness;
-
-    ctx.fillRect(
-        0,
-        0,
-        W,
-        H
-    );
-
-    /* player light */
-
-    const px =
-        screenX(player.x);
-
-    const py =
-        screenY(player.y);
-
-    const light =
-        ctx.createRadialGradient(
-            px,
-            py,
-            10,
-            px,
-            py,
-            350
-        );
-
-    light.addColorStop(
-        0,
-        "rgba(80,210,255,.11)"
-    );
-
-    light.addColorStop(
-        .4,
-        "rgba(40,130,180,.045)"
-    );
-
-    light.addColorStop(
-        1,
-        "rgba(0,0,0,0)"
-    );
-
-    ctx.fillStyle = light;
-
-    ctx.fillRect(
-        0,
-        0,
-        W,
-        H
-    );
-
-    /* beacons */
-
-    for (const b of beacons) {
-
-        if (!b.active) continue;
-
-        const x =
-            screenX(b.x);
-
-        const y =
-            screenY(b.y);
-
-        const g =
-            ctx.createRadialGradient(
-                x,
-                y,
-                0,
-                x,
-                y,
-                220
-            );
-
-        g.addColorStop(
-            0,
-            "rgba(90,230,255,.12)"
-        );
-
-        g.addColorStop(
-            1,
-            "rgba(0,0,0,0)"
-        );
-
-        ctx.fillStyle = g;
-
-        ctx.fillRect(
-            x - 220,
-            y - 220,
-            440,
-            440
-        );
-    }
-}
-
-/* =========================================================
-   DRAW RAIN
-   ========================================================= */
-
-function drawRain() {
-
-    if (!weather.rain) return;
-
-    ctx.strokeStyle =
-        "rgba(120,190,230,.16)";
-
-    ctx.lineWidth = 1;
-
-    for (const drop of rainDrops) {
-
-        const x =
-            drop.x * W;
-
-        const y =
-            drop.y * H;
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            x,
-            y
-        );
-
-        ctx.lineTo(
-            x - 4,
-            y + drop.length
-        );
-
-        ctx.stroke();
-    }
-}
-
-/* =========================================================
-   DRAW FOG
-   ========================================================= */
-
-function drawFog() {
-
-    const fog =
-        ctx.createRadialGradient(
-            W * .5,
-            H * .5,
-            100,
-            W * .5,
-            H * .5,
-            Math.max(W, H) * .75
-        );
-
-    fog.addColorStop(
-        0,
-        "rgba(90,120,140,.015)"
-    );
-
-    fog.addColorStop(
-        1,
-        "rgba(90,120,140,.13)"
-    );
-
-    ctx.fillStyle = fog;
-
-    ctx.fillRect(
-        0,
-        0,
-        W,
-        H
-    );
-}
-
-/* =========================================================
-   CROSSHAIR
-   ========================================================= */
-
-function drawCrosshair() {
-
-    if (gameState !== "playing") return;
-
-    const x = mouse.x;
-    const y = mouse.y;
-
-    ctx.save();
-
-    ctx.strokeStyle =
-        "rgba(170,235,255,.9)";
-
-    ctx.lineWidth = 1.5;
-
-    ctx.beginPath();
-
-    ctx.moveTo(x - 14, y);
-    ctx.lineTo(x - 5, y);
-
-    ctx.moveTo(x + 5, y);
-    ctx.lineTo(x + 14, y);
-
-    ctx.moveTo(x, y - 14);
-    ctx.lineTo(x, y - 5);
-
-    ctx.moveTo(x, y + 5);
-    ctx.lineTo(x, y + 14);
-
-    ctx.stroke();
-
-    ctx.beginPath();
-
-    ctx.arc(
-        x,
-        y,
-        4,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.stroke();
-
-    ctx.restore();
-}
-
-/* =========================================================
-   FLOATING TEXT DRAW
-   ========================================================= */
-
-function drawFloatingTexts() {
-
-    ctx.textAlign = "center";
-    ctx.font =
-        "bold 14px Arial";
-
-    for (const f of floatingTexts) {
-
-        const x =
-            screenX(f.x);
-
-        const y =
-            screenY(f.y);
-
-        ctx.globalAlpha =
-            clamp(
-                f.life / .7,
-                0,
-                1
-            );
-
-        ctx.fillStyle =
-            "#ffffff";
-
-        ctx.fillText(
-            f.text,
-            x,
-            y
-        );
-    }
-
-    ctx.globalAlpha = 1;
-}
-
-/* =========================================================
-   MAP
-   ========================================================= */
-
-function drawMap() {
-
-    if (!mapCanvas) return;
-
-    const mctx =
-        mapCanvas.getContext("2d");
-
-    const mw =
-        mapCanvas.width;
-
-    const mh =
-        mapCanvas.height;
-
-    mctx.clearRect(
-        0,
-        0,
-        mw,
-        mh
-    );
-
-    mctx.fillStyle =
-        "#071019";
-
-    mctx.fillRect(
-        0,
-        0,
-        mw,
-        mh
-    );
-
-    const sx =
-        mw / WORLD.width;
-
-    const sy =
-        mh / WORLD.height;
-
-    for (
-        let i = 0;
-        i < sectors.length;
-        i++
-    ) {
-
-        const s = sectors[i];
-
-        mctx.fillStyle =
-            i === currentSector
-                ? "rgba(100,190,255,.22)"
-                : "rgba(80,100,120,.10)";
-
-        mctx.fillRect(
-            s.minX * sx,
-            s.minY * sy,
-            (s.maxX - s.minX) * sx,
-            (s.maxY - s.minY) * sy
-        );
-
-        mctx.strokeStyle =
-            "rgba(130,190,220,.25)";
-
-        mctx.strokeRect(
-            s.minX * sx,
-            s.minY * sy,
-            (s.maxX - s.minX) * sx,
-            (s.maxY - s.minY) * sy
-        );
-
-        mctx.fillStyle =
-            "#829baa";
-
-        mctx.font =
-            "11px Arial";
-
-        mctx.fillText(
-            "S" + (i + 1),
-            (s.minX + 30) * sx,
-            (s.minY + 20) * sy
-        );
-    }
-
-    for (const wall of walls) {
-
-        mctx.fillStyle =
-            "rgba(170,190,200,.35)";
-
-        mctx.fillRect(
-            wall.x * sx,
-            wall.y * sy,
-            wall.w * sx,
-            wall.h * sy
-        );
-    }
-
-    for (const b of beacons) {
-
-        mctx.fillStyle =
-            b.active
-                ? "#65eaff"
-                : "#45616d";
-
-        mctx.beginPath();
-
-        mctx.arc(
-            b.x * sx,
-            b.y * sy,
-            4,
-            0,
-            Math.PI * 2
-        );
-
-        mctx.fill();
-    }
-
-    mctx.fillStyle =
-        "#ffffff";
-
-    mctx.beginPath();
-
-    mctx.arc(
-        player.x * sx,
-        player.y * sy,
-        6,
-        0,
-        Math.PI * 2
-    );
-
-    mctx.fill();
-
-    for (const e of enemies) {
-
-        if (!e.alive) continue;
-
-        mctx.fillStyle =
-            e.boss
-                ? "#ff5c79"
-                : "#e56f6f";
-
-        mctx.beginPath();
-
-        mctx.arc(
-            e.x * sx,
-            e.y * sy,
-            e.boss ? 5 : 2,
-            0,
-            Math.PI * 2
-        );
-
-        mctx.fill();
-    }
-}
-
-/* =========================================================
-   ACHIEVEMENT PANEL
-   ========================================================= */
-
-function showAchievements() {
-
-    closeExtraPanel();
-
-    const panel =
-        document.createElement("div");
-
-    panel.className =
-        "extraPanel";
-
-    panel.id =
-        "dynamicPanel";
-
-    panel.innerHTML = `
-        <button class="panelClose">CLOSE</button>
-        <h2>ACHIEVEMENTS</h2>
-        <div class="gridList">
-            ${Object.entries(achievements)
-                .map(([id, a]) => `
-                    <div class="card ${
-                        unlockedAchievements[id]
-                            ? ""
-                            : "locked"
-                    }">
-                        <strong>
-                            ${
-                                unlockedAchievements[id]
-                                    ? "✓ "
-                                    : "○ "
-                            }${a.name}
-                        </strong>
-                        <span>${a.description}</span>
-                    </div>
-                `)
-                .join("")}
-        </div>
-    `;
-
-    extraUI.appendChild(panel);
-
-    panel
-        .querySelector(".panelClose")
-        .addEventListener(
-            "click",
-            closeExtraPanel
-        );
-}
-
-function showControls() {
-
-    closeExtraPanel();
-
-    const panel =
-        document.createElement("div");
-
-    panel.className =
-        "extraPanel";
-
-    panel.id =
-        "dynamicPanel";
-
-    panel.innerHTML = `
-        <button class="panelClose">CLOSE</button>
-        <h2>CONTROLS</h2>
-
-        <div class="gridList">
-
-            <div class="card">
-                <strong>MOVE</strong>
-                WASD
-            </div>
-
-            <div class="card">
-                <strong>AIM</strong>
-                Mouse
-            </div>
-
-            <div class="card">
-                <strong>SHOOT</strong>
-                Left mouse button
-            </div>
-
-            <div class="card">
-                <strong>DASH</strong>
-                Space
-            </div>
-
-            <div class="card">
-                <strong>INTERACT</strong>
-                E
-            </div>
-
-            <div class="card">
-                <strong>MAP</strong>
-                M
-            </div>
-
-            <div class="card">
-                <strong>MEDKIT</strong>
-                Q
-            </div>
-
-            <div class="card">
-                <strong>ENERGY CELL</strong>
-                R
-            </div>
-
-            <div class="card">
-                <strong>WEAPON</strong>
-                1–6
-            </div>
-
-            <div class="card">
-                <strong>PAUSE</strong>
-                Escape
-            </div>
-
-        </div>
-    `;
-
-    extraUI.appendChild(panel);
-
-    panel
-        .querySelector(".panelClose")
-        .addEventListener(
-            "click",
-            closeExtraPanel
-        );
-}
-
-/* =========================================================
-   SAVE PANEL
-   ========================================================= */
-
-function showSaveSlots() {
-
-    closeExtraPanel();
-
-    const panel =
-        document.createElement("div");
-
-    panel.className =
-        "extraPanel";
-
-    panel.id =
-        "dynamicPanel";
-
-    let html = `
-        <button class="panelClose">CLOSE</button>
-        <h2>SAVE SLOTS</h2>
-    `;
-
-    for (let i = 0; i < 3; i++) {
-
-        let data = null;
-
-        try {
-
-            const raw =
-                localStorage.getItem(
-                    SAVE_KEY + "_slot_" + i
-                );
-
-            if (raw) {
-                data = JSON.parse(raw);
-            }
-
-        } catch (e) {}
-
-        if (data) {
-
-            html += `
-                <button
-                    class="saveSlot"
-                    data-slot="${i}"
-                >
-                    SLOT ${i + 1}
-                    <br>
-                    Sector ${
-                        (data.currentSector || 0) + 1
-                    }
-                    • Level ${
-                        data.player?.level || 1
-                    }
-                    • Kills ${
-                        data.player?.kills || 0
-                    }
-                    <br>
-                    ${new Date(
-                        data.timestamp
-                    ).toLocaleString()}
-                </button>
-            `;
-
-        } else {
-
-            html += `
-                <button
-                    class="saveSlot"
-                    data-slot="${i}"
-                >
-                    SLOT ${i + 1}
-                    <br>
-                    EMPTY
-                </button>
-            `;
-        }
-    }
-
-    panel.innerHTML = html;
-
-    extraUI.appendChild(panel);
-
-    panel
-        .querySelector(".panelClose")
-        .addEventListener(
-            "click",
-            closeExtraPanel
-        );
-
-    panel
-        .querySelectorAll(".saveSlot")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    const slot =
-                        Number(
-                            button.dataset.slot
-                        );
-
-                    if (gameState === "playing") {
-
-                        activeSaveSlot =
-                            slot;
-
-                        saveSlot(slot);
-
-                        showSaveSlots();
-
-                    } else {
-
-                        if (
-                            loadSlot(slot)
-                        ) {
-
-                            gameState =
-                                "playing";
-
-                            menu.style.display =
-                                "none";
-
-                            closeExtraPanel();
-
-                            spawnInitialEnemies();
-                        }
-                    }
-                }
-            );
-        });
-}
-
-/* =========================================================
-   INVENTORY PANEL
-   ========================================================= */
-
-function showInventory() {
-
-    closeExtraPanel();
-
-    const panel =
-        document.createElement("div");
-
-    panel.className =
-        "extraPanel";
-
-    panel.id =
-        "dynamicPanel";
-
-    const unlockedWeapons =
-        Object.entries(
-            player.weaponsUnlocked
-        )
-        .filter(
-            ([key, value]) => value
-        )
-        .map(
-            ([key]) =>
-                `<div class="card">
-                    <strong>
-                        ${weapons[key].name}
-                    </strong>
-                    Damage:
-                    ${weapons[key].damage}
-                </div>`
-        )
-        .join("");
-
-    panel.innerHTML = `
-        <button class="panelClose">CLOSE</button>
-
-        <h2>INVENTORY</h2>
-
-        <div class="gridList">
-
-            <div class="card">
-                <strong>MEDKITS</strong>
-                ${player.inventory.medkit}
-            </div>
-
-            <div class="card">
-                <strong>ENERGY CELLS</strong>
-                ${player.inventory.energyCell}
-            </div>
-
-            <div class="card">
-                <strong>ARMOR PLATES</strong>
-                ${player.inventory.armorPlate}
-            </div>
-
-            <div class="card">
-                <strong>ACCESS A</strong>
-                ${player.inventory.keycardA}
-            </div>
-
-            <div class="card">
-                <strong>ACCESS B</strong>
-                ${player.inventory.keycardB}
-            </div>
-
-            <div class="card">
-                <strong>DATA CORE</strong>
-                ${player.inventory.dataCore}
-            </div>
-
-        </div>
-
-        <h2>WEAPONS</h2>
-
-        <div class="gridList">
-            ${unlockedWeapons}
-        </div>
-
-        <h2>UPGRADES</h2>
-
-        <div class="gridList">
-
-            <div class="card">
-                <strong>DAMAGE</strong>
-                ${player.upgrades.damage}
-            </div>
-
-            <div class="card">
-                <strong>SPEED</strong>
-                ${player.upgrades.speed}
-            </div>
-
-            <div class="card">
-                <strong>HEALTH</strong>
-                ${player.upgrades.maxHealth}
-            </div>
-
-            <div class="card">
-                <strong>ENERGY</strong>
-                ${player.upgrades.maxEnergy}
-            </div>
-
-            <div class="card">
-                <strong>DASH</strong>
-                ${player.upgrades.dash}
-            </div>
-
-            <div class="card">
-                <strong>ARMOR</strong>
-                ${player.upgrades.armor}
-            </div>
-
-        </div>
-    `;
-
-    extraUI.appendChild(panel);
-
-    panel
-        .querySelector(".panelClose")
-        .addEventListener(
-            "click",
-            closeExtraPanel
-        );
-}
-
-/* =========================================================
-   EXTRA PANEL
-   ========================================================= */
-
-function closeExtraPanel() {
-
-    const panel =
-        document.getElementById(
-            "dynamicPanel"
-        );
-
-    if (panel) {
-        panel.remove();
-    }
-}
-
-/* =========================================================
-   PAUSE
-   ========================================================= */
-
-function pauseGame() {
-
-    if (gameState !== "playing") return;
-
-    gameState = "paused";
-
-    pauseScreen.style.display =
-        "flex";
-}
-
-function resumeGame() {
-
-    if (gameState !== "paused") return;
-
-    gameState = "playing";
-
-    pauseScreen.style.display =
-        "none";
-
-    initAudio();
+    updateHUD();
 }
 
 /* =========================================================
@@ -5574,643 +3663,2132 @@ function resumeGame() {
 
 function gameOver() {
 
-    gameState = "gameover";
+    state = "gameover";
 
-    mouse.down = false;
+    mouseDown = false;
 
-    for (const key in keys) {
-        keys[key] = false;
+    const text =
+        document.getElementById(
+            "gameOverText"
+        );
+
+    if (text && player) {
+
+        text.textContent =
+            "KILLS: " +
+            player.kills +
+            " • LEVEL: " +
+            player.level +
+            " • CREDITS: " +
+            player.credits;
     }
 
-    const panel =
-        document.createElement("div");
+    document.getElementById(
+        "gameOverOverlay"
+    ).style.display = "flex";
+}
 
-    panel.className =
-        "extraPanel";
+function showVictory() {
 
-    panel.id =
-        "dynamicPanel";
-
-    panel.innerHTML = `
-        <h2>RUN ENDED</h2>
-
-        <p>
-            The signal has gone silent.
-        </p>
-
-        <div class="gridList">
-
-            <div class="card">
-                <strong>KILLS</strong>
-                ${player.kills}
-            </div>
-
-            <div class="card">
-                <strong>LEVEL</strong>
-                ${player.level}
-            </div>
-
-            <div class="card">
-                <strong>CREDITS</strong>
-                ${player.credits}
-            </div>
-
-            <div class="card">
-                <strong>SECTOR</strong>
-                ${currentSector + 1}
-            </div>
-
-        </div>
-
-        <button id="retryGame">
-            RETRY
-        </button>
-
-        <button id="gameOverMenu">
-            MAIN MENU
-        </button>
-    `;
-
-    extraUI.appendChild(panel);
-
-    panel
-        .querySelector("#retryGame")
-        .addEventListener(
-            "click",
-            () => {
-
-                panel.remove();
-
-                resetPlayer();
-
-                currentSector = 0;
-                wave = 1;
-
-                bullets = [];
-                enemyBullets = [];
-                enemies = [];
-                pickups = [];
-                particles = [];
-
-                buildWorld();
-
-                gameState =
-                    "playing";
-
-                spawnInitialEnemies();
-            }
+    const stats =
+        document.getElementById(
+            "victoryStats"
         );
 
-    panel
-        .querySelector("#gameOverMenu")
-        .addEventListener(
-            "click",
-            () => {
+    if (stats && player) {
 
-                panel.remove();
+        stats.textContent =
+            "KILLS: " +
+            player.kills +
+            " • LEVEL: " +
+            player.level +
+            " • CREDITS: " +
+            player.credits;
+    }
 
-                gameState = "menu";
-
-                menu.style.display =
-                    "flex";
-            }
-        );
+    document.getElementById(
+        "victoryOverlay"
+    ).style.display = "flex";
 }
 
 /* =========================================================
-   VICTORY
+   PAUSE
    ========================================================= */
 
-function victory() {
+function handleEscape() {
 
-    gameState = "victory";
+    if (
+        state === "playing"
+    ) {
 
-    const panel =
-        document.createElement("div");
+        state = "paused";
 
-    panel.className =
-        "extraPanel";
-
-    panel.id =
-        "dynamicPanel";
-
-    panel.innerHTML = `
-        <h2>SIGNAL RESTORED</h2>
-
-        <p>
-            You reached the source and
-            restored the lost signal.
-        </p>
-
-        <div class="gridList">
-
-            <div class="card">
-                <strong>LEVEL</strong>
-                ${player.level}
-            </div>
-
-            <div class="card">
-                <strong>KILLS</strong>
-                ${player.kills}
-            </div>
-
-            <div class="card">
-                <strong>CREDITS</strong>
-                ${player.credits}
-            </div>
-
-        </div>
-
-        <button id="victorySave">
-            SAVE FINAL RUN
-        </button>
-
-        <button id="victoryMenu">
-            MAIN MENU
-        </button>
-    `;
-
-    extraUI.appendChild(panel);
-
-    panel
-        .querySelector("#victorySave")
-        .addEventListener(
-            "click",
-            () => {
-                saveSlot(activeSaveSlot);
-            }
-        );
-
-    panel
-        .querySelector("#victoryMenu")
-        .addEventListener(
-            "click",
-            () => {
-
-                panel.remove();
-
-                gameState =
-                    "menu";
-
-                menu.style.display =
-                    "flex";
-            }
-        );
-}
-
-/* =========================================================
-   WEAPON SWITCHING
-   ========================================================= */
-
-function switchWeapon(number) {
-
-    const list = [
-        "pulse",
-        "burst",
-        "heavy",
-        "shotgun",
-        "rail",
-        "plasma"
-    ];
-
-    const key =
-        list[number - 1];
-
-    if (!key) return;
-
-    if (!player.weaponsUnlocked[key]) {
-
-        showToast(
-            "WEAPON LOCKED"
-        );
+        pauseScreen.style.display =
+            "flex";
 
         return;
     }
 
-    player.weapon = key;
+    if (
+        state === "paused"
+    ) {
 
-    showToast(
-        "EQUIPPED: " +
-        weapons[key].name
-    );
+        state = "playing";
+
+        pauseScreen.style.display =
+            "none";
+    }
 }
 
 /* =========================================================
-   UPGRADES
+   MAP
    ========================================================= */
 
-function buyUpgrade(type) {
+function toggleMap() {
 
-    const costs = {
-        damage: 150,
-        speed: 180,
-        maxHealth: 200,
-        maxEnergy: 180,
-        dash: 250,
-        armor: 220
-    };
+    if (
+        state !== "playing" &&
+        state !== "map"
+    ) return;
 
-    const cost =
-        costs[type];
+    if (state === "playing") {
 
-    if (!cost) return;
+        state = "map";
 
-    if (player.credits < cost) {
+        mapScreen.style.display =
+            "flex";
 
-        showToast(
-            "NOT ENOUGH CREDITS"
-        );
+        drawMap();
 
+    } else {
+
+        state = "playing";
+
+        mapScreen.style.display =
+            "none";
+    }
+}
+
+function drawMap() {
+
+    if (!mapCtx || !player)
         return;
-    }
 
-    player.credits -= cost;
-
-    player.upgrades[type]++;
-
-    if (type === "maxHealth") {
-        player.maxHealth += 10;
-        player.health += 10;
-    }
-
-    if (type === "maxEnergy") {
-        player.maxEnergy += 10;
-        player.energy += 10;
-    }
-
-    if (type === "armor") {
-        player.armor += 10;
-    }
-
-    showToast(
-        "UPGRADE PURCHASED"
+    mapCtx.clearRect(
+        0,
+        0,
+        mapCanvas.width,
+        mapCanvas.height
     );
+
+    mapCtx.fillStyle =
+        "#081016";
+
+    mapCtx.fillRect(
+        0,
+        0,
+        mapCanvas.width,
+        mapCanvas.height
+    );
+
+    const sx =
+        mapCanvas.width /
+        WORLD_WIDTH;
+
+    const sy =
+        mapCanvas.height /
+        WORLD_HEIGHT;
+
+    /*
+       Muren
+    */
+
+    mapCtx.fillStyle =
+        "#40515a";
+
+    for (const wall of walls) {
+
+        mapCtx.fillRect(
+            wall.x * sx,
+            wall.y * sy,
+            wall.w * sx,
+            wall.h * sy
+        );
+    }
+
+    /*
+       ontdekte sectoren
+    */
+
+    for (const sector of discoveredSectors) {
+
+        const x =
+            (sector % 6) * 1000 * sx;
+
+        const y =
+            Math.floor(sector / 6) *
+            1000 *
+            sy;
+
+        mapCtx.strokeStyle =
+            "rgba(100,180,220,.25)";
+
+        mapCtx.strokeRect(
+            x,
+            y,
+            1000 * sx,
+            1000 * sy
+        );
+    }
+
+    /*
+       enemies
+    */
+
+    mapCtx.fillStyle =
+        "#ff6d65";
+
+    for (const enemy of enemies) {
+
+        mapCtx.beginPath();
+
+        mapCtx.arc(
+            enemy.x * sx,
+            enemy.y * sy,
+            3,
+            0,
+            Math.PI * 2
+        );
+
+        mapCtx.fill();
+    }
+
+    /*
+       player
+    */
+
+    mapCtx.fillStyle =
+        "#80e7ff";
+
+    mapCtx.beginPath();
+
+    mapCtx.arc(
+        player.x * sx,
+        player.y * sy,
+        5,
+        0,
+        Math.PI * 2
+    );
+
+    mapCtx.fill();
+
+    /*
+       beacons
+    */
+
+    mapCtx.fillStyle =
+        "#ffe680";
+
+    for (const beacon of beacons) {
+
+        mapCtx.beginPath();
+
+        mapCtx.arc(
+            beacon.x * sx,
+            beacon.y * sy,
+            5,
+            0,
+            Math.PI * 2
+        );
+
+        mapCtx.fill();
+    }
 }
 
 /* =========================================================
-   SHOP PANEL
+   UI
    ========================================================= */
 
-function showShop() {
+function updateHUD() {
 
-    closeExtraPanel();
+    if (!player) return;
 
-    const panel =
-        document.createElement("div");
+    if (healthBar) {
 
-    panel.className =
-        "extraPanel";
+        healthBar.style.width =
+            (
+                player.hp /
+                player.maxHp *
+                100
+            ) + "%";
+    }
 
-    panel.id =
-        "dynamicPanel";
+    if (energyBar) {
 
-    const upgrades = [
-        ["damage", "DAMAGE", 150],
-        ["speed", "SPEED", 180],
-        ["maxHealth", "MAX HEALTH", 200],
-        ["maxEnergy", "MAX ENERGY", 180],
-        ["dash", "DASH", 250],
-        ["armor", "ARMOR", 220]
-    ];
+        energyBar.style.width =
+            (
+                player.energy /
+                player.maxEnergy *
+                100
+            ) + "%";
+    }
 
-    panel.innerHTML = `
-        <button class="panelClose">CLOSE</button>
+    if (killsElement) {
 
-        <h2>UPGRADE TERMINAL</h2>
+        killsElement.textContent =
+            "KILLS: " +
+            player.kills;
+    }
 
-        <p>
-            CREDITS:
-            <strong>
-                ${player.credits}
-            </strong>
-        </p>
+    if (creditsElement) {
 
-        ${upgrades.map(u => `
-            <button
-                class="upgradeButton"
-                data-type="${u[0]}"
-            >
-                ${u[1]}
-                — ${u[2]} CREDITS
-            </button>
-        `).join("")}
-    `;
+        creditsElement.textContent =
+            "CREDITS: " +
+            player.credits;
+    }
 
-    extraUI.appendChild(panel);
+    if (zoneElement) {
 
-    panel
-        .querySelector(".panelClose")
-        .addEventListener(
-            "click",
-            closeExtraPanel
-        );
-
-    panel
-        .querySelectorAll(".upgradeButton")
-        .forEach(button => {
-
-            button.addEventListener(
-                "click",
-                () => {
-
-                    buyUpgrade(
-                        button.dataset.type
-                    );
-
-                    showShop();
-                }
+        zoneElement.textContent =
+            sectorName(
+                currentSector
             );
+    }
+
+    if (ammoElement) {
+
+        ammoElement.textContent =
+            currentWeapon().ammo +
+            " / " +
+            currentWeapon().maxAmmo;
+    }
+
+    const level =
+        document.getElementById(
+            "levelValue"
+        );
+
+    const xp =
+        document.getElementById(
+            "xpValue"
+        );
+
+    const xpMax =
+        document.getElementById(
+            "xpMax"
+        );
+
+    if (level)
+        level.textContent =
+            player.level;
+
+    if (xp)
+        xp.textContent =
+            Math.floor(player.xp);
+
+    if (xpMax)
+        xpMax.textContent =
+            xpNeeded();
+
+    const weaponName =
+        document.getElementById(
+            "weaponNameExtra"
+        );
+
+    if (weaponName) {
+
+        weaponName.textContent =
+            currentWeapon().name;
+    }
+
+    updateMission();
+}
+
+/* =========================================================
+   MESSAGE
+   ========================================================= */
+
+let messageTimer = 0;
+
+function showMessage(text) {
+
+    const box =
+        document.getElementById(
+            "messageBox"
+        );
+
+    if (!box) return;
+
+    box.textContent = text;
+    box.style.opacity = "1";
+
+    messageTimer = 2;
+}
+
+/* =========================================================
+   OVERLAYS
+   ========================================================= */
+
+function hideAllOverlays() {
+
+    document
+        .querySelectorAll(".overlayPanel")
+        .forEach(el => {
+            el.style.display = "none";
         });
 }
 
+function toggleInventory() {
+
+    if (!player) return;
+
+    if (
+        state === "playing"
+    ) {
+
+        state = "inventory";
+
+        renderInventory();
+
+        inventoryOverlay.style.display =
+            "flex";
+
+    } else if (
+        state === "inventory"
+    ) {
+
+        state = "playing";
+
+        inventoryOverlay.style.display =
+            "none";
+    }
+}
+
 /* =========================================================
-   INPUT
+   SAVE SLOTS UI
    ========================================================= */
 
-window.addEventListener(
-    "keydown",
-    event => {
+function renderSaveSlots() {
 
-        keys[event.code] = true;
-        keys[event.key] = true;
+    const grid =
+        document.getElementById(
+            "slotGrid"
+        );
 
-        initAudio();
+    if (!grid) return;
 
-        if (
-            event.code === "Escape"
-        ) {
+    grid.innerHTML = "";
 
-            if (
-                gameState === "playing"
-            ) {
-                pauseGame();
-            } else if (
-                gameState === "paused"
-            ) {
-                resumeGame();
-            }
+    for (let i = 1; i <= 3; i++) {
 
-            return;
-        }
+        const exists =
+            saveExists(i);
 
-        if (
-            event.code === "Space"
-        ) {
-            event.preventDefault();
-        }
+        const slot =
+            document.createElement("div");
 
-        if (
-            event.code === "KeyE"
-        ) {
-            interact();
-        }
+        slot.className = "slot";
 
-        if (
-            event.code === "KeyQ"
-        ) {
-            useMedkit();
-        }
+        slot.innerHTML = `
+            <strong>SLOT ${i}</strong>
+            <p>
+                ${exists
+                    ? "RUN OPGESLAGEN"
+                    : "LEEG"}
+            </p>
+            <button class="panelButton saveSlotButton">
+                OPSLAAN
+            </button>
+        `;
 
-        if (
-            event.code === "KeyR"
-        ) {
-            useEnergyCell();
-        }
+        slot
+            .querySelector(
+                ".saveSlotButton"
+            )
+            .onclick = () => {
 
-        if (
-            event.code === "KeyM"
-        ) {
+                saveGame(i);
 
-            if (
-                gameState === "playing"
-            ) {
+                renderSaveSlots();
+            };
 
-                mapScreen.style.display =
-                    "flex";
+        grid.appendChild(slot);
+    }
+}
 
-                drawMap();
+/* =========================================================
+   CONTINUE
+   ========================================================= */
+
+function continueGame() {
+
+    for (let i = 1; i <= 3; i++) {
+
+        if (saveExists(i)) {
+
+            if (loadGame(i)) {
+                return;
             }
         }
+    }
 
-        if (
-            event.code === "KeyI"
+    showMessage(
+        "GEEN OPGESLAGEN RUN"
+    );
+}
+
+/* =========================================================
+   RENDER BACKGROUND
+   ========================================================= */
+
+function renderBackground() {
+
+    /*
+       Basisvloer
+    */
+
+    ctx.fillStyle =
+        "#11191c";
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+    /*
+       grote vloerblokken
+    */
+
+    const gridSize = 100;
+
+    const startX =
+        Math.floor(
+            camera.x / gridSize
+        ) * gridSize;
+
+    const startY =
+        Math.floor(
+            camera.y / gridSize
+        ) * gridSize;
+
+    for (
+        let x = startX;
+        x < camera.x + W + gridSize;
+        x += gridSize
+    ) {
+
+        for (
+            let y = startY;
+            y < camera.y + H + gridSize;
+            y += gridSize
         ) {
-            showInventory();
-        }
 
-        if (
-            event.code === "KeyB"
-        ) {
-            showShop();
-        }
-
-        if (
-            event.code.startsWith("Digit")
-        ) {
-
-            const number =
-                Number(
-                    event.code.replace(
-                        "Digit",
-                        ""
-                    )
+            const p =
+                worldToScreen(
+                    x,
+                    y
                 );
 
-            switchWeapon(number);
+            const variation =
+                (
+                    Math.abs(
+                        Math.floor(x / gridSize) * 17 +
+                        Math.floor(y / gridSize) * 31
+                    ) % 5
+                );
+
+            ctx.fillStyle =
+                variation % 2 === 0
+                    ? "#141d20"
+                    : "#172124";
+
+            ctx.fillRect(
+                p.x,
+                p.y,
+                gridSize,
+                gridSize
+            );
+
+            ctx.strokeStyle =
+                "rgba(130,160,170,.035)";
+
+            ctx.strokeRect(
+                p.x,
+                p.y,
+                gridSize,
+                gridSize
+            );
         }
     }
-);
 
-window.addEventListener(
-    "keyup",
-    event => {
+    /*
+       kleine gronddetails
+    */
 
-        keys[event.code] = false;
-        keys[event.key] = false;
+    ctx.fillStyle =
+        "rgba(100,150,160,.05)";
+
+    for (let i = 0; i < 100; i++) {
+
+        const x =
+            ((i * 631) %
+                WORLD_WIDTH);
+
+        const y =
+            ((i * 391) %
+                WORLD_HEIGHT);
+
+        const p =
+            worldToScreen(x, y);
+
+        ctx.fillRect(
+            p.x,
+            p.y,
+            2,
+            2
+        );
     }
-);
-
-window.addEventListener(
-    "blur",
-    () => {
-
-        mouse.down = false;
-
-        for (const key in keys) {
-            keys[key] = false;
-        }
-    }
-);
-
-/* =========================================================
-   MOUSE
-   ========================================================= */
-
-window.addEventListener(
-    "mousemove",
-    event => {
-
-        mouse.x =
-            event.clientX;
-
-        mouse.y =
-            event.clientY;
-    }
-);
-
-window.addEventListener(
-    "mousedown",
-    event => {
-
-        if (event.button === 0) {
-
-            mouse.down = true;
-
-            initAudio();
-        }
-    }
-);
-
-window.addEventListener(
-    "mouseup",
-    event => {
-
-        if (event.button === 0) {
-            mouse.down = false;
-        }
-    }
-);
-
-/* =========================================================
-   BUTTONS
-   ========================================================= */
-
-if (newGameBtn) {
-
-    newGameBtn.addEventListener(
-        "click",
-        startNewGame
-    );
 }
 
-if (loadGameBtn) {
+/* =========================================================
+   RENDER PROPS
+   ========================================================= */
 
-    loadGameBtn.addEventListener(
-        "click",
-        () => {
+function renderProps() {
 
-            if (gameState === "menu") {
-                showSaveSlots();
+    for (const prop of props) {
+
+        const p =
+            worldToScreen(
+                prop.x,
+                prop.y
+            );
+
+        if (
+            p.x < -60 ||
+            p.y < -60 ||
+            p.x > W + 60 ||
+            p.y > H + 60
+        ) continue;
+
+        ctx.save();
+
+        ctx.translate(
+            p.x,
+            p.y
+        );
+
+        ctx.rotate(
+            prop.rotation
+        );
+
+        if (prop.type === "crate") {
+
+            ctx.fillStyle =
+                "#5d4632";
+
+            ctx.fillRect(
+                -prop.size,
+                -prop.size,
+                prop.size * 2,
+                prop.size * 2
+            );
+
+            ctx.strokeStyle =
+                "#a1784e";
+
+            ctx.strokeRect(
+                -prop.size,
+                -prop.size,
+                prop.size * 2,
+                prop.size * 2
+            );
+
+            ctx.strokeStyle =
+                "rgba(255,255,255,.15)";
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                -prop.size,
+                -prop.size
+            );
+
+            ctx.lineTo(
+                prop.size,
+                prop.size
+            );
+
+            ctx.stroke();
+
+        } else if (prop.type === "rock") {
+
+            ctx.fillStyle =
+                "#4b575a";
+
+            ctx.beginPath();
+
+            ctx.arc(
+                0,
+                0,
+                prop.size,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.fill();
+
+        } else {
+
+            ctx.strokeStyle =
+                "#426f61";
+
+            ctx.lineWidth = 4;
+
+            for (let i = 0; i < 4; i++) {
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+                    0,
+                    0
+                );
+
+                ctx.lineTo(
+                    random(
+                        -prop.size,
+                        prop.size
+                    ),
+                    -prop.size
+                );
+
+                ctx.stroke();
             }
         }
-    );
-}
 
-if (achievementsBtn) {
-
-    achievementsBtn.addEventListener(
-        "click",
-        showAchievements
-    );
-}
-
-if (controlsBtn) {
-
-    controlsBtn.addEventListener(
-        "click",
-        showControls
-    );
-}
-
-if (resumeBtn) {
-
-    resumeBtn.addEventListener(
-        "click",
-        resumeGame
-    );
-}
-
-if (saveBtn) {
-
-    saveBtn.addEventListener(
-        "click",
-        () => {
-            saveSlot(activeSaveSlot);
-        }
-    );
-}
-
-if (quitBtn) {
-
-    quitBtn.addEventListener(
-        "click",
-        () => {
-
-            pauseScreen.style.display =
-                "none";
-
-            gameState = "menu";
-
-            menu.style.display =
-                "flex";
-
-            mouse.down = false;
-        }
-    );
-}
-
-if (closeMapBtn) {
-
-    closeMapBtn.addEventListener(
-        "click",
-        () => {
-
-            mapScreen.style.display =
-                "none";
-        }
-    );
+        ctx.restore();
+    }
 }
 
 /* =========================================================
-   UPDATE
+   RENDER WALLS
+   ========================================================= */
+
+function renderWalls() {
+
+    for (const wall of walls) {
+
+        const p =
+            worldToScreen(
+                wall.x,
+                wall.y
+            );
+
+        if (
+            p.x + wall.w < 0 ||
+            p.y + wall.h < 0 ||
+            p.x > W ||
+            p.y > H
+        ) continue;
+
+        /*
+           Schaduw
+        */
+
+        ctx.fillStyle =
+            "rgba(0,0,0,.35)";
+
+        ctx.fillRect(
+            p.x + 8,
+            p.y + 8,
+            wall.w,
+            wall.h
+        );
+
+        /*
+           Muur
+        */
+
+        ctx.fillStyle =
+            "#2c3c43";
+
+        ctx.fillRect(
+            p.x,
+            p.y,
+            wall.w,
+            wall.h
+        );
+
+        /*
+           duidelijke rand
+        */
+
+        ctx.strokeStyle =
+            "#6b8b95";
+
+        ctx.lineWidth = 2;
+
+        ctx.strokeRect(
+            p.x,
+            p.y,
+            wall.w,
+            wall.h
+        );
+
+        /*
+           binnenlijn
+        */
+
+        ctx.strokeStyle =
+            "rgba(180,230,240,.16)";
+
+        ctx.lineWidth = 1;
+
+        ctx.strokeRect(
+            p.x + 5,
+            p.y + 5,
+            wall.w - 10,
+            wall.h - 10
+        );
+
+        /*
+           paneellijnen
+        */
+
+        if (wall.w > 100) {
+
+            for (
+                let x = 50;
+                x < wall.w;
+                x += 100
+            ) {
+
+                ctx.strokeStyle =
+                    "rgba(0,0,0,.18)";
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+                    p.x + x,
+                    p.y
+                );
+
+                ctx.lineTo(
+                    p.x + x,
+                    p.y + wall.h
+                );
+
+                ctx.stroke();
+            }
+        }
+    }
+
+    /*
+       DEUREN
+    */
+
+    for (const door of doors) {
+
+        const p =
+            worldToScreen(
+                door.x,
+                door.y
+            );
+
+        ctx.fillStyle =
+            door.open
+                ? "rgba(80,220,170,.16)"
+                : "#704d32";
+
+        ctx.fillRect(
+            p.x,
+            p.y,
+            door.w,
+            door.h
+        );
+
+        ctx.strokeStyle =
+            door.open
+                ? "#65dcae"
+                : "#d39a5c";
+
+        ctx.lineWidth = 2;
+
+        ctx.strokeRect(
+            p.x,
+            p.y,
+            door.w,
+            door.h
+        );
+    }
+}
+
+/* =========================================================
+   RENDER CHESTS / TERMINALS / BEACONS
+   ========================================================= */
+
+function renderObjects() {
+
+    for (const chest of chests) {
+
+        const p =
+            worldToScreen(
+                chest.x,
+                chest.y
+            );
+
+        ctx.fillStyle =
+            chest.opened
+                ? "#39444a"
+                : "#76572f";
+
+        ctx.fillRect(
+            p.x - 20,
+            p.y - 15,
+            40,
+            30
+        );
+
+        ctx.strokeStyle =
+            chest.opened
+                ? "#66757b"
+                : "#d1a357";
+
+        ctx.strokeRect(
+            p.x - 20,
+            p.y - 15,
+            40,
+            30
+        );
+
+        if (!chest.opened) {
+
+            ctx.fillStyle =
+                "#ffe68a";
+
+            ctx.fillRect(
+                p.x - 3,
+                p.y - 3,
+                6,
+                6
+            );
+        }
+    }
+
+    for (const terminal of terminals) {
+
+        const p =
+            worldToScreen(
+                terminal.x,
+                terminal.y
+            );
+
+        ctx.fillStyle =
+            "#26353b";
+
+        ctx.fillRect(
+            p.x - 12,
+            p.y - 25,
+            24,
+            50
+        );
+
+        ctx.fillStyle =
+            terminal.used
+                ? "#53636a"
+                : "#65ddff";
+
+        ctx.fillRect(
+            p.x - 7,
+            p.y - 17,
+            14,
+            8
+        );
+    }
+
+    for (const beacon of beacons) {
+
+        const p =
+            worldToScreen(
+                beacon.x,
+                beacon.y
+            );
+
+        const pulse =
+            1 +
+            Math.sin(elapsed * 4) * .15;
+
+        ctx.strokeStyle =
+            beacon.active
+                ? "#76ffc4"
+                : "#ffdb73";
+
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            32 * pulse,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.stroke();
+
+        ctx.fillStyle =
+            beacon.active
+                ? "#76ffc4"
+                : "#ffdb73";
+
+        ctx.fillRect(
+            p.x - 7,
+            p.y - 35,
+            14,
+            70
+        );
+    }
+}
+
+/* =========================================================
+   RENDER PICKUPS
+   ========================================================= */
+
+function renderPickups() {
+
+    for (const pickup of pickups) {
+
+        const p =
+            worldToScreen(
+                pickup.x,
+                pickup.y
+            );
+
+        let color =
+            "#ffd46b";
+
+        if (pickup.type === "medkit")
+            color = "#ff827a";
+
+        if (pickup.type === "energy")
+            color = "#72e5ff";
+
+        if (pickup.type === "scrap")
+            color = "#a7b2b7";
+
+        const pulse =
+            1 +
+            Math.sin(
+                pickup.pulse
+            ) * .15;
+
+        ctx.fillStyle =
+            color;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            7 * pulse,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.shadowColor =
+            color;
+
+        ctx.shadowBlur = 12;
+
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+    }
+}
+
+/* =========================================================
+   RENDER ENEMIES
+   ========================================================= */
+
+function renderEnemies() {
+
+    for (const enemy of enemies) {
+
+        const p =
+            worldToScreen(
+                enemy.x,
+                enemy.y
+            );
+
+        if (
+            p.x < -80 ||
+            p.y < -80 ||
+            p.x > W + 80 ||
+            p.y > H + 80
+        ) continue;
+
+        ctx.save();
+
+        /*
+           schaduw
+        */
+
+        ctx.fillStyle =
+            "rgba(0,0,0,.35)";
+
+        ctx.beginPath();
+
+        ctx.ellipse(
+            p.x,
+            p.y + enemy.radius * .8,
+            enemy.radius,
+            enemy.radius * .45,
+            0,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        /*
+           body
+        */
+
+        ctx.fillStyle =
+            enemy.hitFlash > 0
+                ? "#ffffff"
+                : enemy.color;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            enemy.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        /*
+           donkere kern
+        */
+
+        ctx.fillStyle =
+            "rgba(5,10,14,.7)";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            enemy.radius * .48,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        /*
+           richting
+        */
+
+        ctx.strokeStyle =
+            enemy.color;
+
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            p.x,
+            p.y
+        );
+
+        ctx.lineTo(
+            p.x +
+            Math.cos(enemy.angle) *
+            enemy.radius * 1.5,
+
+            p.y +
+            Math.sin(enemy.angle) *
+            enemy.radius * 1.5
+        );
+
+        ctx.stroke();
+
+        /*
+           HP bar
+        */
+
+        const hp =
+            clamp(
+                enemy.hp /
+                enemy.maxHp,
+                0,
+                1
+            );
+
+        ctx.fillStyle =
+            "rgba(0,0,0,.6)";
+
+        ctx.fillRect(
+            p.x - enemy.radius,
+            p.y - enemy.radius - 10,
+            enemy.radius * 2,
+            4
+        );
+
+        ctx.fillStyle =
+            enemy.color;
+
+        ctx.fillRect(
+            p.x - enemy.radius,
+            p.y - enemy.radius - 10,
+            enemy.radius * 2 * hp,
+            4
+        );
+
+        ctx.restore();
+    }
+}
+
+/* =========================================================
+   RENDER PLAYER
+   ========================================================= */
+
+function renderPlayer() {
+
+    if (!player) return;
+
+    const p =
+        worldToScreen(
+            player.x,
+            player.y
+        );
+
+    ctx.save();
+
+    /*
+       schaduw
+    */
+
+    ctx.fillStyle =
+        "rgba(0,0,0,.4)";
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+        p.x,
+        p.y + 18,
+        21,
+        9,
+        0,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    /*
+       dash glow
+    */
+
+    if (player.dashTimer > 0) {
+
+        ctx.strokeStyle =
+            "rgba(100,230,255,.5)";
+
+        ctx.lineWidth = 4;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            30,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.stroke();
+    }
+
+    /*
+       body
+    */
+
+    ctx.fillStyle =
+        player.flash > 0
+            ? "#ffffff"
+            : "#d8e7ec";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        p.x,
+        p.y,
+        player.radius,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    /*
+       armor
+    */
+
+    ctx.strokeStyle =
+        "#62c7e5";
+
+    ctx.lineWidth = 3;
+
+    ctx.stroke();
+
+    /*
+       helm/core
+    */
+
+    ctx.fillStyle =
+        "#20343d";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        p.x,
+        p.y,
+        9,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    /*
+       weapon direction
+    */
+
+    ctx.strokeStyle =
+        currentWeapon().color;
+
+    ctx.lineWidth = 6;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        p.x,
+        p.y
+    );
+
+    ctx.lineTo(
+        p.x +
+        Math.cos(player.angle) *
+        32,
+
+        p.y +
+        Math.sin(player.angle) *
+        32
+    );
+
+    ctx.stroke();
+
+    ctx.restore();
+}
+
+/* =========================================================
+   RENDER BULLETS
+   ========================================================= */
+
+function renderBullets() {
+
+    for (const bullet of bullets) {
+
+        const p =
+            worldToScreen(
+                bullet.x,
+                bullet.y
+            );
+
+        ctx.fillStyle =
+            bullet.color;
+
+        ctx.shadowColor =
+            bullet.color;
+
+        ctx.shadowBlur = 10;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            bullet.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+    }
+
+    for (const bullet of enemyBullets) {
+
+        const p =
+            worldToScreen(
+                bullet.x,
+                bullet.y
+            );
+
+        ctx.fillStyle =
+            bullet.color;
+
+        ctx.shadowColor =
+            bullet.color;
+
+        ctx.shadowBlur = 8;
+
+        ctx.beginPath();
+
+        ctx.arc(
+            p.x,
+            p.y,
+            bullet.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+    }
+}
+
+/* =========================================================
+   RENDER PARTICLES
+   ========================================================= */
+
+function renderParticles() {
+
+    for (const p of particles) {
+
+        const s =
+            worldToScreen(
+                p.x,
+                p.y
+            );
+
+        ctx.globalAlpha =
+            clamp(
+                p.life /
+                p.maxLife,
+                0,
+                1
+            );
+
+        ctx.fillStyle =
+            p.color;
+
+        ctx.fillRect(
+            s.x,
+            s.y,
+            p.size,
+            p.size
+        );
+    }
+
+    ctx.globalAlpha = 1;
+}
+
+/* =========================================================
+   LIGHTING
+   ========================================================= */
+
+function renderLighting() {
+
+    if (!player) return;
+
+    /*
+       Donkere overlay
+    */
+
+    const gradient =
+        ctx.createRadialGradient(
+            W / 2,
+            H / 2,
+            80,
+            W / 2,
+            H / 2,
+            Math.max(W, H) * .75
+        );
+
+    gradient.addColorStop(
+        0,
+        "rgba(0,0,0,0)"
+    );
+
+    gradient.addColorStop(
+        .55,
+        "rgba(0,0,0,.12)"
+    );
+
+    gradient.addColorStop(
+        1,
+        "rgba(0,0,0,.55)"
+    );
+
+    ctx.fillStyle =
+        gradient;
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+    /*
+       spelerlicht
+    */
+
+    const light =
+        ctx.createRadialGradient(
+            W / 2,
+            H / 2,
+            30,
+            W / 2,
+            H / 2,
+            260
+        );
+
+    light.addColorStop(
+        0,
+        "rgba(80,210,255,.055)"
+    );
+
+    light.addColorStop(
+        1,
+        "rgba(80,210,255,0)"
+    );
+
+    ctx.fillStyle =
+        light;
+
+    ctx.fillRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+    /*
+       mist
+    */
+
+    if (weather === "fog") {
+
+        ctx.fillStyle =
+            "rgba(130,160,165,.10)";
+
+        ctx.fillRect(
+            0,
+            0,
+            W,
+            H
+        );
+    }
+}
+
+/* =========================================================
+   WEATHER RENDER
+   ========================================================= */
+
+function renderWeather() {
+
+    if (weather !== "rain")
+        return;
+
+    ctx.strokeStyle =
+        "rgba(120,190,220,.22)";
+
+    ctx.lineWidth = 1;
+
+    for (const drop of rain) {
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            drop.x,
+            drop.y
+        );
+
+        ctx.lineTo(
+            drop.x - 4,
+            drop.y + 15
+        );
+
+        ctx.stroke();
+    }
+}
+
+/* =========================================================
+   UPDATE WEATHER
+   ========================================================= */
+
+function updateWeather(dt) {
+
+    weatherTimer += dt;
+
+    if (weatherTimer > 35) {
+
+        weatherTimer = 0;
+
+        changeWeather();
+    }
+
+    if (weather === "rain") {
+
+        for (const drop of rain) {
+
+            drop.y +=
+                drop.speed * dt;
+
+            drop.x -=
+                drop.speed *
+                .08 *
+                dt;
+
+            if (
+                drop.y > H + 20
+            ) {
+
+                drop.y =
+                    random(-100, 0);
+
+                drop.x =
+                    random(0, W);
+            }
+        }
+    }
+}
+
+/* =========================================================
+   INTERACTION HINT
+   ========================================================= */
+
+function updateInteractionHint() {
+
+    const hint =
+        document.getElementById(
+            "interactHint"
+        );
+
+    if (!hint || !player) return;
+
+    let nearby = false;
+
+    for (const chest of chests) {
+
+        if (
+            !chest.opened &&
+            Math.hypot(
+                player.x - chest.x,
+                player.y - chest.y
+            ) < 85
+        ) {
+            nearby = true;
+        }
+    }
+
+    for (const door of doors) {
+
+        if (
+            Math.hypot(
+                player.x -
+                (door.x + door.w / 2),
+
+                player.y -
+                (door.y + door.h / 2)
+            ) < 100
+        ) {
+            nearby = true;
+        }
+    }
+
+    for (const terminal of terminals) {
+
+        if (
+            Math.hypot(
+                player.x - terminal.x,
+                player.y - terminal.y
+            ) < 85
+        ) {
+            nearby = true;
+        }
+    }
+
+    hint.style.display =
+        nearby
+            ? "block"
+            : "none";
+}
+
+/* =========================================================
+   BOSS
+   ========================================================= */
+
+let boss = null;
+
+function spawnBoss() {
+
+    if (boss) return;
+
+    const position =
+        findSpawnNearPlayerForSector(
+            currentSector
+        );
+
+    if (!position) return;
+
+    boss = {
+        x: position.x,
+        y: position.y,
+
+        radius: 55,
+
+        hp:
+            1800 +
+            player.level * 120,
+
+        maxHp:
+            1800 +
+            player.level * 120,
+
+        speed: 35,
+
+        damage: 30,
+
+        shootCd: 1,
+
+        angle: 0,
+
+        active: true
+    };
+
+    enemies.push(
+        boss
+    );
+
+    showMessage(
+        "WARNING: LARGE ECHO DETECTED"
+    );
+
+    sound("boss");
+}
+
+function updateBoss(dt) {
+
+    if (!boss || !player)
+        return;
+
+    if (boss.dead) {
+
+        boss = null;
+
+        document.getElementById(
+            "bossBar"
+        ).style.display = "none";
+
+        return;
+    }
+
+    const dx =
+        player.x - boss.x;
+
+    const dy =
+        player.y - boss.y;
+
+    const distance =
+        Math.hypot(dx, dy);
+
+    boss.angle =
+        Math.atan2(
+            dy,
+            dx
+        );
+
+    if (
+        distance < 1300
+    ) {
+
+        if (
+            distance > 180
+        ) {
+
+            const nx =
+                boss.x +
+                Math.cos(boss.angle) *
+                boss.speed *
+                dt;
+
+            const ny =
+                boss.y +
+                Math.sin(boss.angle) *
+                boss.speed *
+                dt;
+
+            if (
+                !collidesAt(
+                    nx,
+                    ny,
+                    boss.radius
+                )
+            ) {
+
+                boss.x = nx;
+                boss.y = ny;
+            }
+        }
+
+        boss.shootCd -= dt;
+
+        if (
+            boss.shootCd <= 0 &&
+            distance < 750 &&
+            !lineBlocked(
+                boss.x,
+                boss.y,
+                player.x,
+                player.y
+            )
+        ) {
+
+            for (
+                let i = 0;
+                i < 5;
+                i++
+            ) {
+
+                const a =
+                    boss.angle +
+                    (i - 2) *
+                    .12;
+
+                enemyBullets.push({
+                    x: boss.x,
+                    y: boss.y,
+
+                    vx:
+                        Math.cos(a) *
+                        300,
+
+                    vy:
+                        Math.sin(a) *
+                        300,
+
+                    damage:
+                        boss.damage,
+
+                    life: 3,
+
+                    radius: 7,
+
+                    color: "#ffad6b"
+                });
+            }
+
+            boss.shootCd = 2.2;
+        }
+    }
+
+    const bossBar =
+        document.getElementById(
+            "bossBar"
+        );
+
+    const bossInner =
+        document.getElementById(
+            "bossInner"
+        );
+
+    if (bossBar)
+        bossBar.style.display =
+            "block";
+
+    if (bossInner)
+        bossInner.style.width =
+            clamp(
+                boss.hp /
+                boss.maxHp *
+                100,
+                0,
+                100
+            ) + "%";
+}
+
+/* =========================================================
+   PATCH BOSS DAMAGE
+   ========================================================= */
+
+const originalKillEnemy = killEnemy;
+
+killEnemy = function(enemy) {
+
+    if (enemy === boss) {
+
+        unlockAchievement("boss");
+
+        player.credits += 500;
+
+        player.xp += 250;
+
+        enemy.dead = true;
+
+        showMessage(
+            "BOSS DEFEATED +500 CREDITS"
+        );
+
+        particle(
+            enemy.x,
+            enemy.y,
+            "#ffb56b",
+            70,
+            250
+        );
+
+        checkLevelUp();
+
+        return;
+    }
+
+    originalKillEnemy(enemy);
+};
+
+/* =========================================================
+   PATCH BULLET BOSS HIT
+   ========================================================= */
+
+function handleBossBullets() {
+
+    if (!boss || boss.dead)
+        return;
+
+    for (const bullet of bullets) {
+
+        if (bullet.life <= 0)
+            continue;
+
+        const d =
+            Math.hypot(
+                bullet.x - boss.x,
+                bullet.y - boss.y
+            );
+
+        if (
+            d <
+            boss.radius +
+            bullet.radius
+        ) {
+
+            boss.hp -=
+                bullet.damage;
+
+            bullet.life = 0;
+
+            particle(
+                bullet.x,
+                bullet.y,
+                bullet.color,
+                5,
+                80
+            );
+
+            if (boss.hp <= 0) {
+                killEnemy(boss);
+            }
+        }
+    }
+}
+
+/* =========================================================
+   BOSS SPAWN RULE
+   ========================================================= */
+
+let bossTimer = 0;
+
+function updateBossSpawner(dt) {
+
+    bossTimer += dt;
+
+    if (
+        !boss &&
+        player &&
+        player.level >= 5 &&
+        player.kills >= 25 &&
+        bossTimer > 20
+    ) {
+
+        bossTimer = 0;
+
+        spawnBoss();
+    }
+}
+
+/* =========================================================
+   SHOOT / RELOAD UPDATE
+   ========================================================= */
+
+function updateWeapons(dt) {
+
+    if (fireCooldown > 0) {
+        fireCooldown -= dt;
+    }
+
+    if (reloadTimer > 0) {
+
+        reloadTimer -= dt;
+
+        if (reloadTimer <= 0) {
+            finishReload();
+        }
+    }
+
+    if (
+        mouseDown &&
+        state === "playing"
+    ) {
+        shoot();
+    }
+}
+
+/* =========================================================
+   SECTOR UPDATE
+   ========================================================= */
+
+function updateSector() {
+
+    if (!player) return;
+
+    const newSector =
+        sectorFromPosition(
+            player.x,
+            player.y
+        );
+
+    if (
+        newSector !==
+        currentSector
+    ) {
+
+        currentSector =
+            newSector;
+
+        discoverSector(
+            currentSector
+        );
+
+        /*
+           Extra monsters bij ver reizen
+        */
+
+        spawnSectorEnemies(
+            currentSector
+        );
+
+        /*
+           Soms boss kans in diepe sector
+        */
+
+        if (
+            player.level >= 5 &&
+            currentSector >= 10 &&
+            chance(.15)
+        ) {
+
+            spawnBoss();
+        }
+    }
+
+    /*
+       ALTIJD blijven aanvullen
+       terwijl de speler verder loopt.
+    */
+
+    maintainDistantEnemies();
+}
+
+/* =========================================================
+   MAIN UPDATE
    ========================================================= */
 
 function update(dt) {
 
-    if (toastTimer > 0) {
+    if (state !== "playing") {
 
-        toastTimer -= dt;
+        updateParticles(dt);
 
-        if (toastTimer <= 0) {
-            toast.classList.remove(
-                "show"
-            );
-        }
-    }
-
-    if (gameState !== "playing") {
         return;
     }
 
-    worldTime += dt;
+    elapsed += dt;
 
     updatePlayer(dt);
-    updateBullets(dt);
-    updateEnemyBullets(dt);
-    updateEnemies(dt);
-    updatePickups(dt);
-    updateParticles(dt);
-    updateFloatingTexts(dt);
-    updateWeather(dt);
-    updateSector();
-    updateWave();
+
     updateCamera();
+
+    updateWeapons(dt);
+
+    updateEnemies(dt);
+
+    updateBoss(dt);
+
+    updateBossSpawner(dt);
+
+    updateBullets(dt);
+
+    handleBossBullets();
+
+    updatePickups(dt);
+
+    updateParticles(dt);
+
+    updateWeather(dt);
+
+    updateSector();
+
+    updateInteractionHint();
+
+    checkBeacons();
+
+    if (messageTimer > 0) {
+
+        messageTimer -= dt;
+
+        if (messageTimer <= 0) {
+
+            const box =
+                document.getElementById(
+                    "messageBox"
+                );
+
+            if (box) {
+                box.style.opacity = "0";
+            }
+        }
+    }
 
     updateHUD();
 }
 
 /* =========================================================
-   RENDER
+   MAIN RENDER
    ========================================================= */
 
 function render() {
@@ -6222,140 +5800,332 @@ function render() {
         H
     );
 
-    ctx.save();
+    renderBackground();
 
-    if (camera.shake > 0) {
+    renderProps();
 
-        const sx =
-            rand(
-                -camera.shake,
-                camera.shake
-            );
+    renderObjects();
 
-        const sy =
-            rand(
-                -camera.shake,
-                camera.shake
-            );
+    renderPickups();
 
-        ctx.translate(
-            sx,
-            sy
-        );
+    renderWalls();
 
-        camera.shake *= .82;
+    renderEnemies();
 
-        if (camera.shake < .1) {
-            camera.shake = 0;
-        }
-    }
+    renderBullets();
 
-    drawFloor();
-    drawProps();
-    drawWorldObjects();
-    drawWalls();
-    drawPickups();
-    drawBullets();
-    drawEnemies();
-    drawPlayer();
-    drawParticles();
-    drawFloatingTexts();
+    renderPlayer();
 
-    ctx.restore();
+    renderParticles();
 
-    drawLighting();
-    drawFog();
-    drawRain();
-    drawCrosshair();
+    renderLighting();
+
+    renderWeather();
 }
 
 /* =========================================================
-   MAIN LOOP
+   GAME LOOP
    ========================================================= */
 
 function loop(now) {
 
-    let dt =
-        (now - lastTime) / 1000;
+    const dt =
+        Math.min(
+            (now - lastTime) / 1000,
+            .033
+        );
 
     lastTime = now;
 
-    dt = clamp(
-        dt,
-        0,
-        0.05
-    );
-
     update(dt);
+
     render();
 
     requestAnimationFrame(loop);
 }
 
 /* =========================================================
-   LOAD GLOBAL DATA
+   BUTTONS
    ========================================================= */
 
-loadPersistentData();
+if (newGameButton) {
+
+    newGameButton.addEventListener(
+        "click",
+        newGame
+    );
+}
+
+if (loadGameButton) {
+
+    loadGameButton.addEventListener(
+        "click",
+        () => {
+
+            startAudio();
+
+            continueGame();
+        }
+    );
+}
+
+if (achievementsButton) {
+
+    achievementsButton.addEventListener(
+        "click",
+        () => {
+
+            renderAchievementPanel();
+
+            achievementsOverlay.style.display =
+                "flex";
+        }
+    );
+}
+
+if (controlsButton) {
+
+    controlsButton.addEventListener(
+        "click",
+        () => {
+
+            controlsOverlay.style.display =
+                "flex";
+        }
+    );
+}
+
+if (resumeButton) {
+
+    resumeButton.addEventListener(
+        "click",
+        () => {
+
+            state = "playing";
+
+            pauseScreen.style.display =
+                "none";
+
+            canvas.focus();
+        }
+    );
+}
+
+if (saveButton) {
+
+    saveButton.addEventListener(
+        "click",
+        () => {
+
+            renderSaveSlots();
+
+            saveOverlay.style.display =
+                "flex";
+        }
+    );
+}
+
+if (quitButton) {
+
+    quitButton.addEventListener(
+        "click",
+        () => {
+
+            state = "menu";
+
+            mouseDown = false;
+
+            pauseScreen.style.display =
+                "none";
+
+            hud.style.display =
+                "none";
+
+            menu.style.display =
+                "flex";
+
+            hideAllOverlays();
+        }
+    );
+}
+
+if (closeMapButton) {
+
+    closeMapButton.addEventListener(
+        "click",
+        () => {
+
+            if (state === "map") {
+                state = "playing";
+            }
+
+            mapScreen.style.display =
+                "none";
+        }
+    );
+}
 
 /* =========================================================
-   INITIAL WORLD
+   EXTRA BUTTONS
    ========================================================= */
+
+document
+    .getElementById(
+        "closeAchievements"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+            achievementsOverlay.style.display =
+                "none";
+        }
+    );
+
+document
+    .getElementById(
+        "closeControls"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+            controlsOverlay.style.display =
+                "none";
+        }
+    );
+
+document
+    .getElementById(
+        "closeInventory"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            inventoryOverlay.style.display =
+                "none";
+
+            if (state === "inventory") {
+                state = "playing";
+            }
+        }
+    );
+
+document
+    .getElementById(
+        "closeSaveSlots"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            saveOverlay.style.display =
+                "none";
+        }
+    );
+
+document
+    .getElementById(
+        "retryButton"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            document.getElementById(
+                "gameOverOverlay"
+            ).style.display =
+                "none";
+
+            newGame();
+        }
+    );
+
+document
+    .getElementById(
+        "gameOverMenu"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            document.getElementById(
+                "gameOverOverlay"
+            ).style.display =
+                "none";
+
+            state = "menu";
+
+            hud.style.display =
+                "none";
+
+            menu.style.display =
+                "flex";
+        }
+    );
+
+document
+    .getElementById(
+        "victoryMenu"
+    )
+    ?.addEventListener(
+        "click",
+        () => {
+
+            document.getElementById(
+                "victoryOverlay"
+            ).style.display =
+                "none";
+
+            state = "menu";
+
+            hud.style.display =
+                "none";
+
+            menu.style.display =
+                "flex";
+        }
+    );
+
+/* =========================================================
+   STARTUP
+   ========================================================= */
+
+player = createPlayer();
 
 buildWorld();
 
+hud.style.display = "none";
+
+menu.style.display = "flex";
+
+renderAchievementPanel();
+
 updateHUD();
 
-/* =========================================================
-   INITIAL MENU STATE
-   ========================================================= */
-
-gameState = "menu";
-
-if (hud) {
-    hud.style.display = "none";
-}
+requestAnimationFrame(loop);
 
 /* =========================================================
-   GAME STATE VISIBILITY
+   DEBUG SAFETY
    ========================================================= */
 
-function updateVisibility() {
-
-    if (!hud) return;
-
-    hud.style.display =
-        gameState === "playing"
-            ? ""
-            : "none";
-}
-
-const oldUpdateHUD = updateHUD;
-
-function wrappedHUD() {
-    oldUpdateHUD();
-    updateVisibility();
-}
-
-updateVisibility();
-
-/* =========================================================
-   PATCH HUD UPDATER
-   ========================================================= */
-
-setInterval(
-    () => {
-        if (gameState === "playing") {
-            updateVisibility();
-        }
-    },
-    100
+window.addEventListener(
+    "error",
+    event => {
+        console.error(
+            "EchoBound error:",
+            event.error || event.message
+        );
+    }
 );
 
-/* =========================================================
-   START
-   ========================================================= */
-
-requestAnimationFrame(loop);
+window.addEventListener(
+    "unhandledrejection",
+    event => {
+        console.error(
+            "EchoBound promise error:",
+            event.reason
+        );
+    }
+);
 
 })();
