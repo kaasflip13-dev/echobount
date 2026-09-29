@@ -931,6 +931,158 @@ function updateBullets(dt) {
 
         const b = bullets[i];
 
+        // Oude positie bewaren
+        const oldX = b.x;
+        const oldY = b.y;
+
+        // Kogel bewegen
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+
+        b.life -= dt;
+
+        let removeBullet = false;
+
+        // ====================================================
+        // MUUR / GEBOUW COLLISION
+        // ====================================================
+
+        for (const building of buildings) {
+
+            // Controleer of de kogel door een muur is gegaan
+            if (
+                circleRectCollision(
+                    b.x,
+                    b.y,
+                    4,
+                    building
+                )
+            ) {
+
+                createParticles(
+                    b.x,
+                    b.y,
+                    8
+                );
+
+                removeBullet = true;
+
+                break;
+            }
+        }
+
+        // Als de kogel tegen een muur kwam,
+        // hoeft hij geen vijand meer te raken.
+        if (removeBullet) {
+
+            bullets.splice(i, 1);
+
+            continue;
+        }
+
+        // ====================================================
+        // VIJANDEN
+        // ====================================================
+
+        for (
+            let j = enemies.length - 1;
+            j >= 0;
+            j--
+        ) {
+
+            const enemy =
+                enemies[j];
+
+            const d =
+                dist(
+                    b.x,
+                    b.y,
+                    enemy.x,
+                    enemy.y
+                );
+
+            if (
+                d <
+                enemy.radius + 5
+            ) {
+
+                enemy.health -=
+                    b.damage;
+
+                createParticles(
+                    b.x,
+                    b.y,
+                    6
+                );
+
+                removeBullet = true;
+
+                // Vijand verslagen
+                if (
+                    enemy.health <= 0
+                ) {
+
+                    kills++;
+
+                    score +=
+                        enemy.elite
+                            ? 100
+                            : 25;
+
+                    credits +=
+                        enemy.elite
+                            ? 30
+                            : 8;
+
+                    addXP(
+                        enemy.elite
+                            ? 40
+                            : 15
+                    );
+
+                    missionProgress++;
+
+                    createParticles(
+                        enemy.x,
+                        enemy.y,
+                        18
+                    );
+
+                    enemies.splice(
+                        j,
+                        1
+                    );
+                }
+
+                break;
+            }
+        }
+
+        // ====================================================
+        // KOOGEL VERWIJDEREN
+        // ====================================================
+
+        if (
+            removeBullet ||
+            b.life <= 0
+        ) {
+
+            bullets.splice(
+                i,
+                1
+            );
+        }
+    }
+}
+
+    for (
+        let i = bullets.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const b = bullets[i];
+
         b.x += b.vx * dt;
         b.y += b.vy * dt;
 
