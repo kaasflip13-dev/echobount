@@ -1,6 +1,6 @@
 // ============================================================
-// ECHOBOUND — THE LOST SIGNAL
-// TANK + ALIENS — STABLE VERSION
+// ECHOBOUND - THE LOST SIGNAL
+// Nieuwe JavaScript versie
 // ============================================================
 
 const canvas = document.getElementById("game");
@@ -15,23 +15,27 @@ canvas.height = H;
 window.addEventListener("resize", () => {
     W = window.innerWidth;
     H = window.innerHeight;
+
     canvas.width = W;
     canvas.height = H;
 });
 
 // ============================================================
-// WORLD
+// GAME SETTINGS
 // ============================================================
 
 const WORLD_W = 7000;
 const WORLD_H = 7000;
-const MAX_ENEMIES = 5;
+
+const MAX_ENEMIES = 12;
 
 let gameRunning = false;
 let paused = false;
 
 let cameraX = 0;
 let cameraY = 0;
+
+let gameTime = 0;
 
 let score = 0;
 let kills = 0;
@@ -40,11 +44,13 @@ let level = 1;
 let xp = 0;
 
 let missionProgress = 0;
-const missionTarget = 15;
+const missionTarget = 20;
 
-let gameTime = 0;
+// ============================================================
+// INPUT
+// ============================================================
 
-const keys = {};
+const keys = new Set();
 
 const mouse = {
     x: W / 2,
@@ -52,18 +58,113 @@ const mouse = {
     down: false
 };
 
+// Keyboard
+window.addEventListener("keydown", e => {
+
+    if (
+        [
+            "KeyW",
+            "KeyA",
+            "KeyS",
+            "KeyD",
+            "ShiftLeft",
+            "ShiftRight",
+            "Space"
+        ].includes(e.code)
+    ) {
+        e.preventDefault();
+    }
+
+    keys.add(e.code);
+
+    if (e.code === "KeyR") {
+        reload();
+    }
+
+    if (e.code === "Digit1") {
+        player.weapon = 0;
+    }
+
+    if (e.code === "Digit2") {
+        player.weapon = 1;
+    }
+
+    if (e.code === "Digit3") {
+        player.weapon = 2;
+    }
+
+    if (e.code === "Space") {
+        dash();
+    }
+
+    if (e.code === "Escape") {
+        togglePause();
+    }
+});
+
+window.addEventListener("keyup", e => {
+    keys.delete(e.code);
+});
+
+// Prevent stuck movement
+window.addEventListener("blur", () => {
+    keys.clear();
+    mouse.down = false;
+});
+
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) {
+        keys.clear();
+        mouse.down = false;
+    }
+});
+
+// Mouse
+canvas.addEventListener("pointermove", e => {
+    mouse.x = e.clientX;
+    mouse.y = e.clientY;
+});
+
+canvas.addEventListener("pointerdown", e => {
+
+    if (e.button === 0) {
+        mouse.down = true;
+
+        if (
+            canvas.setPointerCapture
+        ) {
+            canvas.setPointerCapture(
+                e.pointerId
+            );
+        }
+    }
+});
+
+window.addEventListener("pointerup", e => {
+
+    if (e.button === 0) {
+        mouse.down = false;
+    }
+});
+
+canvas.addEventListener(
+    "contextmenu",
+    e => e.preventDefault()
+);
+
 // ============================================================
-// PLAYER TANK
+// PLAYER
 // ============================================================
 
 const player = {
+
     x: 0,
     y: 0,
 
-    radius: 24,
+    radius: 25,
 
-    speed: 220,
-    sprintSpeed: 320,
+    speed: 230,
+    sprintSpeed: 340,
 
     angle: 0,
     turretAngle: 0,
@@ -75,10 +176,13 @@ const player = {
     maxEnergy: 100,
 
     invincible: 0,
+
     dashCooldown: 0,
 
     weapon: 0,
+
     fireCooldown: 0,
+
     reloadTimer: 0
 };
 
@@ -87,34 +191,38 @@ const player = {
 // ============================================================
 
 const weapons = [
+
     {
         name: "PULSE",
         damage: 1,
-        fireRate: 0.18,
-        bulletSpeed: 900,
+        fireRate: 0.16,
+        speed: 900,
         maxAmmo: 12,
         ammo: 12
     },
+
     {
         name: "BURST",
         damage: 1,
-        fireRate: 0.32,
-        bulletSpeed: 950,
+        fireRate: 0.28,
+        speed: 1000,
         maxAmmo: 8,
         ammo: 8
     },
+
     {
         name: "CANNON",
-        damage: 3,
+        damage: 4,
         fireRate: 0.65,
-        bulletSpeed: 700,
+        speed: 700,
         maxAmmo: 4,
         ammo: 4
     }
+
 ];
 
 // ============================================================
-// OBJECTS
+// WORLD OBJECTS
 // ============================================================
 
 let buildings = [];
@@ -125,177 +233,165 @@ let loot = [];
 let npcs = [];
 
 let enemies = [];
+
 let bullets = [];
 let enemyBullets = [];
+
 let particles = [];
 
 // ============================================================
-// HELPER FUNCTIONS
+// HELPERS
 // ============================================================
 
 function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
+    return Math.max(
+        min,
+        Math.min(max, value)
+    );
 }
 
 function random(min, max) {
-    return Math.random() * (max - min) + min;
+    return Math.random() *
+        (max - min) +
+        min;
 }
 
-function distance(x1, y1, x2, y2) {
-    return Math.hypot(x2 - x1, y2 - y1);
+function distance(
+    x1,
+    y1,
+    x2,
+    y2
+) {
+    return Math.hypot(
+        x2 - x1,
+        y2 - y1
+    );
 }
-
-function randomPosition() {
-    return {
-        x: random(-WORLD_W / 2 + 100, WORLD_W / 2 - 100),
-        y: random(-WORLD_H / 2 + 100, WORLD_H / 2 - 100)
-    };
-}
-
-// ============================================================
-// INPUT
-// ============================================================
-
-// KEYBOARD
-window.addEventListener("keydown", (event) => {
-    const key = event.key.toLowerCase();
-
-    keys[key] = true;
-
-    // Don't let space scroll the page
-    if (event.code === "Space") {
-        event.preventDefault();
-
-        if (gameRunning && !paused) {
-            dash();
-        }
-    }
-
-    if (key === "r") {
-        reload();
-    }
-
-    if (key === "1") {
-        player.weapon = 0;
-    }
-
-    if (key === "2") {
-        player.weapon = 1;
-    }
-
-    if (key === "3") {
-        player.weapon = 2;
-    }
-
-    if (key === "escape") {
-        togglePause();
-    }
-});
-
-window.addEventListener("keyup", (event) => {
-    keys[event.key.toLowerCase()] = false;
-});
-
-// MOUSE
-canvas.addEventListener("mousemove", (event) => {
-    mouse.x = event.clientX;
-    mouse.y = event.clientY;
-});
-
-canvas.addEventListener("mousedown", (event) => {
-    if (event.button === 0) {
-        mouse.down = true;
-    }
-});
-
-window.addEventListener("mouseup", (event) => {
-    if (event.button === 0) {
-        mouse.down = false;
-    }
-});
-
-// Make sure movement never gets stuck
-window.addEventListener("blur", () => {
-    for (const key in keys) {
-        keys[key] = false;
-    }
-
-    mouse.down = false;
-});
 
 // ============================================================
 // MENU
 // ============================================================
 
-const menu = document.getElementById("menu");
-const pauseMenu = document.getElementById("pause");
+const menu =
+    document.getElementById(
+        "menu"
+    );
 
-const newGameButton = document.getElementById("newGame");
-const loadGameButton = document.getElementById("loadGame");
-const achievementsButton = document.getElementById("achievementsButton");
-const controlsButton = document.getElementById("controlsButton");
+const pauseMenu =
+    document.getElementById(
+        "pause"
+    );
 
-const resumeButton = document.getElementById("resume");
-const saveButton = document.getElementById("save");
-const quitButton = document.getElementById("quit");
+const newGameButton =
+    document.getElementById(
+        "newGame"
+    );
+
+const loadGameButton =
+    document.getElementById(
+        "loadGame"
+    );
+
+const achievementsButton =
+    document.getElementById(
+        "achievementsButton"
+    );
+
+const controlsButton =
+    document.getElementById(
+        "controlsButton"
+    );
+
+const resumeButton =
+    document.getElementById(
+        "resume"
+    );
+
+const saveButton =
+    document.getElementById(
+        "save"
+    );
+
+const quitButton =
+    document.getElementById(
+        "quit"
+    );
 
 if (newGameButton) {
-    newGameButton.addEventListener("click", startNewGame);
+    newGameButton.onclick =
+        startNewGame;
 }
 
 if (loadGameButton) {
-    loadGameButton.addEventListener("click", loadGame);
+    loadGameButton.onclick =
+        loadGame;
 }
 
 if (achievementsButton) {
-    achievementsButton.addEventListener("click", showAchievements);
+    achievementsButton.onclick =
+        showAchievements;
 }
 
 if (controlsButton) {
-    controlsButton.addEventListener("click", showControls);
+    controlsButton.onclick =
+        showControls;
 }
 
 if (resumeButton) {
-    resumeButton.addEventListener("click", () => {
+    resumeButton.onclick = () => {
+
         paused = false;
 
         if (pauseMenu) {
-            pauseMenu.style.display = "none";
+            pauseMenu.style.display =
+                "none";
         }
-    });
+    };
 }
 
 if (saveButton) {
-    saveButton.addEventListener("click", saveGame);
+    saveButton.onclick =
+        saveGame;
 }
 
 if (quitButton) {
-    quitButton.addEventListener("click", quitToMenu);
+    quitButton.onclick =
+        quitToMenu;
 }
 
 // ============================================================
-// START NEW GAME
+// NEW GAME
 // ============================================================
 
 function startNewGame() {
+
     score = 0;
     kills = 0;
     credits = 0;
+
     level = 1;
     xp = 0;
+
     missionProgress = 0;
 
     player.x = 0;
     player.y = 0;
-    player.health = player.maxHealth;
-    player.energy = player.maxEnergy;
+
+    player.health =
+        player.maxHealth;
+
+    player.energy =
+        player.maxEnergy;
+
     player.weapon = 0;
+
     player.fireCooldown = 0;
     player.reloadTimer = 0;
     player.dashCooldown = 0;
 
     for (const weapon of weapons) {
-        weapon.ammo = weapon.maxAmmo;
+        weapon.ammo =
+            weapon.maxAmmo;
     }
 
     bullets = [];
@@ -304,19 +400,23 @@ function startNewGame() {
 
     generateWorld();
 
+    // MORE ALIENS
+    for (let i = 0; i < 10; i++) {
+        spawnAlien();
+    }
+
     gameRunning = true;
     paused = false;
 
     if (menu) {
-        menu.style.display = "none";
+        menu.style.display =
+            "none";
     }
 
     if (pauseMenu) {
-        pauseMenu.style.display = "none";
+        pauseMenu.style.display =
+            "none";
     }
-
-    // Focus the canvas so keyboard input works immediately
-    canvas.focus();
 
     updateHUD();
 }
@@ -326,6 +426,7 @@ function startNewGame() {
 // ============================================================
 
 function generateWorld() {
+
     buildings = [];
     doors = [];
     trees = [];
@@ -334,117 +435,292 @@ function generateWorld() {
     npcs = [];
     enemies = [];
 
-    // BUILDINGS
+    // MANY BUILDINGS
     const buildingPositions = [
-        [-1500, -900],
-        [1000, -1400],
-        [-1900, 900],
-        [1200, 1000],
-        [0, 1800],
-        [1900, -200],
-        [-3000, -200],
-        [3000, 1300]
+
+        [-2800, -2200],
+        [-1900, -2300],
+        [-800, -2100],
+        [400, -2300],
+        [1600, -2100],
+        [2700, -2300],
+
+        [-3000, -1300],
+        [-2000, -1200],
+        [-900, -1300],
+        [200, -1200],
+        [1300, -1300],
+        [2500, -1200],
+
+        [-3000, -300],
+        [-2100, -400],
+        [-1100, -300],
+        [0, -500],
+        [1100, -350],
+        [2200, -400],
+        [3000, -300],
+
+        [-2900, 700],
+        [-1900, 800],
+        [-800, 700],
+        [300, 850],
+        [1400, 700],
+        [2500, 800],
+
+        [-2800, 1800],
+        [-1700, 1900],
+        [-600, 1800],
+        [600, 1900],
+        [1700, 1800],
+        [2800, 1900],
+
+        [-2200, 2700],
+        [-900, 2800],
+        [400, 2700],
+        [1600, 2800],
+
+        // Extra central buildings
+        [-500, 300],
+        [500, 300],
+        [-400, 1100],
+        [700, 1200]
+
     ];
 
-    for (const position of buildingPositions) {
-        const width = random(280, 420);
-        const height = random(220, 340);
+    for (
+        const position
+        of buildingPositions
+    ) {
+
+        const width =
+            random(260, 400);
+
+        const height =
+            random(220, 330);
 
         buildings.push({
+
             x: position[0],
             y: position[1],
+
             w: width,
             h: height
         });
 
         doors.push({
-            x: position[0] + width / 2 - 30,
-            y: position[1] + height - 8,
+
+            x:
+                position[0] +
+                width / 2 -
+                30,
+
+            y:
+                position[1] +
+                height -
+                8,
+
             w: 60,
             h: 18,
+
             open: false
         });
     }
 
     // TREES
-    for (let i = 0; i < 160; i++) {
-        const p = randomPosition();
+    for (
+        let i = 0;
+        i < 240;
+        i++
+    ) {
 
-        if (!nearBuilding(p.x, p.y, 100)) {
+        const x =
+            random(
+                -WORLD_W / 2 + 100,
+                WORLD_W / 2 - 100
+            );
+
+        const y =
+            random(
+                -WORLD_H / 2 + 100,
+                WORLD_H / 2 - 100
+            );
+
+        if (
+            !nearBuilding(
+                x,
+                y,
+                100
+            )
+        ) {
+
             trees.push({
-                x: p.x,
-                y: p.y,
-                size: random(18, 36)
+
+                x,
+                y,
+
+                size:
+                    random(
+                        18,
+                        38
+                    )
             });
         }
     }
 
     // ROCKS
-    for (let i = 0; i < 100; i++) {
-        const p = randomPosition();
+    for (
+        let i = 140;
+        i--;
+    ) {
 
-        if (!nearBuilding(p.x, p.y, 70)) {
-            rocks.push({
-                x: p.x,
-                y: p.y,
-                size: random(12, 28)
-            });
-        }
+        const x =
+            random(
+                -WORLD_W / 2,
+                WORLD_W / 2
+            );
+
+        const y =
+            random(
+                -WORLD_H / 2,
+                WORLD_H / 2
+            );
+
+        rocks.push({
+
+            x,
+            y,
+
+            size:
+                random(
+                    12,
+                    28
+                )
+        });
     }
 
     // LOOT
-    for (let i = 0; i < 35; i++) {
-        const p = randomPosition();
+    for (
+        let i = 0;
+        i < 60;
+        i++
+    ) {
 
         loot.push({
-            x: p.x,
-            y: p.y,
-            type: Math.random() < 0.5 ? "energy" : "credits",
+
+            x:
+                random(
+                    -3000,
+                    3000
+                ),
+
+            y:
+                random(
+                    -3000,
+                    3000
+                ),
+
+            type:
+                Math.random() <
+                0.5
+                    ? "energy"
+                    : "credits",
+
             collected: false,
-            pulse: random(0, Math.PI * 2)
+
+            pulse:
+                random(
+                    0,
+                    Math.PI * 2
+                )
         });
     }
 
-    // NPCs
-    for (let i = 0; i < 18; i++) {
-        const p = randomPosition();
+    // NPCS
+    for (
+        let i = 0;
+        i < 25;
+        i++
+    ) {
 
         npcs.push({
-            x: p.x,
-            y: p.y,
-            radius: 11,
-            angle: random(0, Math.PI * 2),
-            speed: random(10, 24),
-            timer: random(1, 4),
-            clothing: [
-                "#527a78",
-                "#765b4c",
-                "#596b83",
-                "#6f6a4d",
-                "#704f62"
-            ][Math.floor(Math.random() * 5)]
-        });
-    }
 
-    // ALIENS
-    for (let i = 0; i < 3; i++) {
-        spawnAlien();
+            x:
+                random(
+                    -3000,
+                    3000
+                ),
+
+            y:
+                random(
+                    -3000,
+                    3000
+                ),
+
+            angle:
+                random(
+                    0,
+                    Math.PI * 2
+                ),
+
+            speed:
+                random(
+                    10,
+                    25
+                ),
+
+            timer:
+                random(
+                    1,
+                    4
+                ),
+
+            clothing:
+                [
+                    "#527a78",
+                    "#765b4c",
+                    "#596b83",
+                    "#596d4d",
+                    "#704f62"
+                ][
+                    Math.floor(
+                        Math.random() *
+                        5
+                    )
+                ]
+        });
     }
 }
 
-function nearBuilding(x, y, range) {
-    for (const building of buildings) {
-        const closestX = clamp(
-            x,
-            building.x,
-            building.x + building.w
-        );
+// ============================================================
+// BUILDING CHECK
+// ============================================================
 
-        const closestY = clamp(
-            y,
-            building.y,
-            building.y + building.h
-        );
+function nearBuilding(
+    x,
+    y,
+    range
+) {
+
+    for (
+        const building
+        of buildings
+    ) {
+
+        const closestX =
+            clamp(
+                x,
+                building.x,
+                building.x +
+                    building.w
+            );
+
+        const closestY =
+            clamp(
+                y,
+                building.y,
+                building.y +
+                    building.h
+            );
 
         if (
             distance(
@@ -465,31 +741,57 @@ function nearBuilding(x, y, range) {
 // COLLISION
 // ============================================================
 
-function circleRectCollision(cx, cy, radius, rect) {
-    const closestX = clamp(
-        cx,
-        rect.x,
-        rect.x + rect.w
-    );
+function circleRectCollision(
+    cx,
+    cy,
+    radius,
+    rect
+) {
 
-    const closestY = clamp(
-        cy,
-        rect.y,
-        rect.y + rect.h
-    );
+    const closestX =
+        clamp(
+            cx,
+            rect.x,
+            rect.x +
+                rect.w
+        );
 
-    const dx = cx - closestX;
-    const dy = cy - closestY;
+    const closestY =
+        clamp(
+            cy,
+            rect.y,
+            rect.y +
+                rect.h
+        );
+
+    const dx =
+        cx -
+        closestX;
+
+    const dy =
+        cy -
+        closestY;
 
     return (
-        dx * dx + dy * dy <
-        radius * radius
-    );
+        dx * dx +
+        dy * dy
+    ) <
+    radius * radius;
 }
 
-function blocked(x, y, radius) {
-    const limitX = WORLD_W / 2 - radius;
-    const limitY = WORLD_H / 2 - radius;
+function blocked(
+    x,
+    y,
+    radius
+) {
+
+    const limitX =
+        WORLD_W / 2 -
+        radius;
+
+    const limitY =
+        WORLD_H / 2 -
+        radius;
 
     if (
         x < -limitX ||
@@ -500,7 +802,11 @@ function blocked(x, y, radius) {
         return true;
     }
 
-    for (const building of buildings) {
+    for (
+        const building
+        of buildings
+    ) {
+
         if (
             circleRectCollision(
                 x,
@@ -513,93 +819,86 @@ function blocked(x, y, radius) {
         }
     }
 
-    for (const door of doors) {
-        if (
-            !door.open &&
-            circleRectCollision(
-                x,
-                y,
-                radius,
-                door
-            )
-        ) {
-            return true;
-        }
-    }
-
     return false;
 }
 
 // ============================================================
-// PLAYER MOVEMENT
+// PLAYER UPDATE
 // ============================================================
 
 function updatePlayer(dt) {
-    // IMPORTANT:
-    // Movement is completely independent from shooting.
 
-    let moveX = 0;
-    let moveY = 0;
+    let dx = 0;
+    let dy = 0;
 
-    if (keys["w"]) {
-        moveY -= 1;
+    // WASD
+    if (keys.has("KeyW")) {
+        dy--;
     }
 
-    if (keys["s"]) {
-        moveY += 1;
+    if (keys.has("KeyS")) {
+        dy++;
     }
 
-    if (keys["a"]) {
-        moveX -= 1;
+    if (keys.has("KeyA")) {
+        dx--;
     }
 
-    if (keys["d"]) {
-        moveX += 1;
+    if (keys.has("KeyD")) {
+        dx++;
     }
 
-    const length = Math.hypot(
-        moveX,
-        moveY
-    );
+    const length =
+        Math.hypot(
+            dx,
+            dy
+        );
 
     if (length > 0) {
-        moveX /= length;
-        moveY /= length;
 
-        const sprinting =
-            keys["shift"] &&
+        dx /= length;
+        dy /= length;
+
+        const sprint =
+            (
+                keys.has(
+                    "ShiftLeft"
+                ) ||
+                keys.has(
+                    "ShiftRight"
+                )
+            ) &&
             player.energy > 0;
 
-        const speed = sprinting
-            ? player.sprintSpeed
-            : player.speed;
+        const speed =
+            sprint
+                ? player.sprintSpeed
+                : player.speed;
 
-        if (sprinting) {
-            player.energy -= 25 * dt;
+        if (sprint) {
+
+            player.energy -=
+                28 * dt;
+
         } else {
-            player.energy += 15 * dt;
-        }
 
-        player.energy = clamp(
-            player.energy,
-            0,
-            player.maxEnergy
-        );
+            player.energy +=
+                16 * dt;
+        }
 
         const newX =
             player.x +
-            moveX *
+            dx *
             speed *
             dt;
 
         const newY =
             player.y +
-            moveY *
+            dy *
             speed *
             dt;
 
-        // X and Y are checked separately.
-        // This makes movement much more reliable.
+        // X
         if (
             !blocked(
                 newX,
@@ -607,9 +906,12 @@ function updatePlayer(dt) {
                 player.radius
             )
         ) {
-            player.x = newX;
+
+            player.x =
+                newX;
         }
 
+        // Y
         if (
             !blocked(
                 player.x,
@@ -617,25 +919,32 @@ function updatePlayer(dt) {
                 player.radius
             )
         ) {
-            player.y = newY;
+
+            player.y =
+                newY;
         }
 
-        player.angle = Math.atan2(
-            moveY,
-            moveX
-        );
-    } else {
-        player.energy += 15 * dt;
+        player.angle =
+            Math.atan2(
+                dy,
+                dx
+            );
 
-        player.energy = clamp(
+    } else {
+
+        player.energy +=
+            16 * dt;
+    }
+
+    player.energy =
+        clamp(
             player.energy,
             0,
             player.maxEnergy
         );
-    }
 
-    // Aim at mouse
-    const mouseWorld =
+    // Aim
+    const target =
         screenToWorld(
             mouse.x,
             mouse.y
@@ -643,41 +952,62 @@ function updatePlayer(dt) {
 
     player.turretAngle =
         Math.atan2(
-            mouseWorld.y - player.y,
-            mouseWorld.x - player.x
+            target.y -
+                player.y,
+            target.x -
+                player.x
         );
 
-    // Shooting timer
-    if (player.fireCooldown > 0) {
-        player.fireCooldown -= dt;
+    // Timers
+    player.fireCooldown -= dt;
+
+    if (
+        player.fireCooldown < 0
+    ) {
+        player.fireCooldown = 0;
     }
 
-    // Reload timer
-    if (player.reloadTimer > 0) {
+    if (
+        player.reloadTimer > 0
+    ) {
+
         player.reloadTimer -= dt;
 
-        if (player.reloadTimer <= 0) {
-            weapons[player.weapon].ammo =
-                weapons[player.weapon].maxAmmo;
+        if (
+            player.reloadTimer <= 0
+        ) {
+
+            weapons[
+                player.weapon
+            ].ammo =
+                weapons[
+                    player.weapon
+                ].maxAmmo;
 
             player.reloadTimer = 0;
         }
     }
 
-    // Dash cooldown
-    if (player.dashCooldown > 0) {
+    if (
+        player.dashCooldown > 0
+    ) {
+
         player.dashCooldown -= dt;
     }
 
-    if (player.invincible > 0) {
+    if (
+        player.invincible > 0
+    ) {
+
         player.invincible -= dt;
     }
 
-    // Shooting does NOT stop movement
+    // Shoot while moving
     if (
         mouse.down &&
         player.reloadTimer <= 0
     ) {
+
         shoot();
     }
 }
@@ -687,6 +1017,11 @@ function updatePlayer(dt) {
 // ============================================================
 
 function dash() {
+
+    if (!gameRunning) {
+        return;
+    }
+
     if (
         player.dashCooldown > 0 ||
         player.energy < 35
@@ -697,39 +1032,58 @@ function dash() {
     let dx = 0;
     let dy = 0;
 
-    if (keys["w"]) dy -= 1;
-    if (keys["s"]) dy += 1;
-    if (keys["a"]) dx -= 1;
-    if (keys["d"]) dx += 1;
+    if (
+        keys.has("KeyW")
+    ) dy--;
+
+    if (
+        keys.has("KeyS")
+    ) dy++;
+
+    if (
+        keys.has("KeyA")
+    ) dx--;
+
+    if (
+        keys.has("KeyD")
+    ) dx++;
 
     if (
         dx === 0 &&
         dy === 0
     ) {
-        dx = Math.cos(player.turretAngle);
-        dy = Math.sin(player.turretAngle);
+
+        dx =
+            Math.cos(
+                player.turretAngle
+            );
+
+        dy =
+            Math.sin(
+                player.turretAngle
+            );
     }
 
-    const length = Math.hypot(dx, dy);
-
-    if (length === 0) {
-        return;
-    }
+    const length =
+        Math.hypot(
+            dx,
+            dy
+        );
 
     dx /= length;
     dy /= length;
 
-    const dashDistance = 140;
+    const distanceDash = 150;
 
     const newX =
         player.x +
         dx *
-        dashDistance;
+        distanceDash;
 
     const newY =
         player.y +
         dy *
-        dashDistance;
+        distanceDash;
 
     if (
         !blocked(
@@ -738,7 +1092,9 @@ function dash() {
             player.radius
         )
     ) {
-        player.x = newX;
+
+        player.x =
+            newX;
     }
 
     if (
@@ -748,17 +1104,23 @@ function dash() {
             player.radius
         )
     ) {
-        player.y = newY;
+
+        player.y =
+            newY;
     }
 
     player.energy -= 35;
-    player.dashCooldown = 1.2;
-    player.invincible = 0.35;
+
+    player.dashCooldown =
+        1.2;
+
+    player.invincible =
+        0.35;
 
     createParticles(
         player.x,
         player.y,
-        18
+        20
     );
 }
 
@@ -767,8 +1129,11 @@ function dash() {
 // ============================================================
 
 function shoot() {
+
     const weapon =
-        weapons[player.weapon];
+        weapons[
+            player.weapon
+        ];
 
     if (
         player.fireCooldown > 0 ||
@@ -777,7 +1142,10 @@ function shoot() {
         return;
     }
 
-    if (weapon.ammo <= 0) {
+    if (
+        weapon.ammo <= 0
+    ) {
+
         reload();
         return;
     }
@@ -790,52 +1158,60 @@ function shoot() {
     let angle =
         player.turretAngle;
 
-    // Small spread for BURST
-    if (player.weapon === 1) {
-        angle += random(-0.06, 0.06);
+    // Burst spread
+    if (
+        player.weapon === 1
+    ) {
+
+        angle +=
+            random(
+                -0.055,
+                0.055
+            );
     }
 
-    const start = 38;
+    const bulletSpeed =
+        weapon.speed;
 
     bullets.push({
+
         x:
             player.x +
             Math.cos(angle) *
-            start,
+            42,
 
         y:
             player.y +
             Math.sin(angle) *
-            start,
+            42,
 
         vx:
             Math.cos(angle) *
-            weapon.bulletSpeed,
+            bulletSpeed,
 
         vy:
             Math.sin(angle) *
-            weapon.bulletSpeed,
+            bulletSpeed,
 
-        damage: weapon.damage,
+        damage:
+            weapon.damage,
 
         radius:
             player.weapon === 2
-                ? 6
+                ? 7
                 : 4,
 
-        life: 1.5,
-
-        type: player.weapon
+        life: 1.6
     });
 
     createParticles(
         player.x +
-        Math.cos(angle) *
-        38,
+            Math.cos(angle) *
+            42,
 
         player.y +
-        Math.sin(angle) *
-        38,
+            Math.sin(angle) *
+            42,
 
         5
     );
@@ -846,43 +1222,63 @@ function shoot() {
 // ============================================================
 
 function reload() {
+
     const weapon =
-        weapons[player.weapon];
+        weapons[
+            player.weapon
+        ];
 
     if (
-        player.reloadTimer > 0 ||
-        weapon.ammo >= weapon.maxAmmo
+        player.reloadTimer > 0
     ) {
         return;
     }
 
-    player.reloadTimer = 0.8;
+    if (
+        weapon.ammo >=
+        weapon.maxAmmo
+    ) {
+        return;
+    }
+
+    player.reloadTimer =
+        0.8;
 }
 
 // ============================================================
-// BULLET UPDATE
+// BULLETS
 // ============================================================
 
 function updateBullets(dt) {
+
     for (
-        let i = bullets.length - 1;
+        let i =
+            bullets.length - 1;
         i >= 0;
         i--
     ) {
-        const bullet = bullets[i];
+
+        const bullet =
+            bullets[i];
 
         bullet.x +=
-            bullet.vx * dt;
+            bullet.vx *
+            dt;
 
         bullet.y +=
-            bullet.vy * dt;
+            bullet.vy *
+            dt;
 
         bullet.life -= dt;
 
         let remove = false;
 
-        // Building collision
-        for (const building of buildings) {
+        // Building
+        for (
+            const building
+            of buildings
+        ) {
+
             if (
                 circleRectCollision(
                     bullet.x,
@@ -891,6 +1287,7 @@ function updateBullets(dt) {
                     building
                 )
             ) {
+
                 createParticles(
                     bullet.x,
                     bullet.y,
@@ -903,44 +1300,54 @@ function updateBullets(dt) {
         }
 
         if (remove) {
-            bullets.splice(i, 1);
+
+            bullets.splice(
+                i,
+                1
+            );
+
             continue;
         }
 
-        // Alien collision
+        // Alien
         for (
-            let j = enemies.length - 1;
+            let j =
+                enemies.length - 1;
             j >= 0;
             j--
         ) {
-            const alien = enemies[j];
+
+            const enemy =
+                enemies[j];
 
             if (
                 distance(
                     bullet.x,
                     bullet.y,
-                    alien.x,
-                    alien.y
+                    enemy.x,
+                    enemy.y
                 ) <
                 bullet.radius +
-                alien.radius
+                enemy.radius
             ) {
-                alien.health -=
+
+                enemy.health -=
                     bullet.damage;
 
                 createParticles(
                     bullet.x,
                     bullet.y,
-                    7
+                    8
                 );
 
                 remove = true;
 
                 if (
-                    alien.health <= 0
+                    enemy.health <= 0
                 ) {
+
                     killAlien(
-                        alien
+                        enemy
                     );
 
                     enemies.splice(
@@ -950,7 +1357,7 @@ function updateBullets(dt) {
 
                     setTimeout(
                         spawnAlien,
-                        600
+                        700
                     );
                 }
 
@@ -962,77 +1369,61 @@ function updateBullets(dt) {
             remove ||
             bullet.life <= 0
         ) {
-            bullets.splice(i, 1);
+
+            bullets.splice(
+                i,
+                1
+            );
         }
     }
 }
 
 // ============================================================
-// KILL ALIEN
-// ============================================================
-
-function killAlien(alien) {
-    kills++;
-
-    if (alien.elite) {
-        score += 100;
-        credits += 30;
-        addXP(40);
-    } else {
-        score += 25;
-        credits += 8;
-        addXP(15);
-    }
-
-    missionProgress++;
-
-    createParticles(
-        alien.x,
-        alien.y,
-        alien.elite ? 25 : 16
-    );
-
-    if (kills === 1) {
-        unlockAchievement(
-            "FIRST CONTACT"
-        );
-    }
-
-    if (kills === 10) {
-        unlockAchievement(
-            "ALIEN HUNTER"
-        );
-    }
-}
-
-// ============================================================
-// SPAWN ALIEN
+// ALIEN SPAWN
 // ============================================================
 
 function spawnAlien() {
+
     if (
-        enemies.length >= MAX_ENEMIES ||
-        !gameRunning
+        !gameRunning ||
+        enemies.length >=
+            MAX_ENEMIES
     ) {
         return;
     }
 
-    let p = randomPosition();
+    let x;
+    let y;
 
-    for (let i = 0; i < 30; i++) {
-        p = randomPosition();
+    for (
+        let tries = 0;
+        tries < 50;
+        tries++
+    ) {
+
+        x =
+            random(
+                -3300,
+                3300
+            );
+
+        y =
+            random(
+                -3300,
+                3300
+            );
 
         if (
             distance(
-                p.x,
-                p.y,
+                x,
+                y,
                 player.x,
                 player.y
-            ) > 800 &&
+            ) > 700 &&
             !blocked(
-                p.x,
-                p.y,
-                30
+                x,
+                y,
+                35
             )
         ) {
             break;
@@ -1040,54 +1431,77 @@ function spawnAlien() {
     }
 
     const elite =
-        Math.random() < 0.22;
+        Math.random() <
+        0.18;
+
+    const type =
+        elite
+            ? "guardian"
+            : Math.random() <
+                0.35
+                ? "crawler"
+                : "stalker";
 
     enemies.push({
-        x: p.x,
-        y: p.y,
+
+        x,
+        y,
 
         radius:
-            elite ? 31 : 25,
+            elite
+                ? 32
+                : 25,
 
         health:
-            elite ? 8 : 3,
+            elite
+                ? 8
+                : 3,
 
         maxHealth:
-            elite ? 8 : 3,
+            elite
+                ? 8
+                : 3,
 
         speed:
             elite
-                ? 65
-                : 45,
+                ? 60
+                : type === "crawler"
+                    ? 55
+                    : 45,
+
+        type,
 
         elite,
 
-        type:
-            elite
-                ? "guardian"
-                : Math.random() < 0.35
-                    ? "crawler"
-                    : "stalker",
-
         shootCooldown:
-            random(1, 3),
+            random(
+                1,
+                3
+            ),
 
         attackCooldown: 0,
 
-        pulse: random(
-            0,
-            Math.PI * 2
-        )
+        pulse:
+            random(
+                0,
+                Math.PI * 2
+            )
     });
 }
 
 // ============================================================
-// ENEMY UPDATE
+// ALIENS
 // ============================================================
 
 function updateEnemies(dt) {
-    for (const enemy of enemies) {
-        enemy.pulse += dt * 3;
+
+    for (
+        const enemy
+        of enemies
+    ) {
+
+        enemy.pulse +=
+            dt * 3;
 
         const d =
             distance(
@@ -1099,12 +1513,16 @@ function updateEnemies(dt) {
 
         const angle =
             Math.atan2(
-                player.y - enemy.y,
-                player.x - enemy.x
+                player.y -
+                    enemy.y,
+                player.x -
+                    enemy.x
             );
 
-        // Chase
-        if (d > 180) {
+        if (
+            d > 180
+        ) {
+
             const newX =
                 enemy.x +
                 Math.cos(angle) *
@@ -1124,7 +1542,9 @@ function updateEnemies(dt) {
                     enemy.radius
                 )
             ) {
-                enemy.x = newX;
+
+                enemy.x =
+                    newX;
             }
 
             if (
@@ -1134,28 +1554,31 @@ function updateEnemies(dt) {
                     enemy.radius
                 )
             ) {
-                enemy.y = newY;
+
+                enemy.y =
+                    newY;
             }
         }
 
-        // Close attack
-        if (enemy.attackCooldown > 0) {
-            enemy.attackCooldown -= dt;
-        }
+        // Attack
+        enemy.attackCooldown -= dt;
 
         if (
-            d < 70 &&
+            d < 75 &&
             enemy.attackCooldown <= 0
         ) {
+
             if (
                 player.invincible <= 0
             ) {
+
                 player.health -=
                     enemy.elite
                         ? 18
                         : 10;
 
-                player.invincible = 0.45;
+                player.invincible =
+                    0.4;
 
                 createParticles(
                     player.x,
@@ -1164,7 +1587,8 @@ function updateEnemies(dt) {
                 );
             }
 
-            enemy.attackCooldown = 1;
+            enemy.attackCooldown =
+                1;
         }
 
         // Shoot
@@ -1180,12 +1604,21 @@ function updateEnemies(dt) {
                 player.y
             )
         ) {
-            shootEnemy(enemy);
+
+            shootEnemy(
+                enemy
+            );
 
             enemy.shootCooldown =
                 enemy.elite
-                    ? random(0.8, 1.8)
-                    : random(1.4, 2.8);
+                    ? random(
+                        0.8,
+                        1.7
+                    )
+                    : random(
+                        1.4,
+                        2.8
+                    );
         }
     }
 }
@@ -1200,18 +1633,22 @@ function hasLineOfSight(
     x2,
     y2
 ) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
 
-    const distanceValue =
-        Math.hypot(dx, dy);
+    const dx =
+        x2 - x1;
+
+    const dy =
+        y2 - y1;
+
+    const d =
+        Math.hypot(
+            dx,
+            dy
+        );
 
     const steps =
-        Math.max(
-            10,
-            Math.ceil(
-                distanceValue / 15
-            )
+        Math.ceil(
+            d / 15
         );
 
     for (
@@ -1219,21 +1656,36 @@ function hasLineOfSight(
         i < steps;
         i++
     ) {
-        const t = i / steps;
+
+        const t =
+            i / steps;
 
         const x =
-            x1 + dx * t;
+            x1 +
+            dx * t;
 
         const y =
-            y1 + dy * t;
+            y1 +
+            dy * t;
 
-        for (const building of buildings) {
+        for (
+            const building
+            of buildings
+        ) {
+
             if (
-                x >= building.x &&
-                x <= building.x + building.w &&
-                y >= building.y &&
-                y <= building.y + building.h
+                x >=
+                    building.x &&
+                x <=
+                    building.x +
+                    building.w &&
+                y >=
+                    building.y &&
+                y <=
+                    building.y +
+                    building.h
             ) {
+
                 return false;
             }
         }
@@ -1247,10 +1699,13 @@ function hasLineOfSight(
 // ============================================================
 
 function shootEnemy(enemy) {
+
     const angle =
         Math.atan2(
-            player.y - enemy.y,
-            player.x - enemy.x
+            player.y -
+                enemy.y,
+            player.x -
+                enemy.x
         );
 
     const speed =
@@ -1259,6 +1714,7 @@ function shootEnemy(enemy) {
             : 300;
 
     enemyBullets.push({
+
         x: enemy.x,
         y: enemy.y,
 
@@ -1289,26 +1745,34 @@ function shootEnemy(enemy) {
 // ============================================================
 
 function updateEnemyBullets(dt) {
+
     for (
-        let i = enemyBullets.length - 1;
+        let i =
+            enemyBullets.length - 1;
         i >= 0;
         i--
     ) {
+
         const bullet =
             enemyBullets[i];
 
         bullet.x +=
-            bullet.vx * dt;
+            bullet.vx *
+            dt;
 
         bullet.y +=
-            bullet.vy * dt;
+            bullet.vy *
+            dt;
 
         bullet.life -= dt;
 
         let remove = false;
 
-        // Buildings block alien shots
-        for (const building of buildings) {
+        for (
+            const building
+            of buildings
+        ) {
+
             if (
                 circleRectCollision(
                     bullet.x,
@@ -1317,6 +1781,7 @@ function updateEnemyBullets(dt) {
                     building
                 )
             ) {
+
                 remove = true;
 
                 createParticles(
@@ -1330,7 +1795,12 @@ function updateEnemyBullets(dt) {
         }
 
         if (remove) {
-            enemyBullets.splice(i, 1);
+
+            enemyBullets.splice(
+                i,
+                1
+            );
+
             continue;
         }
 
@@ -1344,13 +1814,16 @@ function updateEnemyBullets(dt) {
             bullet.radius +
             player.radius
         ) {
+
             if (
                 player.invincible <= 0
             ) {
+
                 player.health -=
                     bullet.damage;
 
-                player.invincible = 0.4;
+                player.invincible =
+                    0.4;
 
                 createParticles(
                     player.x,
@@ -1366,20 +1839,32 @@ function updateEnemyBullets(dt) {
             remove ||
             bullet.life <= 0
         ) {
-            enemyBullets.splice(i, 1);
+
+            enemyBullets.splice(
+                i,
+                1
+            );
         }
     }
 }
 
 // ============================================================
-// NPC UPDATE
+// NPC
 // ============================================================
 
 function updateNPCs(dt) {
-    for (const npc of npcs) {
+
+    for (
+        const npc
+        of npcs
+    ) {
+
         npc.timer -= dt;
 
-        if (npc.timer <= 0) {
+        if (
+            npc.timer <= 0
+        ) {
+
             npc.angle =
                 random(
                     0,
@@ -1387,39 +1872,48 @@ function updateNPCs(dt) {
                 );
 
             npc.timer =
-                random(1, 4);
+                random(
+                    1,
+                    4
+                );
         }
 
-        const newX =
+        const nx =
             npc.x +
-            Math.cos(npc.angle) *
+            Math.cos(
+                npc.angle
+            ) *
             npc.speed *
             dt;
 
-        const newY =
+        const ny =
             npc.y +
-            Math.sin(npc.angle) *
+            Math.sin(
+                npc.angle
+            ) *
             npc.speed *
             dt;
 
         if (
             !blocked(
-                newX,
+                nx,
                 npc.y,
-                npc.radius
+                11
             )
         ) {
-            npc.x = newX;
+
+            npc.x = nx;
         }
 
         if (
             !blocked(
                 npc.x,
-                newY,
-                npc.radius
+                ny,
+                11
             )
         ) {
-            npc.y = newY;
+
+            npc.y = ny;
         }
     }
 }
@@ -1429,12 +1923,20 @@ function updateNPCs(dt) {
 // ============================================================
 
 function updateLoot(dt) {
-    for (const item of loot) {
-        if (item.collected) {
+
+    for (
+        const item
+        of loot
+    ) {
+
+        if (
+            item.collected
+        ) {
             continue;
         }
 
-        item.pulse += dt * 4;
+        item.pulse +=
+            dt * 4;
 
         if (
             distance(
@@ -1442,31 +1944,32 @@ function updateLoot(dt) {
                 player.y,
                 item.x,
                 item.y
-            ) < 35
+            ) < 40
         ) {
-            item.collected = true;
+
+            item.collected =
+                true;
 
             if (
-                item.type === "credits"
+                item.type ===
+                "credits"
             ) {
+
                 credits += 10;
 
                 unlockAchievement(
                     "SCAVENGER"
                 );
+
             } else {
+
                 player.energy =
                     Math.min(
                         player.maxEnergy,
-                        player.energy + 35
+                        player.energy +
+                            35
                     );
             }
-
-            createParticles(
-                item.x,
-                item.y,
-                10
-            );
         }
     }
 }
@@ -1480,11 +1983,13 @@ function createParticles(
     y,
     amount
 ) {
+
     for (
         let i = 0;
         i < amount;
         i++
     ) {
+
         const angle =
             random(
                 0,
@@ -1498,6 +2003,7 @@ function createParticles(
             );
 
         particles.push({
+
             x,
             y,
 
@@ -1525,53 +2031,37 @@ function createParticles(
 }
 
 function updateParticles(dt) {
+
     for (
-        let i = particles.length - 1;
+        let i =
+            particles.length - 1;
         i >= 0;
         i--
     ) {
-        const p = particles[i];
 
-        p.x += p.vx * dt;
-        p.y += p.vy * dt;
+        const p =
+            particles[i];
+
+        p.x +=
+            p.vx * dt;
+
+        p.y +=
+            p.vy * dt;
 
         p.vx *= 0.96;
         p.vy *= 0.96;
 
         p.life -= dt;
 
-        if (p.life <= 0) {
-            particles.splice(i, 1);
+        if (
+            p.life <= 0
+        ) {
+
+            particles.splice(
+                i,
+                1
+            );
         }
-    }
-}
-
-// ============================================================
-// XP
-// ============================================================
-
-function addXP(amount) {
-    xp += amount;
-
-    const required =
-        level * 100;
-
-    if (xp >= required) {
-        xp -= required;
-
-        level++;
-
-        player.maxHealth += 5;
-        player.health =
-            player.maxHealth;
-
-        player.maxEnergy += 5;
-        player.energy =
-            player.maxEnergy;
-
-        unlockAchievement(
-            "LEVEL UP"
-        );
     }
 }
 
@@ -1580,17 +2070,35 @@ function addXP(amount) {
 // ============================================================
 
 function updateCamera(dt) {
+
     cameraX +=
-        (player.x - cameraX) *
-        Math.min(1, dt * 8);
+        (
+            player.x -
+            cameraX
+        ) *
+        Math.min(
+            1,
+            dt * 8
+        );
 
     cameraY +=
-        (player.y - cameraY) *
-        Math.min(1, dt * 8);
+        (
+            player.y -
+            cameraY
+        ) *
+        Math.min(
+            1,
+            dt * 8
+        );
 }
 
-function worldToScreen(x, y) {
+function worldToScreen(
+    x,
+    y
+) {
+
     return {
+
         x:
             x -
             cameraX +
@@ -1603,8 +2111,13 @@ function worldToScreen(x, y) {
     };
 }
 
-function screenToWorld(x, y) {
+function screenToWorld(
+    x,
+    y
+) {
+
     return {
+
         x:
             x -
             W / 2 +
@@ -1618,11 +2131,13 @@ function screenToWorld(x, y) {
 }
 
 // ============================================================
-// DRAW
+// DRAW WORLD
 // ============================================================
 
 function draw() {
-    ctx.fillStyle = "#101719";
+
+    ctx.fillStyle =
+        "#101719";
 
     ctx.fillRect(
         0,
@@ -1632,49 +2147,71 @@ function draw() {
     );
 
     drawGrid();
+
     drawTrees();
     drawRocks();
+
     drawBuildings();
     drawDoors();
+
     drawLoot();
     drawNPCs();
+
     drawEnemies();
+
     drawBullets();
     drawEnemyBullets();
+
     drawTank();
+
     drawParticles();
-    drawWeather();
+
     drawCrosshair();
 }
 
+// ============================================================
+// GRID
+// ============================================================
+
 function drawGrid() {
+
     const grid = 100;
 
     ctx.strokeStyle =
-        "rgba(90,160,155,0.06)";
+        "rgba(100,180,170,0.06)";
 
     ctx.lineWidth = 1;
 
     const startX =
         Math.floor(
-            (cameraX - W / 2) /
+            (
+                cameraX -
+                W / 2
+            ) /
             grid
         ) *
         grid;
 
     const startY =
         Math.floor(
-            (cameraY - H / 2) /
+            (
+                cameraY -
+                H / 2
+            ) /
             grid
         ) *
         grid;
 
     for (
-        let x = startX;
-        x < cameraX + W;
+        let x =
+            startX;
+        x <
+            cameraX +
+            W;
         x += grid
     ) {
-        const screen =
+
+        const p =
             worldToScreen(
                 x,
                 0
@@ -1683,12 +2220,12 @@ function drawGrid() {
         ctx.beginPath();
 
         ctx.moveTo(
-            screen.x,
+            p.x,
             0
         );
 
         ctx.lineTo(
-            screen.x,
+            p.x,
             H
         );
 
@@ -1696,11 +2233,15 @@ function drawGrid() {
     }
 
     for (
-        let y = startY;
-        y < cameraY + H;
+        let y =
+            startY;
+        y <
+            cameraY +
+            H;
         y += grid
     ) {
-        const screen =
+
+        const p =
             worldToScreen(
                 0,
                 y
@@ -1710,12 +2251,12 @@ function drawGrid() {
 
         ctx.moveTo(
             0,
-            screen.y
+            p.y
         );
 
         ctx.lineTo(
             W,
-            screen.y
+            p.y
         );
 
         ctx.stroke();
@@ -1727,7 +2268,12 @@ function drawGrid() {
 // ============================================================
 
 function drawTrees() {
-    for (const tree of trees) {
+
+    for (
+        const tree
+        of trees
+    ) {
+
         const p =
             worldToScreen(
                 tree.x,
@@ -1735,10 +2281,10 @@ function drawTrees() {
             );
 
         if (
-            p.x < -100 ||
-            p.x > W + 100 ||
-            p.y < -100 ||
-            p.y > H + 100
+            p.x < -80 ||
+            p.x > W + 80 ||
+            p.y < -80 ||
+            p.y > H + 80
         ) {
             continue;
         }
@@ -1750,9 +2296,10 @@ function drawTrees() {
 
         ctx.ellipse(
             p.x,
-            p.y + tree.size * 0.5,
+            p.y + 15,
             tree.size,
-            tree.size * 0.35,
+            tree.size *
+                0.35,
             0,
             0,
             Math.PI * 2
@@ -1761,39 +2308,25 @@ function drawTrees() {
         ctx.fill();
 
         ctx.fillStyle =
-            "#4a372b";
+            "#49372b";
 
         ctx.fillRect(
             p.x - 4,
-            p.y,
+            p.y - 5,
             8,
             tree.size
         );
 
         ctx.fillStyle =
-            "#245448";
+            "#245548";
 
         ctx.beginPath();
 
         ctx.arc(
             p.x,
-            p.y - 10,
-            tree.size * 0.7,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.fillStyle =
-            "#32705b";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            p.x - 8,
-            p.y - 17,
-            tree.size * 0.35,
+            p.y - 15,
+            tree.size *
+                0.7,
             0,
             Math.PI * 2
         );
@@ -1807,7 +2340,12 @@ function drawTrees() {
 // ============================================================
 
 function drawRocks() {
-    for (const rock of rocks) {
+
+    for (
+        const rock
+        of rocks
+    ) {
+
         const p =
             worldToScreen(
                 rock.x,
@@ -1815,7 +2353,7 @@ function drawRocks() {
             );
 
         ctx.fillStyle =
-            "#354041";
+            "#394547";
 
         ctx.beginPath();
 
@@ -1823,7 +2361,8 @@ function drawRocks() {
             p.x,
             p.y,
             rock.size,
-            rock.size * 0.65,
+            rock.size *
+                0.6,
             0,
             0,
             Math.PI * 2
@@ -1838,13 +2377,28 @@ function drawRocks() {
 // ============================================================
 
 function drawBuildings() {
-    for (const b of buildings) {
+
+    for (
+        const b
+        of buildings
+    ) {
+
         const p =
             worldToScreen(
                 b.x,
                 b.y
             );
 
+        if (
+            p.x > W ||
+            p.x + b.w < 0 ||
+            p.y > H ||
+            p.y + b.h < 0
+        ) {
+            continue;
+        }
+
+        // Shadow
         ctx.fillStyle =
             "rgba(0,0,0,0.4)";
 
@@ -1855,8 +2409,9 @@ function drawBuildings() {
             b.h
         );
 
+        // Building
         ctx.fillStyle =
-            "#273134";
+            "#293437";
 
         ctx.fillRect(
             p.x,
@@ -1865,8 +2420,9 @@ function drawBuildings() {
             b.h
         );
 
+        // Border
         ctx.strokeStyle =
-            "#596a6d";
+            "#627477";
 
         ctx.lineWidth = 3;
 
@@ -1877,22 +2433,44 @@ function drawBuildings() {
             b.h
         );
 
-        // windows
+        // Windows
         ctx.fillStyle =
-            "#6bbeb5";
+            "#62bbb3";
 
         for (
             let x = 25;
-            x < b.w - 30;
+            x <
+            b.w - 30;
             x += 65
         ) {
+
             ctx.fillRect(
                 p.x + x,
                 p.y + 30,
-                25,
-                16
+                26,
+                17
             );
         }
+
+        // Roof detail
+        ctx.strokeStyle =
+            "#405054";
+
+        ctx.lineWidth = 2;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            p.x + 15,
+            p.y + b.h / 2
+        );
+
+        ctx.lineTo(
+            p.x + b.w - 15,
+            p.y + b.h / 2
+        );
+
+        ctx.stroke();
     }
 }
 
@@ -1901,7 +2479,12 @@ function drawBuildings() {
 // ============================================================
 
 function drawDoors() {
-    for (const door of doors) {
+
+    for (
+        const door
+        of doors
+    ) {
+
         const p =
             worldToScreen(
                 door.x,
@@ -1909,9 +2492,7 @@ function drawDoors() {
             );
 
         ctx.fillStyle =
-            door.open
-                ? "#477d77"
-                : "#151b1d";
+            "#111719";
 
         ctx.fillRect(
             p.x,
@@ -1937,8 +2518,15 @@ function drawDoors() {
 // ============================================================
 
 function drawLoot() {
-    for (const item of loot) {
-        if (item.collected) {
+
+    for (
+        const item
+        of loot
+    ) {
+
+        if (
+            item.collected
+        ) {
             continue;
         }
 
@@ -1954,9 +2542,10 @@ function drawLoot() {
             ) * 3;
 
         ctx.fillStyle =
-            item.type === "credits"
-                ? "#d8b65a"
-                : "#65ded1";
+            item.type ===
+            "credits"
+                ? "#e0bd5e"
+                : "#62ded1";
 
         ctx.beginPath();
 
@@ -1977,7 +2566,12 @@ function drawLoot() {
 // ============================================================
 
 function drawNPCs() {
-    for (const npc of npcs) {
+
+    for (
+        const npc
+        of npcs
+    ) {
+
         const p =
             worldToScreen(
                 npc.x,
@@ -1995,38 +2589,16 @@ function drawNPCs() {
             npc.angle
         );
 
-        ctx.fillStyle =
-            "rgba(0,0,0,0.3)";
-
-        ctx.beginPath();
-
-        ctx.ellipse(
-            0,
-            12,
-            10,
-            4,
-            0,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
         // Body
         ctx.fillStyle =
             npc.clothing;
 
-        ctx.beginPath();
-
-        ctx.roundRect(
-            -8,
-            -2,
-            16,
-            16,
-            5
+        ctx.fillRect(
+            -7,
+            -1,
+            14,
+            15
         );
-
-        ctx.fill();
 
         // Head
         ctx.fillStyle =
@@ -2036,8 +2608,8 @@ function drawNPCs() {
 
         ctx.arc(
             0,
-            -11,
-            8,
+            -9,
+            7,
             0,
             Math.PI * 2
         );
@@ -2046,14 +2618,14 @@ function drawNPCs() {
 
         // Hair
         ctx.fillStyle =
-            "#292321";
+            "#272323";
 
         ctx.beginPath();
 
         ctx.arc(
             0,
-            -14,
-            8,
+            -12,
+            7,
             Math.PI,
             Math.PI * 2
         );
@@ -2062,29 +2634,29 @@ function drawNPCs() {
 
         // Legs
         ctx.strokeStyle =
-            "#1d2325";
+            "#1b2224";
 
         ctx.lineWidth = 4;
 
         ctx.beginPath();
 
         ctx.moveTo(
-            -4,
-            12
+            -3,
+            13
         );
 
         ctx.lineTo(
-            -5,
+            -4,
             20
         );
 
         ctx.moveTo(
-            4,
-            12
+            3,
+            13
         );
 
         ctx.lineTo(
-            5,
+            4,
             20
         );
 
@@ -2099,7 +2671,12 @@ function drawNPCs() {
 // ============================================================
 
 function drawEnemies() {
-    for (const enemy of enemies) {
+
+    for (
+        const enemy
+        of enemies
+    ) {
+
         const p =
             worldToScreen(
                 enemy.x,
@@ -2120,15 +2697,15 @@ function drawEnemies() {
 
         // Shadow
         ctx.fillStyle =
-            "rgba(0,0,0,0.35)";
+            "rgba(0,0,0,0.4)";
 
         ctx.beginPath();
 
         ctx.ellipse(
             0,
-            enemy.radius * 0.65,
+            20,
             enemy.radius,
-            enemy.radius * 0.3,
+            9,
             0,
             0,
             Math.PI * 2
@@ -2137,51 +2714,60 @@ function drawEnemies() {
         ctx.fill();
 
         if (
-            enemy.type === "crawler"
+            enemy.type ===
+            "crawler"
         ) {
+
             drawCrawler(
                 enemy,
                 pulse
             );
+
         } else if (
-            enemy.type === "guardian"
+            enemy.type ===
+            "guardian"
         ) {
+
             drawGuardian(
                 enemy,
                 pulse
             );
+
         } else {
+
             drawStalker(
                 enemy,
                 pulse
             );
         }
 
-        // Health bar
-        const width =
+        // Health
+        const barWidth =
             enemy.radius * 2;
 
         ctx.fillStyle =
             "rgba(0,0,0,0.7)";
 
         ctx.fillRect(
-            -width / 2,
-            -enemy.radius - 14,
-            width,
+            -barWidth / 2,
+            -enemy.radius - 15,
+            barWidth,
             5
         );
 
         ctx.fillStyle =
             enemy.elite
-                ? "#b68cff"
-                : "#5ce0b2";
+                ? "#b48cff"
+                : "#55dfb0";
 
         ctx.fillRect(
-            -width / 2,
-            -enemy.radius - 14,
-            width *
-            (enemy.health /
-                enemy.maxHealth),
+            -barWidth / 2,
+            -enemy.radius - 15,
+            barWidth *
+                (
+                    enemy.health /
+                    enemy.maxHealth
+                ),
             5
         );
 
@@ -2190,14 +2776,18 @@ function drawEnemies() {
 }
 
 // ============================================================
-// STALKER
+// STALKER ALIEN
 // ============================================================
 
-function drawStalker(enemy, pulse) {
+function drawStalker(
+    enemy,
+    pulse
+) {
+
     const color =
         enemy.elite
-            ? "#9e7cff"
-            : "#55dcb0";
+            ? "#a17cff"
+            : "#58dcb0";
 
     // Body
     ctx.fillStyle =
@@ -2208,8 +2798,10 @@ function drawStalker(enemy, pulse) {
     ctx.ellipse(
         0,
         5,
-        enemy.radius * 0.6,
-        enemy.radius * 0.7,
+        enemy.radius *
+            0.6,
+        enemy.radius *
+            0.7,
         0,
         0,
         Math.PI * 2
@@ -2222,9 +2814,12 @@ function drawStalker(enemy, pulse) {
 
     ctx.ellipse(
         0,
-        -enemy.radius * 0.45,
-        enemy.radius * 0.72,
-        enemy.radius * 0.5,
+        -enemy.radius *
+            0.45,
+        enemy.radius *
+            0.72,
+        enemy.radius *
+            0.5,
         0,
         0,
         Math.PI * 2
@@ -2234,13 +2829,13 @@ function drawStalker(enemy, pulse) {
 
     // Eyes
     ctx.fillStyle =
-        "#07110e";
+        "#07110f";
 
     ctx.beginPath();
 
     ctx.ellipse(
-        -enemy.radius * 0.25,
-        -enemy.radius * 0.45,
+        -8,
+        -11,
         5,
         8,
         -0.2,
@@ -2249,8 +2844,8 @@ function drawStalker(enemy, pulse) {
     );
 
     ctx.ellipse(
-        enemy.radius * 0.25,
-        -enemy.radius * 0.45,
+        8,
+        -11,
         5,
         8,
         0.2,
@@ -2260,23 +2855,23 @@ function drawStalker(enemy, pulse) {
 
     ctx.fill();
 
-    // Eye shine
+    // Eyes shine
     ctx.fillStyle =
-        "#eaffff";
+        "#efffff";
 
     ctx.beginPath();
 
     ctx.arc(
-        -enemy.radius * 0.27,
-        -enemy.radius * 0.5,
+        -9,
+        -13,
         2,
         0,
         Math.PI * 2
     );
 
     ctx.arc(
-        enemy.radius * 0.27,
-        -enemy.radius * 0.5,
+        7,
+        -13,
         2,
         0,
         Math.PI * 2
@@ -2290,7 +2885,8 @@ function drawStalker(enemy, pulse) {
 
     ctx.lineWidth = 5;
 
-    ctx.lineCap = "round";
+    ctx.lineCap =
+        "round";
 
     ctx.beginPath();
 
@@ -2300,8 +2896,9 @@ function drawStalker(enemy, pulse) {
     );
 
     ctx.lineTo(
-        -22,
-        12 + pulse
+        -23,
+        14 +
+            pulse
     );
 
     ctx.moveTo(
@@ -2310,15 +2907,16 @@ function drawStalker(enemy, pulse) {
     );
 
     ctx.lineTo(
-        22,
-        12 - pulse
+        23,
+        14 -
+            pulse
     );
 
     ctx.stroke();
 
     // Antennas
     ctx.strokeStyle =
-        "#a5ffe8";
+        "#baffef";
 
     ctx.lineWidth = 2;
 
@@ -2326,7 +2924,7 @@ function drawStalker(enemy, pulse) {
 
     ctx.moveTo(
         -7,
-        -25
+        -24
     );
 
     ctx.lineTo(
@@ -2336,7 +2934,7 @@ function drawStalker(enemy, pulse) {
 
     ctx.moveTo(
         7,
-        -25
+        -24
     );
 
     ctx.lineTo(
@@ -2345,46 +2943,29 @@ function drawStalker(enemy, pulse) {
     );
 
     ctx.stroke();
-
-    ctx.fillStyle =
-        "#c7fff2";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        -13,
-        -37,
-        3,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.arc(
-        13,
-        -37,
-        3,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
 }
 
 // ============================================================
-// CRAWLER
+// CRAWLER ALIEN
 // ============================================================
 
-function drawCrawler(enemy, pulse) {
+function drawCrawler(
+    enemy,
+    pulse
+) {
+
     ctx.fillStyle =
-        "#55d9c0";
+        "#50d8bf";
 
     ctx.beginPath();
 
     ctx.ellipse(
         0,
         5,
-        enemy.radius * 0.75,
-        enemy.radius * 0.45,
+        enemy.radius *
+            0.75,
+        enemy.radius *
+            0.45,
         0,
         0,
         Math.PI * 2
@@ -2394,14 +2975,14 @@ function drawCrawler(enemy, pulse) {
 
     // Head
     ctx.fillStyle =
-        "#79ead3";
+        "#78ead3";
 
     ctx.beginPath();
 
     ctx.arc(
         0,
-        -7,
-        enemy.radius * 0.38,
+        -8,
+        11,
         0,
         Math.PI * 2
     );
@@ -2416,7 +2997,7 @@ function drawCrawler(enemy, pulse) {
 
     ctx.arc(
         0,
-        -8,
+        -9,
         7,
         0,
         Math.PI * 2
@@ -2425,14 +3006,14 @@ function drawCrawler(enemy, pulse) {
     ctx.fill();
 
     ctx.fillStyle =
-        "#eaffff";
+        "#ecffff";
 
     ctx.beginPath();
 
     ctx.arc(
         -2,
-        -10,
-        2.5,
+        -11,
+        2,
         0,
         Math.PI * 2
     );
@@ -2441,7 +3022,7 @@ function drawCrawler(enemy, pulse) {
 
     // Tentacles
     ctx.strokeStyle =
-        "#55d9c0";
+        "#50d8bf";
 
     ctx.lineWidth = 4;
 
@@ -2450,6 +3031,7 @@ function drawCrawler(enemy, pulse) {
         i <= 2;
         i++
     ) {
+
         ctx.beginPath();
 
         ctx.moveTo(
@@ -2459,9 +3041,10 @@ function drawCrawler(enemy, pulse) {
 
         ctx.quadraticCurveTo(
             i * 13,
-            20 + pulse,
+            20 +
+                pulse,
             i * 17,
-            27
+            28
         );
 
         ctx.stroke();
@@ -2469,12 +3052,16 @@ function drawCrawler(enemy, pulse) {
 }
 
 // ============================================================
-// GUARDIAN
+// GUARDIAN ALIEN
 // ============================================================
 
-function drawGuardian(enemy, pulse) {
+function drawGuardian(
+    enemy,
+    pulse
+) {
+
     ctx.fillStyle =
-        "#3c275b";
+        "#3b2759";
 
     ctx.beginPath();
 
@@ -2497,7 +3084,7 @@ function drawGuardian(enemy, pulse) {
 
     // Head
     ctx.fillStyle =
-        "#b68aff";
+        "#b589ff";
 
     ctx.beginPath();
 
@@ -2541,7 +3128,7 @@ function drawGuardian(enemy, pulse) {
 
     ctx.fill();
 
-    // Energy core
+    // Core
     ctx.fillStyle =
         "#e4cfff";
 
@@ -2549,7 +3136,7 @@ function drawGuardian(enemy, pulse) {
 
     ctx.arc(
         0,
-        7,
+        8,
         7 + pulse,
         0,
         Math.PI * 2
@@ -2563,6 +3150,7 @@ function drawGuardian(enemy, pulse) {
 // ============================================================
 
 function drawTank() {
+
     const p =
         worldToScreen(
             player.x,
@@ -2576,7 +3164,7 @@ function drawTank() {
         p.y
     );
 
-    // Tank shadow
+    // Shadow
     ctx.fillStyle =
         "rgba(0,0,0,0.45)";
 
@@ -2584,8 +3172,8 @@ function drawTank() {
 
     ctx.ellipse(
         0,
-        8,
-        35,
+        10,
+        38,
         24,
         0,
         0,
@@ -2594,56 +3182,56 @@ function drawTank() {
 
     ctx.fill();
 
-    // Rotate tank body
+    // Rotate hull
     ctx.rotate(
         player.angle
     );
 
-    // LEFT TRACK
+    // Tracks
     ctx.fillStyle =
-        "#14191b";
+        "#13191b";
 
     ctx.beginPath();
 
     ctx.roundRect(
-        -30,
-        -27,
-        60,
-        14,
+        -32,
+        -29,
+        64,
+        15,
         5
     );
 
     ctx.fill();
 
-    // RIGHT TRACK
     ctx.beginPath();
 
     ctx.roundRect(
-        -30,
-        13,
-        60,
+        -32,
         14,
+        64,
+        15,
         5
     );
 
     ctx.fill();
 
-    // Track details
+    // Track lines
     ctx.strokeStyle =
-        "#4c595b";
+        "#4c5b5d";
 
     ctx.lineWidth = 2;
 
     for (
-        let x = -24;
-        x <= 24;
-        x += 12
+        let x = -26;
+        x <= 26;
+        x += 13
     ) {
+
         ctx.beginPath();
 
         ctx.moveTo(
             x,
-            -26
+            -28
         );
 
         ctx.lineTo(
@@ -2658,30 +3246,30 @@ function drawTank() {
 
         ctx.lineTo(
             x,
-            26
+            28
         );
 
         ctx.stroke();
     }
 
-    // Tank body
+    // Hull
     ctx.fillStyle =
-        "#435653";
+        "#455b56";
 
     ctx.beginPath();
 
     ctx.roundRect(
-        -26,
-        -17,
-        52,
-        34,
+        -27,
+        -18,
+        54,
+        36,
         8
     );
 
     ctx.fill();
 
     ctx.strokeStyle =
-        "#7c908b";
+        "#839692";
 
     ctx.lineWidth = 2;
 
@@ -2689,15 +3277,15 @@ function drawTank() {
 
     // Armor
     ctx.fillStyle =
-        "#596d68";
+        "#5c716b";
 
     ctx.beginPath();
 
     ctx.roundRect(
-        -17,
-        -12,
-        34,
-        24,
+        -18,
+        -13,
+        36,
+        26,
         6
     );
 
@@ -2708,39 +3296,39 @@ function drawTank() {
 
     ctx.rotate(
         player.turretAngle -
-        player.angle
+            player.angle
     );
 
     // Cannon
     ctx.fillStyle =
-        "#111719";
+        "#121719";
 
     ctx.fillRect(
-        2,
-        -5,
-        48,
-        10
+        0,
+        -6,
+        54,
+        12
     );
 
     ctx.fillStyle =
-        "#728580";
+        "#72847f";
 
     ctx.fillRect(
         8,
         -4,
-        40,
+        43,
         8
     );
 
     // Cannon end
     ctx.fillStyle =
-        "#293331";
+        "#2c3836";
 
     ctx.fillRect(
-        45,
-        -7,
+        48,
+        -8,
         9,
-        14
+        16
     );
 
     // Turret
@@ -2752,7 +3340,7 @@ function drawTank() {
     ctx.arc(
         0,
         0,
-        16,
+        17,
         0,
         Math.PI * 2
     );
@@ -2760,45 +3348,45 @@ function drawTank() {
     ctx.fill();
 
     ctx.strokeStyle =
-        "#9aacA6";
+        "#9badA7";
 
     ctx.stroke();
 
-    // Light
+    // Turret light
     ctx.fillStyle =
-        "#67ddd1";
+        "#69ded2";
 
     ctx.beginPath();
 
     ctx.arc(
-        5,
-        -7,
-        3,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    ctx.restore();
-
-    // Tank lights
-    ctx.fillStyle =
-        "#63d8cd";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        23,
+        6,
         -8,
         3,
         0,
         Math.PI * 2
     );
 
+    ctx.fill();
+
+    ctx.restore();
+
+    // Lights
+    ctx.fillStyle =
+        "#66dad0";
+
+    ctx.beginPath();
+
     ctx.arc(
-        23,
-        8,
+        24,
+        -9,
+        3,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.arc(
+        24,
+        9,
         3,
         0,
         Math.PI * 2
@@ -2808,10 +3396,11 @@ function drawTank() {
 
     ctx.restore();
 
-    // Shield effect
+    // Shield
     if (
         player.invincible > 0
     ) {
+
         ctx.strokeStyle =
             "rgba(100,240,230,0.8)";
 
@@ -2822,7 +3411,7 @@ function drawTank() {
         ctx.arc(
             p.x,
             p.y,
-            38,
+            40,
             0,
             Math.PI * 2
         );
@@ -2832,11 +3421,16 @@ function drawTank() {
 }
 
 // ============================================================
-// BULLETS DRAW
+// DRAW BULLETS
 // ============================================================
 
 function drawBullets() {
-    for (const bullet of bullets) {
+
+    for (
+        const bullet
+        of bullets
+    ) {
+
         const p =
             worldToScreen(
                 bullet.x,
@@ -2858,14 +3452,12 @@ function drawBullets() {
         );
 
         ctx.fillStyle =
-            bullet.type === 2
-                ? "#e1c16b"
-                : "#6de7dc";
+            "#6de6da";
 
         ctx.fillRect(
-            -8,
+            -9,
             -2,
-            16,
+            18,
             4
         );
 
@@ -2874,7 +3466,12 @@ function drawBullets() {
 }
 
 function drawEnemyBullets() {
-    for (const bullet of enemyBullets) {
+
+    for (
+        const bullet
+        of enemyBullets
+    ) {
+
         const p =
             worldToScreen(
                 bullet.x,
@@ -2882,7 +3479,7 @@ function drawEnemyBullets() {
             );
 
         ctx.fillStyle =
-            "#b78cff";
+            "#b98cff";
 
         ctx.beginPath();
 
@@ -2899,11 +3496,16 @@ function drawEnemyBullets() {
 }
 
 // ============================================================
-// PARTICLES DRAW
+// PARTICLES
 // ============================================================
 
 function drawParticles() {
-    for (const p of particles) {
+
+    for (
+        const p
+        of particles
+    ) {
+
         const screen =
             worldToScreen(
                 p.x,
@@ -2918,7 +3520,7 @@ function drawParticles() {
             );
 
         ctx.fillStyle =
-            "#6fe4d7";
+            "#73e4d7";
 
         ctx.beginPath();
 
@@ -2937,102 +3539,60 @@ function drawParticles() {
 }
 
 // ============================================================
-// WEATHER
-// ============================================================
-
-function drawWeather() {
-    if (
-        Math.floor(gameTime / 30) % 3 === 1
-    ) {
-        ctx.strokeStyle =
-            "rgba(120,190,220,0.2)";
-
-        for (
-            let i = 0;
-            i < 100;
-            i++
-        ) {
-            const x =
-                (i * 83 +
-                    gameTime * 300) %
-                W;
-
-            const y =
-                (i * 47 +
-                    gameTime * 500) %
-                H;
-
-            ctx.beginPath();
-
-            ctx.moveTo(
-                x,
-                y
-            );
-
-            ctx.lineTo(
-                x - 4,
-                y + 15
-            );
-
-            ctx.stroke();
-        }
-    }
-}
-
-// ============================================================
 // CROSSHAIR
 // ============================================================
 
 function drawCrosshair() {
+
     if (!gameRunning) {
         return;
     }
 
     ctx.strokeStyle =
-        "rgba(120,240,225,0.85)";
+        "rgba(120,240,225,0.9)";
 
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth = 2;
 
     ctx.beginPath();
 
     ctx.moveTo(
-        mouse.x - 10,
+        mouse.x - 12,
         mouse.y
     );
 
     ctx.lineTo(
-        mouse.x - 3,
-        mouse.y
-    );
-
-    ctx.moveTo(
-        mouse.x + 3,
-        mouse.y
-    );
-
-    ctx.lineTo(
-        mouse.x + 10,
+        mouse.x - 4,
         mouse.y
     );
 
     ctx.moveTo(
-        mouse.x,
-        mouse.y - 10
+        mouse.x + 4,
+        mouse.y
     );
 
     ctx.lineTo(
-        mouse.x,
-        mouse.y - 3
+        mouse.x + 12,
+        mouse.y
     );
 
     ctx.moveTo(
         mouse.x,
-        mouse.y + 3
+        mouse.y - 12
     );
 
     ctx.lineTo(
         mouse.x,
-        mouse.y + 10
+        mouse.y - 4
+    );
+
+    ctx.moveTo(
+        mouse.x,
+        mouse.y + 4
+    );
+
+    ctx.lineTo(
+        mouse.x,
+        mouse.y + 12
     );
 
     ctx.stroke();
@@ -3043,6 +3603,7 @@ function drawCrosshair() {
 // ============================================================
 
 function updateHUD() {
+
     const healthBar =
         document.getElementById(
             "healthBar"
@@ -3079,231 +3640,154 @@ function updateHUD() {
         );
 
     if (healthBar) {
+
         healthBar.style.width =
-            `${clamp(
+            (
                 player.health /
                 player.maxHealth *
-                100,
-                0,
                 100
-            )}%`;
+            ) + "%";
     }
 
     if (energyBar) {
+
         energyBar.style.width =
-            `${clamp(
+            (
                 player.energy /
                 player.maxEnergy *
-                100,
-                0,
                 100
-            )}%`;
+            ) + "%";
     }
 
     if (ammo) {
+
         const weapon =
-            weapons[player.weapon];
+            weapons[
+                player.weapon
+            ];
 
         ammo.textContent =
             player.reloadTimer > 0
                 ? "RELOADING..."
-                : `${weapon.ammo} / ∞`;
+                : `${weapon.name}  ${weapon.ammo} / ∞`;
     }
 
     if (killsText) {
+
         killsText.textContent =
             `KILLS: ${kills}`;
     }
 
     if (creditsText) {
+
         creditsText.textContent =
             `CREDITS: ${credits}`;
     }
 
     if (objective) {
+
         objective.textContent =
-            missionProgress >= missionTarget
+            missionProgress >=
+            missionTarget
                 ? "SIGNAL FOUND"
                 : `FIND THE SIGNAL • ${missionProgress}/${missionTarget}`;
     }
 
     if (zone) {
+
         zone.textContent =
             `SECTOR ${level}`;
     }
 }
 
 // ============================================================
-// PAUSE
+// KILL ALIEN
 // ============================================================
 
-function togglePause() {
-    if (!gameRunning) {
-        return;
+function killAlien(
+    enemy
+) {
+
+    kills++;
+
+    if (
+        enemy.elite
+    ) {
+
+        score += 100;
+        credits += 30;
+
+        addXP(40);
+
+    } else {
+
+        score += 25;
+        credits += 8;
+
+        addXP(15);
     }
 
-    paused = !paused;
+    missionProgress++;
 
-    if (pauseMenu) {
-        pauseMenu.style.display =
-            paused
-                ? "flex"
-                : "none";
-    }
-
-    if (paused) {
-        mouse.down = false;
-    }
-}
-
-// ============================================================
-// SAVE
-// ============================================================
-
-function saveGame() {
-    const data = {
-        player: {
-            x: player.x,
-            y: player.y,
-            health: player.health,
-            energy: player.energy,
-            weapon: player.weapon
-        },
-
-        score,
-        kills,
-        credits,
-        level,
-        xp,
-        missionProgress,
-
-        ammo: weapons.map(
-            weapon => weapon.ammo
-        )
-    };
-
-    localStorage.setItem(
-        "echoboundSave",
-        JSON.stringify(data)
+    createParticles(
+        enemy.x,
+        enemy.y,
+        enemy.elite
+            ? 25
+            : 16
     );
 
-    alert("RUN SAVED!");
+    if (
+        kills === 1
+    ) {
+
+        unlockAchievement(
+            "FIRST CONTACT"
+        );
+    }
+
+    if (
+        kills === 10
+    ) {
+
+        unlockAchievement(
+            "ALIEN HUNTER"
+        );
+    }
 }
 
 // ============================================================
-// LOAD
+// XP
 // ============================================================
 
-function loadGame() {
-    const saved =
-        localStorage.getItem(
-            "echoboundSave"
-        );
+function addXP(
+    amount
+) {
 
-    if (!saved) {
-        alert(
-            "NO SAVE FOUND."
-        );
+    xp += amount;
 
-        return;
-    }
+    const needed =
+        level * 100;
 
-    try {
-        const data =
-            JSON.parse(saved);
+    if (
+        xp >= needed
+    ) {
 
-        generateWorld();
+        xp -= needed;
 
-        score =
-            data.score || 0;
+        level++;
 
-        kills =
-            data.kills || 0;
-
-        credits =
-            data.credits || 0;
-
-        level =
-            data.level || 1;
-
-        xp =
-            data.xp || 0;
-
-        missionProgress =
-            data.missionProgress || 0;
-
-        player.x =
-            data.player.x || 0;
-
-        player.y =
-            data.player.y || 0;
-
+        player.maxHealth += 5;
         player.health =
-            data.player.health ||
             player.maxHealth;
 
+        player.maxEnergy += 5;
         player.energy =
-            data.player.energy ||
             player.maxEnergy;
 
-        player.weapon =
-            data.player.weapon || 0;
-
-        if (data.ammo) {
-            data.ammo.forEach(
-                (ammo, index) => {
-                    if (
-                        weapons[index]
-                    ) {
-                        weapons[index].ammo =
-                            ammo;
-                    }
-                }
-            );
-        }
-
-        gameRunning = true;
-        paused = false;
-
-        if (menu) {
-            menu.style.display =
-                "none";
-        }
-
-        if (pauseMenu) {
-            pauseMenu.style.display =
-                "none";
-        }
-
-        updateHUD();
-
-    } catch (error) {
-        console.error(error);
-
-        alert(
-            "SAVE DATA IS CORRUPTED."
+        unlockAchievement(
+            "LEVEL UP"
         );
-    }
-}
-
-// ============================================================
-// QUIT
-// ============================================================
-
-function quitToMenu() {
-    gameRunning = false;
-    paused = false;
-
-    mouse.down = false;
-
-    if (pauseMenu) {
-        pauseMenu.style.display =
-            "none";
-    }
-
-    if (menu) {
-        menu.style.display =
-            "flex";
     }
 }
 
@@ -3311,26 +3795,26 @@ function quitToMenu() {
 // ACHIEVEMENTS
 // ============================================================
 
-const achievements = [
-    "FIRST CONTACT",
-    "ALIEN HUNTER",
-    "SCAVENGER",
-    "LEVEL UP"
-];
-
 function getAchievements() {
+
     try {
+
         return JSON.parse(
             localStorage.getItem(
                 "echoboundAchievements"
             )
         ) || [];
+
     } catch {
+
         return [];
     }
 }
 
-function unlockAchievement(name) {
+function unlockAchievement(
+    name
+) {
+
     const unlocked =
         getAchievements();
 
@@ -3363,6 +3847,7 @@ function unlockAchievement(name) {
         box &&
         nameElement
     ) {
+
         nameElement.textContent =
             name;
 
@@ -3370,13 +3855,23 @@ function unlockAchievement(name) {
             "block";
 
         setTimeout(() => {
+
             box.style.display =
                 "none";
+
         }, 3000);
     }
 }
 
 function showAchievements() {
+
+    const achievements = [
+        "FIRST CONTACT",
+        "ALIEN HUNTER",
+        "SCAVENGER",
+        "LEVEL UP"
+    ];
+
     const unlocked =
         getAchievements();
 
@@ -3384,8 +3879,10 @@ function showAchievements() {
         "ACHIEVEMENTS\n\n";
 
     for (
-        const achievement of achievements
+        const achievement
+        of achievements
     ) {
+
         text +=
             unlocked.includes(
                 achievement
@@ -3397,20 +3894,229 @@ function showAchievements() {
     alert(text);
 }
 
+// ============================================================
+// CONTROLS
+// ============================================================
+
 function showControls() {
+
     alert(
         "CONTROLS\n\n" +
-        "W A S D = Bewegen\n" +
-        "SHIFT = Sneller rijden\n" +
-        "MUIS = Richten\n" +
-        "LINKERMUIS = Schieten\n" +
-        "R = Herladen\n" +
-        "SPACE = Dash\n" +
-        "1 = Pulse\n" +
-        "2 = Burst\n" +
-        "3 = Cannon\n" +
-        "ESC = Pauze"
+
+        "W A S D = BEWEGEN\n" +
+        "SHIFT = SNELLER\n" +
+        "MUIS = RICHTEN\n" +
+        "LINKERMUIS = SCHIETEN\n" +
+        "R = HERLADEN\n" +
+        "SPACE = DASH\n" +
+        "1 = PULSE\n" +
+        "2 = BURST\n" +
+        "3 = CANNON\n" +
+        "ESC = PAUZE"
     );
+}
+
+// ============================================================
+// PAUSE
+// ============================================================
+
+function togglePause() {
+
+    if (!gameRunning) {
+        return;
+    }
+
+    paused = !paused;
+
+    mouse.down = false;
+
+    if (pauseMenu) {
+
+        pauseMenu.style.display =
+            paused
+                ? "flex"
+                : "none";
+    }
+}
+
+// ============================================================
+// SAVE
+// ============================================================
+
+function saveGame() {
+
+    const data = {
+
+        x: player.x,
+        y: player.y,
+
+        health:
+            player.health,
+
+        energy:
+            player.energy,
+
+        weapon:
+            player.weapon,
+
+        score,
+        kills,
+        credits,
+
+        level,
+        xp,
+
+        missionProgress,
+
+        ammo:
+            weapons.map(
+                w => w.ammo
+            )
+    };
+
+    localStorage.setItem(
+        "echoboundSave",
+        JSON.stringify(data)
+    );
+
+    alert(
+        "RUN SAVED!"
+    );
+}
+
+// ============================================================
+// LOAD
+// ============================================================
+
+function loadGame() {
+
+    const saved =
+        localStorage.getItem(
+            "echoboundSave"
+        );
+
+    if (!saved) {
+
+        alert(
+            "NO SAVE FOUND."
+        );
+
+        return;
+    }
+
+    try {
+
+        const data =
+            JSON.parse(saved);
+
+        generateWorld();
+
+        player.x =
+            data.x || 0;
+
+        player.y =
+            data.y || 0;
+
+        player.health =
+            data.health ||
+            player.maxHealth;
+
+        player.energy =
+            data.energy ||
+            player.maxEnergy;
+
+        player.weapon =
+            data.weapon || 0;
+
+        score =
+            data.score || 0;
+
+        kills =
+            data.kills || 0;
+
+        credits =
+            data.credits || 0;
+
+        level =
+            data.level || 1;
+
+        xp =
+            data.xp || 0;
+
+        missionProgress =
+            data.missionProgress ||
+            0;
+
+        if (data.ammo) {
+
+            data.ammo.forEach(
+                (
+                    ammo,
+                    index
+                ) => {
+
+                    if (
+                        weapons[index]
+                    ) {
+
+                        weapons[
+                            index
+                        ].ammo =
+                            ammo;
+                    }
+                }
+            );
+        }
+
+        for (
+            let i = 0;
+            i < 10;
+            i++
+        ) {
+
+            spawnAlien();
+        }
+
+        gameRunning = true;
+        paused = false;
+
+        if (menu) {
+            menu.style.display =
+                "none";
+        }
+
+        updateHUD();
+
+    } catch {
+
+        alert(
+            "SAVE DATA IS CORRUPTED."
+        );
+    }
+}
+
+// ============================================================
+// QUIT
+// ============================================================
+
+function quitToMenu() {
+
+    gameRunning = false;
+    paused = false;
+
+    keys.clear();
+
+    mouse.down = false;
+
+    if (pauseMenu) {
+        pauseMenu.style.display =
+            "none";
+    }
+
+    if (menu) {
+        menu.style.display =
+            "flex";
+    }
 }
 
 // ============================================================
@@ -3418,9 +4124,12 @@ function showControls() {
 // ============================================================
 
 function gameOver() {
+
     gameRunning = false;
-    paused = false;
+
     mouse.down = false;
+
+    keys.clear();
 
     alert(
         "TANK DESTROYED\n\n" +
@@ -3436,10 +4145,11 @@ function gameOver() {
 }
 
 // ============================================================
-// GAME UPDATE
+// MAIN UPDATE
 // ============================================================
 
 function update(dt) {
+
     if (
         !gameRunning ||
         paused
@@ -3450,18 +4160,27 @@ function update(dt) {
     gameTime += dt;
 
     updatePlayer(dt);
+
     updateEnemies(dt);
+
     updateBullets(dt);
+
     updateEnemyBullets(dt);
+
     updateNPCs(dt);
+
     updateLoot(dt);
+
     updateParticles(dt);
+
     updateCamera(dt);
 
     if (
         player.health <= 0
     ) {
+
         player.health = 0;
+
         gameOver();
     }
 
@@ -3475,20 +4194,27 @@ function update(dt) {
 let lastTime =
     performance.now();
 
-function gameLoop(time) {
+function gameLoop(
+    currentTime
+) {
+
     let dt =
-        (time - lastTime) /
-        1000;
+        (
+            currentTime -
+            lastTime
+        ) / 1000;
 
-    lastTime = time;
+    lastTime =
+        currentTime;
 
-    // Prevent huge jumps if browser freezes
-    dt = Math.min(
-        dt,
-        0.05
-    );
+    dt =
+        Math.min(
+            dt,
+            0.05
+        );
 
     update(dt);
+
     draw();
 
     requestAnimationFrame(
@@ -3497,10 +4223,11 @@ function gameLoop(time) {
 }
 
 // ============================================================
-// INITIALIZE
+// START
 // ============================================================
 
 generateWorld();
+
 updateHUD();
 
 requestAnimationFrame(
