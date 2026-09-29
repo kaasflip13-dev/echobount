@@ -1,6 +1,6 @@
 // ============================================================
 // ECHOBOUND — THE LOST SIGNAL
-// Complete 2D game
+// COMPLETE 2D GAME
 // ============================================================
 
 const canvas = document.getElementById("game");
@@ -9,19 +9,11 @@ const ctx = canvas.getContext("2d");
 const mapCanvas = document.getElementById("mapCanvas");
 const mapCtx = mapCanvas.getContext("2d");
 
-// ============================================================
-// WORLD
-// ============================================================
-
 const WORLD_W = 7000;
 const WORLD_H = 7000;
-
 const MAX_ENEMIES = 5;
 
-let camera = {
-    x: 0,
-    y: 0
-};
+let camera = { x: 0, y: 0 };
 
 let gameRunning = false;
 let paused = false;
@@ -39,6 +31,7 @@ let weather = "clear";
 let timeOfDay = 0.25;
 
 let reloadTimer = 0;
+let fireCooldown = 0;
 
 // ============================================================
 // PLAYER
@@ -99,10 +92,8 @@ const weapons = [
     }
 ];
 
-let fireCooldown = 0;
-
 // ============================================================
-// OBJECTS
+// WORLD OBJECTS
 // ============================================================
 
 const bullets = [];
@@ -147,27 +138,39 @@ window.addEventListener("keydown", e => {
     }
 
     if (e.key >= "1" && e.key <= "3") {
-        player.weapon = Number(e.key) - 1;
+
+        player.weapon =
+            Number(e.key) - 1;
+
         updateHUD();
     }
 });
 
 window.addEventListener("keyup", e => {
+
     keys[e.key.toLowerCase()] = false;
 });
 
 canvas.addEventListener("mousemove", e => {
 
-    const rect = canvas.getBoundingClientRect();
+    const rect =
+        canvas.getBoundingClientRect();
 
-    mouse.x = e.clientX - rect.left;
-    mouse.y = e.clientY - rect.top;
+    mouse.x =
+        e.clientX - rect.left;
+
+    mouse.y =
+        e.clientY - rect.top;
 
     const worldX =
-        mouse.x - canvas.width / 2 + camera.x;
+        mouse.x -
+        canvas.width / 2 +
+        camera.x;
 
     const worldY =
-        mouse.y - canvas.height / 2 + camera.y;
+        mouse.y -
+        canvas.height / 2 +
+        camera.y;
 
     player.angle =
         Math.atan2(
@@ -195,7 +198,11 @@ window.addEventListener("mouseup", e => {
 // ============================================================
 
 function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
+
+    return Math.max(
+        min,
+        Math.min(max, value)
+    );
 }
 
 function dist(x1, y1, x2, y2) {
@@ -207,19 +214,42 @@ function dist(x1, y1, x2, y2) {
 }
 
 function random(min, max) {
-    return Math.random() * (max - min) + min;
+
+    return Math.random() *
+        (max - min) +
+        min;
 }
 
-function circleRectCollision(cx, cy, radius, r) {
+// ============================================================
+// RECTANGLE COLLISION
+// ============================================================
+
+function circleRectCollision(
+    cx,
+    cy,
+    radius,
+    r
+) {
 
     const closestX =
-        clamp(cx, r.x, r.x + r.w);
+        clamp(
+            cx,
+            r.x,
+            r.x + r.w
+        );
 
     const closestY =
-        clamp(cy, r.y, r.y + r.h);
+        clamp(
+            cy,
+            r.y,
+            r.y + r.h
+        );
 
-    const dx = cx - closestX;
-    const dy = cy - closestY;
+    const dx =
+        cx - closestX;
+
+    const dy =
+        cy - closestY;
 
     return (
         dx * dx +
@@ -229,16 +259,22 @@ function circleRectCollision(cx, cy, radius, r) {
 }
 
 // ============================================================
-// WALL / BUILDING COLLISION
+// WORLD COLLISION
 // ============================================================
 
-function blocked(x, y, radius = player.radius) {
+function blocked(
+    x,
+    y,
+    radius = player.radius
+) {
 
     const limitX =
-        WORLD_W / 2 - radius;
+        WORLD_W / 2 -
+        radius;
 
     const limitY =
-        WORLD_H / 2 - radius;
+        WORLD_H / 2 -
+        radius;
 
     if (
         x < -limitX ||
@@ -286,27 +322,41 @@ function blocked(x, y, radius = player.radius) {
 // ============================================================
 // LINE OF SIGHT
 // ============================================================
-// TRUE  = vijand kan speler zien
-// FALSE = muur/gebouw blokkeert zicht
+// Vijanden kunnen NIET door gebouwen heen schieten.
 // ============================================================
 
-function hasLineOfSight(x1, y1, x2, y2) {
+function hasLineOfSight(
+    x1,
+    y1,
+    x2,
+    y2
+) {
 
-    const dx = x2 - x1;
-    const dy = y2 - y1;
+    const dx =
+        x2 - x1;
+
+    const dy =
+        y2 - y1;
 
     const distance =
         Math.hypot(dx, dy);
 
-    // Meer controlepunten bij grotere afstand
-    const steps = Math.max(
-        20,
-        Math.ceil(distance / 12)
-    );
+    const steps =
+        Math.max(
+            20,
+            Math.ceil(
+                distance / 12
+            )
+        );
 
-    for (let i = 1; i < steps; i++) {
+    for (
+        let i = 1;
+        i < steps;
+        i++
+    ) {
 
-        const t = i / steps;
+        const t =
+            i / steps;
 
         const x =
             x1 + dx * t;
@@ -314,14 +364,22 @@ function hasLineOfSight(x1, y1, x2, y2) {
         const y =
             y1 + dy * t;
 
-        for (const building of buildings) {
+        for (
+            const building
+            of buildings
+        ) {
 
             if (
                 x >= building.x &&
-                x <= building.x + building.w &&
+                x <=
+                    building.x +
+                    building.w &&
                 y >= building.y &&
-                y <= building.y + building.h
+                y <=
+                    building.y +
+                    building.h
             ) {
+
                 return false;
             }
         }
@@ -337,6 +395,7 @@ function hasLineOfSight(x1, y1, x2, y2) {
 function randomWorldPosition() {
 
     return {
+
         x: random(
             -WORLD_W / 2 + 100,
             WORLD_W / 2 - 100
@@ -370,10 +429,12 @@ function generateWorld() {
 
         let position;
         let valid = false;
-
         let attempts = 0;
 
-        while (!valid && attempts < 100) {
+        while (
+            !valid &&
+            attempts < 100
+        ) {
 
             attempts++;
 
@@ -385,8 +446,15 @@ function generateWorld() {
                 x: position.x,
                 y: position.y,
 
-                w: random(180, 360),
-                h: random(150, 300),
+                w: random(
+                    180,
+                    360
+                ),
+
+                h: random(
+                    150,
+                    300
+                ),
 
                 type:
                     Math.random() > 0.7
@@ -396,20 +464,33 @@ function generateWorld() {
 
             valid = true;
 
-            for (const other of buildings) {
+            for (
+                const other
+                of buildings
+            ) {
 
                 if (
                     building.x <
-                        other.x + other.w + 100 &&
+                        other.x +
+                        other.w +
+                        100 &&
+
                     building.x +
-                        building.w + 100 >
+                        building.w +
+                        100 >
                         other.x &&
+
                     building.y <
-                        other.y + other.h + 100 &&
+                        other.y +
+                        other.h +
+                        100 &&
+
                     building.y +
-                        building.h + 100 >
+                        building.h +
+                        100 >
                         other.y
                 ) {
+
                     valid = false;
                     break;
                 }
@@ -453,14 +534,24 @@ function generateWorld() {
         const p =
             randomWorldPosition();
 
-        if (!blocked(p.x, p.y, 18)) {
+        if (
+            !blocked(
+                p.x,
+                p.y,
+                18
+            )
+        ) {
 
             trees.push({
 
                 x: p.x,
                 y: p.y,
 
-                radius: random(14, 27),
+                radius:
+                    random(
+                        14,
+                        27
+                    ),
 
                 phase:
                     Math.random() *
@@ -479,14 +570,24 @@ function generateWorld() {
         const p =
             randomWorldPosition();
 
-        if (!blocked(p.x, p.y, 15)) {
+        if (
+            !blocked(
+                p.x,
+                p.y,
+                15
+            )
+        ) {
 
             rocks.push({
 
                 x: p.x,
                 y: p.y,
 
-                radius: random(8, 22)
+                radius:
+                    random(
+                        8,
+                        22
+                    )
             });
         }
     }
@@ -515,8 +616,34 @@ function generateWorld() {
     }
 
     // --------------------------------------------------------
-    // NPCS
+    // NPC'S
     // --------------------------------------------------------
+
+    const npcColors = [
+
+        "#527a78",
+        "#765b4c",
+        "#596b83",
+        "#6f6a4d",
+        "#704f62"
+    ];
+
+    const hairColors = [
+
+        "#292321",
+        "#3b3029",
+        "#55463a",
+        "#1e2526",
+        "#806548"
+    ];
+
+    const skinColors = [
+
+        "#c58e6b",
+        "#d39b73",
+        "#a96f50",
+        "#e0ad83"
+    ];
 
     for (let i = 0; i < 18; i++) {
 
@@ -532,12 +659,44 @@ function generateWorld() {
 
             angle:
                 Math.random() *
-                Math.PI * 2,
+                Math.PI *
+                2,
 
-            speed: random(10, 25),
+            speed:
+                random(
+                    10,
+                    25
+                ),
 
             changeTimer:
-                random(1, 4)
+                random(
+                    1,
+                    4
+                ),
+
+            clothing:
+                npcColors[
+                    Math.floor(
+                        Math.random() *
+                        npcColors.length
+                    )
+                ],
+
+            hair:
+                hairColors[
+                    Math.floor(
+                        Math.random() *
+                        hairColors.length
+                    )
+                ],
+
+            skin:
+                skinColors[
+                    Math.floor(
+                        Math.random() *
+                        skinColors.length
+                    )
+                ]
         });
     }
 }
@@ -579,6 +738,7 @@ function resetGame() {
     generateWorld();
 
     for (let i = 0; i < 4; i++) {
+
         spawnEnemy();
     }
 
@@ -594,12 +754,15 @@ function resetGame() {
 }
 
 // ============================================================
-// ENEMIES
+// SPAWN ENEMY
 // ============================================================
 
 function spawnEnemy() {
 
-    if (enemies.length >= MAX_ENEMIES) {
+    if (
+        enemies.length >=
+        MAX_ENEMIES
+    ) {
         return;
     }
 
@@ -608,11 +771,13 @@ function spawnEnemy() {
 
     do {
 
-        p = randomWorldPosition();
+        p =
+            randomWorldPosition();
 
         attempts++;
 
     } while (
+
         (
             dist(
                 p.x,
@@ -620,12 +785,14 @@ function spawnEnemy() {
                 player.x,
                 player.y
             ) < 700 ||
+
             blocked(
                 p.x,
                 p.y,
                 20
             )
         ) &&
+
         attempts < 100
     );
 
@@ -638,28 +805,39 @@ function spawnEnemy() {
         y: p.y,
 
         radius:
-            elite ? 24 : 19,
+            elite
+                ? 24
+                : 19,
 
         speed:
-            elite ? 75 : 48,
+            elite
+                ? 75
+                : 48,
 
         health:
-            elite ? 5 : 2,
+            elite
+                ? 5
+                : 2,
 
         maxHealth:
-            elite ? 5 : 2,
+            elite
+                ? 5
+                : 2,
 
         elite,
 
         shootCooldown:
-            random(1, 3),
+            random(
+                1,
+                3
+            ),
 
         angle: 0
     });
 }
 
 // ============================================================
-// ENEMY UPDATE
+// UPDATE ENEMIES
 // ============================================================
 
 function updateEnemies(dt) {
@@ -668,50 +846,73 @@ function updateEnemies(dt) {
         enemies.length <
         Math.min(
             MAX_ENEMIES,
-            3 + Math.floor(level / 2)
+            3 +
+            Math.floor(
+                level / 2
+            )
         )
     ) {
+
         spawnEnemy();
     }
 
-    for (const enemy of enemies) {
+    for (
+        const enemy
+        of enemies
+    ) {
 
         const dx =
-            player.x - enemy.x;
+            player.x -
+            enemy.x;
 
         const dy =
-            player.y - enemy.y;
+            player.y -
+            enemy.y;
 
         const distance =
-            Math.hypot(dx, dy);
+            Math.hypot(
+                dx,
+                dy
+            );
 
         if (distance > 0) {
 
             enemy.angle =
-                Math.atan2(dy, dx);
+                Math.atan2(
+                    dy,
+                    dx
+                );
         }
 
         // ----------------------------------------------------
         // MOVEMENT
         // ----------------------------------------------------
 
-        if (distance > 260) {
+        if (
+            distance > 260
+        ) {
 
             const moveX =
-                Math.cos(enemy.angle) *
+                Math.cos(
+                    enemy.angle
+                ) *
                 enemy.speed *
                 dt;
 
             const moveY =
-                Math.sin(enemy.angle) *
+                Math.sin(
+                    enemy.angle
+                ) *
                 enemy.speed *
                 dt;
 
             const nx =
-                enemy.x + moveX;
+                enemy.x +
+                moveX;
 
             const ny =
-                enemy.y + moveY;
+                enemy.y +
+                moveY;
 
             if (
                 !blocked(
@@ -720,6 +921,7 @@ function updateEnemies(dt) {
                     enemy.radius
                 )
             ) {
+
                 enemy.x = nx;
             }
 
@@ -730,6 +932,7 @@ function updateEnemies(dt) {
                     enemy.radius
                 )
             ) {
+
                 enemy.y = ny;
             }
         }
@@ -745,9 +948,9 @@ function updateEnemies(dt) {
             distance < 1000
         ) {
 
-            // BELANGRIJK:
-            // De vijand mag alleen schieten als hij
-            // daadwerkelijk zicht heeft op de speler.
+            // DE VIJAND KAN ALLEEN SCHIETEN
+            // ALS HIJ DE SPELER KAN ZIEN.
+
             if (
                 hasLineOfSight(
                     enemy.x,
@@ -760,14 +963,16 @@ function updateEnemies(dt) {
                 shootEnemy(enemy);
             }
 
-            // Ook als er een muur tussen zit,
-            // wordt de cooldown opnieuw ingesteld.
             enemy.shootCooldown =
-                random(1.2, 2.8);
+                random(
+                    1.2,
+                    2.8
+                );
 
             if (enemy.elite) {
 
-                enemy.shootCooldown *= 0.7;
+                enemy.shootCooldown *=
+                    0.7;
             }
         }
     }
@@ -781,8 +986,11 @@ function shootEnemy(enemy) {
 
     const angle =
         Math.atan2(
-            player.y - enemy.y,
-            player.x - enemy.x
+            player.y -
+                enemy.y,
+
+            player.x -
+                enemy.x
         );
 
     const speed =
@@ -831,10 +1039,16 @@ function updatePlayer(dt) {
     if (keys["a"]) dx--;
     if (keys["d"]) dx++;
 
-    if (dx !== 0 || dy !== 0) {
+    if (
+        dx !== 0 ||
+        dy !== 0
+    ) {
 
         const length =
-            Math.hypot(dx, dy);
+            Math.hypot(
+                dx,
+                dy
+            );
 
         dx /= length;
         dy /= length;
@@ -851,6 +1065,7 @@ function updatePlayer(dt) {
 
             player.energy -=
                 25 * dt;
+
         } else {
 
             player.energy +=
@@ -859,11 +1074,15 @@ function updatePlayer(dt) {
 
         const nx =
             player.x +
-            dx * speed * dt;
+            dx *
+            speed *
+            dt;
 
         const ny =
             player.y +
-            dy * speed * dt;
+            dy *
+            speed *
+            dt;
 
         if (
             !blocked(
@@ -872,6 +1091,7 @@ function updatePlayer(dt) {
                 player.radius
             )
         ) {
+
             player.x = nx;
         }
 
@@ -882,6 +1102,7 @@ function updatePlayer(dt) {
                 player.radius
             )
         ) {
+
             player.y = ny;
         }
 
@@ -898,11 +1119,17 @@ function updatePlayer(dt) {
             player.maxEnergy
         );
 
-    if (player.invincible > 0) {
+    if (
+        player.invincible > 0
+    ) {
+
         player.invincible -= dt;
     }
 
-    if (player.dashCooldown > 0) {
+    if (
+        player.dashCooldown > 0
+    ) {
+
         player.dashCooldown -= dt;
     }
 }
@@ -919,6 +1146,7 @@ function dash() {
         player.dashCooldown > 0 ||
         player.energy < 30
     ) {
+
         return;
     }
 
@@ -930,7 +1158,10 @@ function dash() {
     if (keys["a"]) dx--;
     if (keys["d"]) dx++;
 
-    if (dx === 0 && dy === 0) {
+    if (
+        dx === 0 &&
+        dy === 0
+    ) {
 
         dx =
             Math.cos(
@@ -944,28 +1175,40 @@ function dash() {
     }
 
     const length =
-        Math.hypot(dx, dy);
+        Math.hypot(
+            dx,
+            dy
+        );
 
     dx /= length;
     dy /= length;
 
     const distance = 170;
-
     const steps = 20;
 
-    for (let i = 0; i < steps; i++) {
+    for (
+        let i = 0;
+        i < steps;
+        i++
+    ) {
 
         const nx =
             player.x +
             dx *
             distance *
-            ((i + 1) / steps);
+            (
+                (i + 1) /
+                steps
+            );
 
         const ny =
             player.y +
             dy *
             distance *
-            ((i + 1) / steps);
+            (
+                (i + 1) /
+                steps
+            );
 
         if (
             blocked(
@@ -974,6 +1217,7 @@ function dash() {
                 player.radius
             )
         ) {
+
             break;
         }
 
@@ -983,9 +1227,11 @@ function dash() {
 
     player.energy -= 30;
 
-    player.dashCooldown = 1.2;
+    player.dashCooldown =
+        1.2;
 
-    player.invincible = 0.25;
+    player.invincible =
+        0.25;
 
     createParticles(
         player.x,
@@ -995,7 +1241,7 @@ function dash() {
 }
 
 // ============================================================
-// SHOOT PLAYER
+// PLAYER SHOOTING
 // ============================================================
 
 function shoot() {
@@ -1006,13 +1252,16 @@ function shoot() {
         reloadTimer > 0 ||
         fireCooldown > 0
     ) {
+
         return;
     }
 
     const weapon =
         weapons[player.weapon];
 
-    if (weapon.ammo <= 0) {
+    if (
+        weapon.ammo <= 0
+    ) {
 
         reload();
 
@@ -1026,7 +1275,10 @@ function shoot() {
 
     const spread =
         player.weapon === 1
-            ? random(-0.12, 0.12)
+            ? random(
+                -0.12,
+                0.12
+            )
             : 0;
 
     const angle =
@@ -1061,10 +1313,12 @@ function shoot() {
 
     createParticles(
         player.x +
-            Math.cos(angle) * 24,
+            Math.cos(angle) *
+            24,
 
         player.y +
-            Math.sin(angle) * 24,
+            Math.sin(angle) *
+            24,
 
         3
     );
@@ -1081,8 +1335,10 @@ function reload() {
 
     if (
         reloadTimer > 0 ||
-        weapon.ammo >= weapon.maxAmmo
+        weapon.ammo >=
+            weapon.maxAmmo
     ) {
+
         return;
     }
 
@@ -1090,13 +1346,14 @@ function reload() {
 }
 
 // ============================================================
-// BULLET UPDATE
+// PLAYER BULLETS
 // ============================================================
 
 function updateBullets(dt) {
 
     for (
-        let i = bullets.length - 1;
+        let i =
+            bullets.length - 1;
         i >= 0;
         i--
     ) {
@@ -1104,18 +1361,25 @@ function updateBullets(dt) {
         const b =
             bullets[i];
 
-        b.x += b.vx * dt;
-        b.y += b.vy * dt;
+        b.x +=
+            b.vx * dt;
+
+        b.y +=
+            b.vy * dt;
 
         b.life -= dt;
 
-        let removeBullet = false;
+        let removeBullet =
+            false;
 
         // ----------------------------------------------------
         // WALL COLLISION
         // ----------------------------------------------------
 
-        for (const building of buildings) {
+        for (
+            const building
+            of buildings
+        ) {
 
             if (
                 circleRectCollision(
@@ -1132,15 +1396,21 @@ function updateBullets(dt) {
                     8
                 );
 
-                removeBullet = true;
+                removeBullet =
+                    true;
 
                 break;
             }
         }
 
-        if (removeBullet) {
+        if (
+            removeBullet
+        ) {
 
-            bullets.splice(i, 1);
+            bullets.splice(
+                i,
+                1
+            );
 
             continue;
         }
@@ -1150,7 +1420,8 @@ function updateBullets(dt) {
         // ----------------------------------------------------
 
         for (
-            let j = enemies.length - 1;
+            let j =
+                enemies.length - 1;
             j >= 0;
             j--
         ) {
@@ -1180,7 +1451,8 @@ function updateBullets(dt) {
                     6
                 );
 
-                removeBullet = true;
+                removeBullet =
+                    true;
 
                 if (
                     enemy.health <= 0
@@ -1242,16 +1514,14 @@ function updateBullets(dt) {
 function updateEnemyBullets(dt) {
 
     for (
-        let i = enemyBullets.length - 1;
+        let i =
+            enemyBullets.length - 1;
         i >= 0;
         i--
     ) {
 
         const b =
             enemyBullets[i];
-
-        const oldX = b.x;
-        const oldY = b.y;
 
         b.x +=
             b.vx * dt;
@@ -1264,10 +1534,13 @@ function updateEnemyBullets(dt) {
         let remove = false;
 
         // ----------------------------------------------------
-        // WALL COLLISION
+        // WALL
         // ----------------------------------------------------
 
-        for (const building of buildings) {
+        for (
+            const building
+            of buildings
+        ) {
 
             if (
                 circleRectCollision(
@@ -1301,7 +1574,7 @@ function updateEnemyBullets(dt) {
         }
 
         // ----------------------------------------------------
-        // PLAYER COLLISION
+        // PLAYER
         // ----------------------------------------------------
 
         const d =
@@ -1361,7 +1634,11 @@ function createParticles(
     amount
 ) {
 
-    for (let i = 0; i < amount; i++) {
+    for (
+        let i = 0;
+        i < amount;
+        i++
+    ) {
 
         const angle =
             Math.random() *
@@ -1369,7 +1646,10 @@ function createParticles(
             2;
 
         const speed =
-            random(30, 150);
+            random(
+                30,
+                150
+            );
 
         particles.push({
 
@@ -1385,13 +1665,18 @@ function createParticles(
                 speed,
 
             life:
-                random(0.25, 0.7),
+                random(
+                    0.25,
+                    0.7
+                ),
 
-            maxLife:
-                0.7,
+            maxLife: 0.7,
 
             size:
-                random(2, 5)
+                random(
+                    2,
+                    5
+                )
         });
     }
 }
@@ -1399,7 +1684,8 @@ function createParticles(
 function updateParticles(dt) {
 
     for (
-        let i = particles.length - 1;
+        let i =
+            particles.length - 1;
         i >= 0;
         i--
     ) {
@@ -1418,7 +1704,9 @@ function updateParticles(dt) {
 
         p.life -= dt;
 
-        if (p.life <= 0) {
+        if (
+            p.life <= 0
+        ) {
 
             particles.splice(
                 i,
@@ -1429,16 +1717,21 @@ function updateParticles(dt) {
 }
 
 // ============================================================
-// NPCS
+// NPC MOVEMENT
 // ============================================================
 
 function updateNPCs(dt) {
 
-    for (const npc of npcs) {
+    for (
+        const npc
+        of npcs
+    ) {
 
         npc.changeTimer -= dt;
 
-        if (npc.changeTimer <= 0) {
+        if (
+            npc.changeTimer <= 0
+        ) {
 
             npc.angle =
                 random(
@@ -1447,18 +1740,25 @@ function updateNPCs(dt) {
                 );
 
             npc.changeTimer =
-                random(1, 4);
+                random(
+                    1,
+                    4
+                );
         }
 
         const nx =
             npc.x +
-            Math.cos(npc.angle) *
+            Math.cos(
+                npc.angle
+            ) *
             npc.speed *
             dt;
 
         const ny =
             npc.y +
-            Math.sin(npc.angle) *
+            Math.sin(
+                npc.angle
+            ) *
             npc.speed *
             dt;
 
@@ -1469,6 +1769,7 @@ function updateNPCs(dt) {
                 npc.radius
             )
         ) {
+
             npc.x = nx;
         }
 
@@ -1479,6 +1780,7 @@ function updateNPCs(dt) {
                 npc.radius
             )
         ) {
+
             npc.y = ny;
         }
     }
@@ -1490,9 +1792,15 @@ function updateNPCs(dt) {
 
 function updateLoot() {
 
-    for (const item of loot) {
+    for (
+        const item
+        of loot
+    ) {
 
-        if (item.collected) {
+        if (
+            item.collected
+        ) {
+
             continue;
         }
 
@@ -1504,9 +1812,12 @@ function updateLoot() {
                 item.y
             );
 
-        if (d < 35) {
+        if (
+            d < 35
+        ) {
 
-            item.collected = true;
+            item.collected =
+                true;
 
             if (
                 item.type ===
@@ -1525,7 +1836,8 @@ function updateLoot() {
 
                 player.energy =
                     clamp(
-                        player.energy + 30,
+                        player.energy +
+                        30,
                         0,
                         player.maxEnergy
                     );
@@ -1550,27 +1862,40 @@ function update(dt) {
         !gameRunning ||
         paused
     ) {
+
         return;
     }
 
     updatePlayer(dt);
 
-    if (mouse.down) {
+    if (
+        mouse.down
+    ) {
+
         shoot();
     }
 
-    if (fireCooldown > 0) {
+    if (
+        fireCooldown > 0
+    ) {
+
         fireCooldown -= dt;
     }
 
-    if (reloadTimer > 0) {
+    if (
+        reloadTimer > 0
+    ) {
 
         reloadTimer -= dt;
 
-        if (reloadTimer <= 0) {
+        if (
+            reloadTimer <= 0
+        ) {
 
             const weapon =
-                weapons[player.weapon];
+                weapons[
+                    player.weapon
+                ];
 
             weapon.ammo =
                 weapon.maxAmmo;
@@ -1589,16 +1914,20 @@ function update(dt) {
 
     updateParticles(dt);
 
-    // Day/night cycle
     timeOfDay +=
         dt * 0.003;
 
-    if (timeOfDay >= 1) {
+    if (
+        timeOfDay >= 1
+    ) {
+
         timeOfDay -= 1;
     }
 
-    // Weather
-    if (Math.random() < dt * 0.002) {
+    if (
+        Math.random() <
+        dt * 0.002
+    ) {
 
         const weatherTypes = [
             "clear",
@@ -1621,7 +1950,9 @@ function update(dt) {
     camera.y =
         player.y;
 
-    if (player.health <= 0) {
+    if (
+        player.health <= 0
+    ) {
 
         player.health = 0;
 
@@ -1671,14 +2002,16 @@ function drawWorld() {
         WORLD_H
     );
 
-    // Grid / terrain details
     drawGroundDetails();
 
     // --------------------------------------------------------
     // ROCKS
     // --------------------------------------------------------
 
-    for (const rock of rocks) {
+    for (
+        const rock
+        of rocks
+    ) {
 
         if (
             dist(
@@ -1688,6 +2021,7 @@ function drawWorld() {
                 player.y
             ) > 1000
         ) {
+
             continue;
         }
 
@@ -1711,7 +2045,10 @@ function drawWorld() {
     // TREES
     // --------------------------------------------------------
 
-    for (const tree of trees) {
+    for (
+        const tree
+        of trees
+    ) {
 
         if (
             dist(
@@ -1721,6 +2058,7 @@ function drawWorld() {
                 player.y
             ) > 1100
         ) {
+
             continue;
         }
 
@@ -1731,7 +2069,10 @@ function drawWorld() {
     // BUILDINGS
     // --------------------------------------------------------
 
-    for (const building of buildings) {
+    for (
+        const building
+        of buildings
+    ) {
 
         if (
             dist(
@@ -1745,17 +2086,23 @@ function drawWorld() {
                 player.y
             ) > 1300
         ) {
+
             continue;
         }
 
-        drawBuilding(building);
+        drawBuilding(
+            building
+        );
     }
 
     // --------------------------------------------------------
     // DOORS
     // --------------------------------------------------------
 
-    for (const door of doors) {
+    for (
+        const door
+        of doors
+    ) {
 
         ctx.fillStyle =
             door.open
@@ -1774,9 +2121,15 @@ function drawWorld() {
     // LOOT
     // --------------------------------------------------------
 
-    for (const item of loot) {
+    for (
+        const item
+        of loot
+    ) {
 
-        if (item.collected) {
+        if (
+            item.collected
+        ) {
+
             continue;
         }
 
@@ -1800,32 +2153,25 @@ function drawWorld() {
     }
 
     // --------------------------------------------------------
-    // NPCS
+    // NPC'S
     // --------------------------------------------------------
 
-    for (const npc of npcs) {
+    for (
+        const npc
+        of npcs
+    ) {
 
-        ctx.fillStyle =
-            "#6ea4a1";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            npc.x,
-            npc.y,
-            npc.radius,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
+        drawNPC(npc);
     }
 
     // --------------------------------------------------------
     // ENEMIES
     // --------------------------------------------------------
 
-    for (const enemy of enemies) {
+    for (
+        const enemy
+        of enemies
+    ) {
 
         drawEnemy(enemy);
     }
@@ -1834,7 +2180,10 @@ function drawWorld() {
     // PLAYER BULLETS
     // --------------------------------------------------------
 
-    for (const b of bullets) {
+    for (
+        const b
+        of bullets
+    ) {
 
         ctx.strokeStyle =
             "#d9ffff";
@@ -1850,10 +2199,12 @@ function drawWorld() {
 
         ctx.lineTo(
             b.x -
-                b.vx * 0.02,
+                b.vx *
+                0.02,
 
             b.y -
-                b.vy * 0.02
+                b.vy *
+                0.02
         );
 
         ctx.stroke();
@@ -1863,7 +2214,10 @@ function drawWorld() {
     // ENEMY BULLETS
     // --------------------------------------------------------
 
-    for (const b of enemyBullets) {
+    for (
+        const b
+        of enemyBullets
+    ) {
 
         ctx.fillStyle =
             "#ff9a54";
@@ -1885,13 +2239,16 @@ function drawWorld() {
     // PARTICLES
     // --------------------------------------------------------
 
-    for (const p of particles) {
+    for (
+        const p
+        of particles
+    ) {
 
         ctx.globalAlpha =
             Math.max(
                 0,
                 p.life /
-                    p.maxLife
+                p.maxLife
             );
 
         ctx.fillStyle =
@@ -1911,10 +2268,6 @@ function drawWorld() {
     }
 
     ctx.globalAlpha = 1;
-
-    // --------------------------------------------------------
-    // PLAYER
-    // --------------------------------------------------------
 
     drawPlayer();
 
@@ -1994,18 +2347,18 @@ function drawGroundDetails() {
 }
 
 // ============================================================
-// DRAW TREE
+// TREE
 // ============================================================
 
 function drawTree(tree) {
 
     const sway =
         Math.sin(
-            performance.now() * 0.001 +
+            performance.now() *
+            0.001 +
             tree.phase
         ) * 2;
 
-    // Shadow
     ctx.fillStyle =
         "rgba(0,0,0,0.25)";
 
@@ -2023,7 +2376,6 @@ function drawTree(tree) {
 
     ctx.fill();
 
-    // Trunk
     ctx.fillStyle =
         "#594b38";
 
@@ -2034,7 +2386,6 @@ function drawTree(tree) {
         28
     );
 
-    // Crown
     ctx.fillStyle =
         "#31533d";
 
@@ -2067,12 +2418,11 @@ function drawTree(tree) {
 }
 
 // ============================================================
-// DRAW BUILDING
+// BUILDING
 // ============================================================
 
 function drawBuilding(building) {
 
-    // Shadow
     ctx.fillStyle =
         "rgba(0,0,0,0.35)";
 
@@ -2083,7 +2433,6 @@ function drawBuilding(building) {
         building.h
     );
 
-    // Main building
     ctx.fillStyle =
         "#343d3b";
 
@@ -2094,7 +2443,6 @@ function drawBuilding(building) {
         building.h
     );
 
-    // Roof
     ctx.fillStyle =
         "#252d2b";
 
@@ -2105,7 +2453,6 @@ function drawBuilding(building) {
         12
     );
 
-    // Windows
     ctx.fillStyle =
         "#6e8d88";
 
@@ -2144,7 +2491,6 @@ function drawBuilding(building) {
         }
     }
 
-    // Door
     ctx.fillStyle =
         "#1e2524";
 
@@ -2163,7 +2509,308 @@ function drawBuilding(building) {
 }
 
 // ============================================================
-// DRAW ENEMY
+// NPC — ECHTE 2D PERSOON
+// ============================================================
+
+function drawNPC(npc) {
+
+    ctx.save();
+
+    ctx.translate(
+        npc.x,
+        npc.y
+    );
+
+    ctx.rotate(
+        npc.angle
+    );
+
+    const walking =
+        Math.sin(
+            performance.now() *
+            0.008 +
+            npc.x * 0.01
+        );
+
+    // --------------------------------------------------------
+    // SCHADUW
+    // --------------------------------------------------------
+
+    ctx.fillStyle =
+        "rgba(0,0,0,0.28)";
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+        0,
+        15,
+        11,
+        5,
+        0,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // --------------------------------------------------------
+    // BENEN
+    // --------------------------------------------------------
+
+    ctx.strokeStyle =
+        "#20282b";
+
+    ctx.lineWidth = 5;
+
+    ctx.lineCap =
+        "round";
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        -4,
+        7
+    );
+
+    ctx.lineTo(
+        -5 +
+            walking * 3,
+        17
+    );
+
+    ctx.moveTo(
+        4,
+        7
+    );
+
+    ctx.lineTo(
+        5 -
+            walking * 3,
+        17
+    );
+
+    ctx.stroke();
+
+    // --------------------------------------------------------
+    // LICHAAM
+    // --------------------------------------------------------
+
+    ctx.fillStyle =
+        npc.clothing ||
+        "#527a78";
+
+    ctx.beginPath();
+
+    ctx.roundRect(
+        -9,
+        -2,
+        18,
+        15,
+        5
+    );
+
+    ctx.fill();
+
+    // Jasdetail
+    ctx.strokeStyle =
+        "rgba(255,255,255,0.15)";
+
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        0,
+        0
+    );
+
+    ctx.lineTo(
+        0,
+        11
+    );
+
+    ctx.stroke();
+
+    // --------------------------------------------------------
+    // ARMEN
+    // --------------------------------------------------------
+
+    ctx.strokeStyle =
+        npc.skin ||
+        "#c58e6b";
+
+    ctx.lineWidth = 4;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        -8,
+        1
+    );
+
+    ctx.lineTo(
+        -12,
+        8 +
+            walking * 2
+    );
+
+    ctx.moveTo(
+        8,
+        1
+    );
+
+    ctx.lineTo(
+        12,
+        8 -
+            walking * 2
+    );
+
+    ctx.stroke();
+
+    // --------------------------------------------------------
+    // NEK
+    // --------------------------------------------------------
+
+    ctx.fillStyle =
+        npc.skin ||
+        "#c58e6b";
+
+    ctx.fillRect(
+        -4,
+        -7,
+        8,
+        7
+    );
+
+    // --------------------------------------------------------
+    // HOOFD
+    // --------------------------------------------------------
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        -12,
+        9,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // --------------------------------------------------------
+    // HAAR
+    // --------------------------------------------------------
+
+    ctx.fillStyle =
+        npc.hair ||
+        "#3b3029";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        0,
+        -15,
+        9,
+        Math.PI,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // --------------------------------------------------------
+    // OREN
+    // --------------------------------------------------------
+
+    ctx.fillStyle =
+        npc.skin ||
+        "#c58e6b";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        -9,
+        -12,
+        2.5,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.arc(
+        9,
+        -12,
+        2.5,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // --------------------------------------------------------
+    // OGEN
+    // --------------------------------------------------------
+
+    ctx.fillStyle =
+        "#202020";
+
+    ctx.beginPath();
+
+    ctx.arc(
+        -3,
+        -12,
+        1.2,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.arc(
+        3,
+        -12,
+        1.2,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    // --------------------------------------------------------
+    // SCHOENEN
+    // --------------------------------------------------------
+
+    ctx.fillStyle =
+        "#171b1c";
+
+    ctx.beginPath();
+
+    ctx.ellipse(
+        -6 +
+            walking * 3,
+        18,
+        5,
+        3,
+        0,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.ellipse(
+        6 -
+            walking * 3,
+        18,
+        5,
+        3,
+        0,
+        0,
+        Math.PI * 2
+    );
+
+    ctx.fill();
+
+    ctx.restore();
+}
+
+// ============================================================
+// ENEMY
 // ============================================================
 
 function drawEnemy(enemy) {
@@ -2208,7 +2855,6 @@ function drawEnemy(enemy) {
 
     ctx.restore();
 
-    // Health bar
     const barWidth =
         enemy.radius * 2;
 
@@ -2220,10 +2866,13 @@ function drawEnemy(enemy) {
         "rgba(0,0,0,0.5)";
 
     ctx.fillRect(
-        enemy.x - barWidth / 2,
+        enemy.x -
+            barWidth / 2,
+
         enemy.y -
             enemy.radius -
             12,
+
         barWidth,
         5
     );
@@ -2232,18 +2881,22 @@ function drawEnemy(enemy) {
         "#79d6a3";
 
     ctx.fillRect(
-        enemy.x - barWidth / 2,
+        enemy.x -
+            barWidth / 2,
+
         enemy.y -
             enemy.radius -
             12,
+
         barWidth *
             healthPercent,
+
         5
     );
 }
 
 // ============================================================
-// DRAW PLAYER
+// PLAYER
 // ============================================================
 
 function drawPlayer() {
@@ -2265,10 +2918,11 @@ function drawPlayer() {
             player.invincible * 20
         ) % 2 === 0
     ) {
-        ctx.globalAlpha = 0.45;
+
+        ctx.globalAlpha =
+            0.45;
     }
 
-    // Body
     ctx.fillStyle =
         "#77d4c8";
 
@@ -2284,7 +2938,6 @@ function drawPlayer() {
 
     ctx.fill();
 
-    // Weapon
     ctx.fillStyle =
         "#d9e4df";
 
@@ -2309,12 +2962,16 @@ function drawLighting() {
     const darkness =
         getNightAmount();
 
-    if (darkness <= 0) {
+    if (
+        darkness <= 0
+    ) {
+
         return;
     }
 
     const gradient =
         ctx.createRadialGradient(
+
             canvas.width / 2,
             canvas.height / 2,
             80,
@@ -2372,14 +3029,20 @@ function getNightAmount() {
 
 function drawWeather() {
 
-    if (weather === "rain") {
+    if (
+        weather === "rain"
+    ) {
 
         ctx.strokeStyle =
             "rgba(150,190,220,0.25)";
 
         ctx.lineWidth = 1;
 
-        for (let i = 0; i < 120; i++) {
+        for (
+            let i = 0;
+            i < 120;
+            i++
+        ) {
 
             const x =
                 Math.random() *
@@ -2405,7 +3068,9 @@ function drawWeather() {
         }
     }
 
-    if (weather === "fog") {
+    if (
+        weather === "fog"
+    ) {
 
         ctx.fillStyle =
             "rgba(180,200,190,0.08)";
@@ -2434,15 +3099,18 @@ function drawMinimap() {
 
     const y = 20;
 
+    mapCanvas.width =
+        size;
+
+    mapCanvas.height =
+        size;
+
     mapCtx.clearRect(
         0,
         0,
-        mapCanvas.width,
-        mapCanvas.height
+        size,
+        size
     );
-
-    mapCanvas.width = size;
-    mapCanvas.height = size;
 
     mapCtx.fillStyle =
         "#111917";
@@ -2462,17 +3130,22 @@ function drawMinimap() {
     mapCtx.fillStyle =
         "#56645f";
 
-    for (const building of buildings) {
+    for (
+        const building
+        of buildings
+    ) {
 
         mapCtx.fillRect(
 
-            (building.x +
-                WORLD_W / 2) *
-                scale,
+            (
+                building.x +
+                WORLD_W / 2
+            ) * scale,
 
-            (building.y +
-                WORLD_H / 2) *
-                scale,
+            (
+                building.y +
+                WORLD_H / 2
+            ) * scale,
 
             building.w * scale,
             building.h * scale
@@ -2483,22 +3156,26 @@ function drawMinimap() {
     mapCtx.fillStyle =
         "#d85f6b";
 
-    for (const enemy of enemies) {
+    for (
+        const enemy
+        of enemies
+    ) {
 
         mapCtx.beginPath();
 
         mapCtx.arc(
 
-            (enemy.x +
-                WORLD_W / 2) *
-                scale,
+            (
+                enemy.x +
+                WORLD_W / 2
+            ) * scale,
 
-            (enemy.y +
-                WORLD_H / 2) *
-                scale,
+            (
+                enemy.y +
+                WORLD_H / 2
+            ) * scale,
 
             3,
-
             0,
             Math.PI * 2
         );
@@ -2514,23 +3191,23 @@ function drawMinimap() {
 
     mapCtx.arc(
 
-        (player.x +
-            WORLD_W / 2) *
-            scale,
+        (
+            player.x +
+            WORLD_W / 2
+        ) * scale,
 
-        (player.y +
-            WORLD_H / 2) *
-            scale,
+        (
+            player.y +
+            WORLD_H / 2
+        ) * scale,
 
         4,
-
         0,
         Math.PI * 2
     );
 
     mapCtx.fill();
 
-    // Position map on screen
     ctx.drawImage(
         mapCanvas,
         x,
@@ -2579,7 +3256,9 @@ function updateHUD() {
             "zone"
         );
 
-    if (healthBar) {
+    if (
+        healthBar
+    ) {
 
         healthBar.style.width =
             (
@@ -2589,7 +3268,9 @@ function updateHUD() {
             ) + "%";
     }
 
-    if (energyBar) {
+    if (
+        energyBar
+    ) {
 
         energyBar.style.width =
             (
@@ -2599,10 +3280,14 @@ function updateHUD() {
             ) + "%";
     }
 
-    if (ammo) {
+    if (
+        ammo
+    ) {
 
         const weapon =
-            weapons[player.weapon];
+            weapons[
+                player.weapon
+            ];
 
         ammo.textContent =
             reloadTimer > 0
@@ -2610,27 +3295,38 @@ function updateHUD() {
                 : `${weapon.ammo} / ∞`;
     }
 
-    if (killsElement) {
+    if (
+        killsElement
+    ) {
 
         killsElement.textContent =
             `KILLS: ${kills}`;
     }
 
-    if (creditsElement) {
+    if (
+        creditsElement
+    ) {
 
         creditsElement.textContent =
             `CREDITS: ${credits}`;
     }
 
-    if (objective) {
+    if (
+        objective
+    ) {
 
         objective.textContent =
-            missionProgress >= missionTarget
+            missionProgress >=
+            missionTarget
+
                 ? "SIGNAL LOCATED"
+
                 : `FIND THE SIGNAL • ${missionProgress}/${missionTarget}`;
     }
 
-    if (zone) {
+    if (
+        zone
+    ) {
 
         zone.textContent =
             `SECTOR ${level}`;
@@ -2641,7 +3337,9 @@ function updateHUD() {
             ".weaponName"
         );
 
-    if (weaponName) {
+    if (
+        weaponName
+    ) {
 
         weaponName.textContent =
             weapons[
@@ -2651,7 +3349,7 @@ function updateHUD() {
 }
 
 // ============================================================
-// XP / LEVEL
+// XP
 // ============================================================
 
 function addXP(amount) {
@@ -2661,15 +3359,19 @@ function addXP(amount) {
     const needed =
         level * 100;
 
-    if (xp >= needed) {
+    if (
+        xp >= needed
+    ) {
 
         xp -= needed;
 
         level++;
 
-        player.maxHealth += 10;
+        player.maxHealth +=
+            10;
 
-        player.maxEnergy += 5;
+        player.maxEnergy +=
+            5;
 
         player.health =
             player.maxHealth;
@@ -2687,7 +3389,9 @@ function addXP(amount) {
 // ACHIEVEMENT
 // ============================================================
 
-function showAchievement(name) {
+function showAchievement(
+    name
+) {
 
     const box =
         document.getElementById(
@@ -2699,7 +3403,11 @@ function showAchievement(name) {
             "achievementName"
         );
 
-    if (!box || !nameElement) {
+    if (
+        !box ||
+        !nameElement
+    ) {
+
         return;
     }
 
@@ -2720,7 +3428,7 @@ function showAchievement(name) {
 }
 
 // ============================================================
-// SAVE
+// SAVE GAME
 // ============================================================
 
 function saveGame() {
@@ -2728,13 +3436,24 @@ function saveGame() {
     const data = {
 
         player: {
+
             x: player.x,
             y: player.y,
-            health: player.health,
-            maxHealth: player.maxHealth,
-            energy: player.energy,
-            maxEnergy: player.maxEnergy,
-            weapon: player.weapon
+
+            health:
+                player.health,
+
+            maxHealth:
+                player.maxHealth,
+
+            energy:
+                player.energy,
+
+            maxEnergy:
+                player.maxEnergy,
+
+            weapon:
+                player.weapon
         },
 
         score,
@@ -2764,7 +3483,7 @@ function saveGame() {
 }
 
 // ============================================================
-// LOAD
+// LOAD GAME
 // ============================================================
 
 function loadGame() {
@@ -2829,10 +3548,15 @@ function loadGame() {
         missionProgress =
             data.missionProgress;
 
-        if (data.weapons) {
+        if (
+            data.weapons
+        ) {
 
             data.weapons.forEach(
-                (savedWeapon, i) => {
+                (
+                    savedWeapon,
+                    i
+                ) => {
 
                     if (
                         weapons[i] &&
@@ -2851,7 +3575,12 @@ function loadGame() {
         particles.length = 0;
         enemies.length = 0;
 
-        for (let i = 0; i < 4; i++) {
+        for (
+            let i = 0;
+            i < 4;
+            i++
+        ) {
+
             spawnEnemy();
         }
 
@@ -2901,33 +3630,47 @@ function gameOver() {
 
 function togglePause() {
 
-    if (!gameRunning) {
+    if (
+        !gameRunning
+    ) {
+
         return;
     }
 
     paused =
         !paused;
 
-    if (paused) {
+    if (
+        paused
+    ) {
 
-        showElement("pause");
+        showElement(
+            "pause"
+        );
 
     } else {
 
-        hideElement("pause");
+        hideElement(
+            "pause"
+        );
     }
 }
 
 // ============================================================
-// UI HELPERS
+// UI
 // ============================================================
 
 function showElement(id) {
 
     const element =
-        document.getElementById(id);
+        document.getElementById(
+            id
+        );
 
-    if (!element) {
+    if (
+        !element
+    ) {
+
         return;
     }
 
@@ -2940,9 +3683,14 @@ function showElement(id) {
 function hideElement(id) {
 
     const element =
-        document.getElementById(id);
+        document.getElementById(
+            id
+        );
 
-    if (!element) {
+    if (
+        !element
+    ) {
+
         return;
     }
 
@@ -2959,7 +3707,9 @@ const newGameButton =
         "newGame"
     );
 
-if (newGameButton) {
+if (
+    newGameButton
+) {
 
     newGameButton.addEventListener(
         "click",
@@ -2975,7 +3725,9 @@ const loadGameButton =
         "loadGame"
     );
 
-if (loadGameButton) {
+if (
+    loadGameButton
+) {
 
     loadGameButton.addEventListener(
         "click",
@@ -2991,7 +3743,9 @@ const achievementsButton =
         "achievementsButton"
     );
 
-if (achievementsButton) {
+if (
+    achievementsButton
+) {
 
     achievementsButton.addEventListener(
         "click",
@@ -3013,7 +3767,9 @@ const controlsButton =
         "controlsButton"
     );
 
-if (controlsButton) {
+if (
+    controlsButton
+) {
 
     controlsButton.addEventListener(
         "click",
@@ -3039,7 +3795,9 @@ const resumeButton =
         "resume"
     );
 
-if (resumeButton) {
+if (
+    resumeButton
+) {
 
     resumeButton.addEventListener(
         "click",
@@ -3047,7 +3805,9 @@ if (resumeButton) {
 
             paused = false;
 
-            hideElement("pause");
+            hideElement(
+                "pause"
+            );
         }
     );
 }
@@ -3057,7 +3817,9 @@ const saveButton =
         "save"
     );
 
-if (saveButton) {
+if (
+    saveButton
+) {
 
     saveButton.addEventListener(
         "click",
@@ -3073,7 +3835,9 @@ const quitButton =
         "quit"
     );
 
-if (quitButton) {
+if (
+    quitButton
+) {
 
     quitButton.addEventListener(
         "click",
@@ -3082,10 +3846,17 @@ if (quitButton) {
             paused = false;
             gameRunning = false;
 
-            hideElement("pause");
-            hideElement("hud");
+            hideElement(
+                "pause"
+            );
 
-            showElement("menu");
+            hideElement(
+                "hud"
+            );
+
+            showElement(
+                "menu"
+            );
         }
     );
 }
@@ -3095,13 +3866,17 @@ const closeMapButton =
         "closeMap"
     );
 
-if (closeMapButton) {
+if (
+    closeMapButton
+) {
 
     closeMapButton.addEventListener(
         "click",
         () => {
 
-            hideElement("map");
+            hideElement(
+                "map"
+            );
         }
     );
 }
@@ -3158,7 +3933,7 @@ requestAnimationFrame(
 );
 
 // ============================================================
-// START STATE
+// START
 // ============================================================
 
 hideElement("hud");
