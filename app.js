@@ -1,6 +1,6 @@
 // ============================================================
-// ECHOBOUND - THE LOST SIGNAL
-// Nieuwe JavaScript versie
+// ECHOBOUND — THE LOST SIGNAL
+// NIEUWE APP.JS MET WERKENDE ALIENS
 // ============================================================
 
 const canvas = document.getElementById("game");
@@ -12,39 +12,17 @@ let H = window.innerHeight;
 canvas.width = W;
 canvas.height = H;
 
-window.addEventListener("resize", () => {
-    W = window.innerWidth;
-    H = window.innerHeight;
-
-    canvas.width = W;
-    canvas.height = H;
-});
-
 // ============================================================
-// GAME SETTINGS
+// WERELD
 // ============================================================
 
 const WORLD_W = 7000;
 const WORLD_H = 7000;
 
-const MAX_ENEMIES = 12;
-
 let gameRunning = false;
 let paused = false;
 
-let cameraX = 0;
-let cameraY = 0;
-
-let gameTime = 0;
-
-let score = 0;
-let kills = 0;
-let credits = 0;
-let level = 1;
-let xp = 0;
-
-let missionProgress = 0;
-const missionTarget = 20;
+let lastTime = 0;
 
 // ============================================================
 // INPUT
@@ -58,19 +36,14 @@ const mouse = {
     down: false
 };
 
-// Keyboard
-window.addEventListener("keydown", e => {
+window.addEventListener("keydown", (e) => {
 
     if (
-        [
-            "KeyW",
-            "KeyA",
-            "KeyS",
-            "KeyD",
-            "ShiftLeft",
-            "ShiftRight",
-            "Space"
-        ].includes(e.code)
+        e.code === "KeyW" ||
+        e.code === "KeyA" ||
+        e.code === "KeyS" ||
+        e.code === "KeyD" ||
+        e.code === "Space"
     ) {
         e.preventDefault();
     }
@@ -102,58 +75,83 @@ window.addEventListener("keydown", e => {
     }
 });
 
-window.addEventListener("keyup", e => {
+window.addEventListener("keyup", (e) => {
     keys.delete(e.code);
 });
 
-// Prevent stuck movement
 window.addEventListener("blur", () => {
     keys.clear();
     mouse.down = false;
 });
 
 document.addEventListener("visibilitychange", () => {
+
     if (document.hidden) {
         keys.clear();
         mouse.down = false;
     }
 });
 
-// Mouse
-canvas.addEventListener("pointermove", e => {
+canvas.addEventListener("pointermove", (e) => {
+
     mouse.x = e.clientX;
     mouse.y = e.clientY;
 });
 
-canvas.addEventListener("pointerdown", e => {
+canvas.addEventListener("pointerdown", (e) => {
 
     if (e.button === 0) {
+
         mouse.down = true;
 
-        if (
-            canvas.setPointerCapture
-        ) {
-            canvas.setPointerCapture(
-                e.pointerId
-            );
+        if (canvas.setPointerCapture) {
+            canvas.setPointerCapture(e.pointerId);
         }
     }
 });
 
-window.addEventListener("pointerup", e => {
+window.addEventListener("pointerup", (e) => {
 
     if (e.button === 0) {
         mouse.down = false;
     }
 });
 
-canvas.addEventListener(
-    "contextmenu",
-    e => e.preventDefault()
-);
+canvas.addEventListener("contextmenu", (e) => {
+    e.preventDefault();
+});
+
+window.addEventListener("resize", () => {
+
+    W = window.innerWidth;
+    H = window.innerHeight;
+
+    canvas.width = W;
+    canvas.height = H;
+});
 
 // ============================================================
-// PLAYER
+// HULPFUNCTIES
+// ============================================================
+
+function random(min, max) {
+    return Math.random() * (max - min) + min;
+}
+
+function distance(a, b) {
+
+    return Math.hypot(
+        a.x - b.x,
+        a.y - b.y
+    );
+}
+
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+// ============================================================
+// SPELER
 // ============================================================
 
 const player = {
@@ -187,7 +185,7 @@ const player = {
 };
 
 // ============================================================
-// WEAPONS
+// WAPENS
 // ============================================================
 
 const weapons = [
@@ -218,796 +216,277 @@ const weapons = [
         maxAmmo: 4,
         ammo: 4
     }
-
 ];
 
 // ============================================================
-// WORLD OBJECTS
+// ARRAYS
 // ============================================================
 
-let buildings = [];
-let doors = [];
-let trees = [];
-let rocks = [];
-let loot = [];
-let npcs = [];
-
-let enemies = [];
-
-let bullets = [];
-let enemyBullets = [];
-
-let particles = [];
+const enemies = [];
+const bullets = [];
+const enemyBullets = [];
+const particles = [];
+const buildings = [];
+const trees = [];
+const rocks = [];
+const loot = [];
+const npcs = [];
 
 // ============================================================
-// HELPERS
+// ALIEN SPAWN INSTELLINGEN
 // ============================================================
 
-function clamp(value, min, max) {
-    return Math.max(
-        min,
-        Math.min(max, value)
-    );
-}
+const MAX_ALIENS = 15;
 
-function random(min, max) {
-    return Math.random() *
-        (max - min) +
-        min;
-}
+let alienSpawnTimer = 0;
 
-function distance(
-    x1,
-    y1,
-    x2,
-    y2
-) {
-    return Math.hypot(
-        x2 - x1,
-        y2 - y1
-    );
-}
+const STARTING_ALIENS = 8;
 
 // ============================================================
-// MENU
+// ALIEN SPAWN
 // ============================================================
 
-const menu =
-    document.getElementById(
-        "menu"
-    );
+function spawnAlien() {
 
-const pauseMenu =
-    document.getElementById(
-        "pause"
-    );
-
-const newGameButton =
-    document.getElementById(
-        "newGame"
-    );
-
-const loadGameButton =
-    document.getElementById(
-        "loadGame"
-    );
-
-const achievementsButton =
-    document.getElementById(
-        "achievementsButton"
-    );
-
-const controlsButton =
-    document.getElementById(
-        "controlsButton"
-    );
-
-const resumeButton =
-    document.getElementById(
-        "resume"
-    );
-
-const saveButton =
-    document.getElementById(
-        "save"
-    );
-
-const quitButton =
-    document.getElementById(
-        "quit"
-    );
-
-if (newGameButton) {
-    newGameButton.onclick =
-        startNewGame;
-}
-
-if (loadGameButton) {
-    loadGameButton.onclick =
-        loadGame;
-}
-
-if (achievementsButton) {
-    achievementsButton.onclick =
-        showAchievements;
-}
-
-if (controlsButton) {
-    controlsButton.onclick =
-        showControls;
-}
-
-if (resumeButton) {
-    resumeButton.onclick = () => {
-
-        paused = false;
-
-        if (pauseMenu) {
-            pauseMenu.style.display =
-                "none";
-        }
-    };
-}
-
-if (saveButton) {
-    saveButton.onclick =
-        saveGame;
-}
-
-if (quitButton) {
-    quitButton.onclick =
-        quitToMenu;
-}
-
-// ============================================================
-// NEW GAME
-// ============================================================
-
-function startNewGame() {
-
-    score = 0;
-    kills = 0;
-    credits = 0;
-
-    level = 1;
-    xp = 0;
-
-    missionProgress = 0;
-
-    player.x = 0;
-    player.y = 0;
-
-    player.health =
-        player.maxHealth;
-
-    player.energy =
-        player.maxEnergy;
-
-    player.weapon = 0;
-
-    player.fireCooldown = 0;
-    player.reloadTimer = 0;
-    player.dashCooldown = 0;
-
-    for (const weapon of weapons) {
-        weapon.ammo =
-            weapon.maxAmmo;
+    if (!gameRunning) {
+        return;
     }
 
-    bullets = [];
-    enemyBullets = [];
-    particles = [];
+    if (enemies.length >= MAX_ALIENS) {
+        return;
+    }
 
-    generateWorld();
+    let x;
+    let y;
 
-    // MORE ALIENS
-    for (let i = 0; i < 10; i++) {
+    let attempts = 0;
+
+    do {
+
+        const angle = Math.random() * Math.PI * 2;
+
+        const spawnDistance = random(900, 1800);
+
+        x =
+            player.x +
+            Math.cos(angle) * spawnDistance;
+
+        y =
+            player.y +
+            Math.sin(angle) * spawnDistance;
+
+        attempts++;
+
+    } while (
+
+        (
+            x < 100 ||
+            x > WORLD_W - 100 ||
+            y < 100 ||
+            y > WORLD_H - 100
+        ) &&
+        attempts < 30
+    );
+
+    x = clamp(x, 100, WORLD_W - 100);
+    y = clamp(y, 100, WORLD_H - 100);
+
+    const typeRoll = Math.random();
+
+    let type;
+    let health;
+    let speed;
+    let radius;
+
+    // GROTE ALIEN
+    if (typeRoll < 0.15) {
+
+        type = "guardian";
+
+        health = 10;
+        speed = 45;
+        radius = 34;
+
+    }
+
+    // SNELLE ALIEN
+    else if (typeRoll < 0.45) {
+
+        type = "crawler";
+
+        health = 3;
+        speed = 85;
+        radius = 22;
+
+    }
+
+    // NORMALE ALIEN
+    else {
+
+        type = "stalker";
+
+        health = 4;
+        speed = 55;
+        radius = 27;
+    }
+
+    enemies.push({
+
+        x: x,
+        y: y,
+
+        radius: radius,
+
+        type: type,
+
+        health: health,
+        maxHealth: health,
+
+        speed: speed,
+
+        attackCooldown: random(0, 1),
+
+        shootCooldown: random(1, 3),
+
+        pulse: random(0, Math.PI * 2),
+
+        hitFlash: 0
+    });
+}
+
+// ============================================================
+// ALIENS STARTEN
+// ============================================================
+
+function spawnStartingAliens() {
+
+    enemies.length = 0;
+
+    for (let i = 0; i < STARTING_ALIENS; i++) {
+
         spawnAlien();
     }
-
-    gameRunning = true;
-    paused = false;
-
-    if (menu) {
-        menu.style.display =
-            "none";
-    }
-
-    if (pauseMenu) {
-        pauseMenu.style.display =
-            "none";
-    }
-
-    updateHUD();
 }
 
 // ============================================================
-// WORLD GENERATION
+// CONTINUE ALIENS SPAWNEN
 // ============================================================
 
-function generateWorld() {
+function updateAlienSpawner(dt) {
 
-    buildings = [];
-    doors = [];
-    trees = [];
-    rocks = [];
-    loot = [];
-    npcs = [];
-    enemies = [];
-
-    // MANY BUILDINGS
-    const buildingPositions = [
-
-        [-2800, -2200],
-        [-1900, -2300],
-        [-800, -2100],
-        [400, -2300],
-        [1600, -2100],
-        [2700, -2300],
-
-        [-3000, -1300],
-        [-2000, -1200],
-        [-900, -1300],
-        [200, -1200],
-        [1300, -1300],
-        [2500, -1200],
-
-        [-3000, -300],
-        [-2100, -400],
-        [-1100, -300],
-        [0, -500],
-        [1100, -350],
-        [2200, -400],
-        [3000, -300],
-
-        [-2900, 700],
-        [-1900, 800],
-        [-800, 700],
-        [300, 850],
-        [1400, 700],
-        [2500, 800],
-
-        [-2800, 1800],
-        [-1700, 1900],
-        [-600, 1800],
-        [600, 1900],
-        [1700, 1800],
-        [2800, 1900],
-
-        [-2200, 2700],
-        [-900, 2800],
-        [400, 2700],
-        [1600, 2800],
-
-        // Extra central buildings
-        [-500, 300],
-        [500, 300],
-        [-400, 1100],
-        [700, 1200]
-
-    ];
-
-    for (
-        const position
-        of buildingPositions
-    ) {
-
-        const width =
-            random(260, 400);
-
-        const height =
-            random(220, 330);
-
-        buildings.push({
-
-            x: position[0],
-            y: position[1],
-
-            w: width,
-            h: height
-        });
-
-        doors.push({
-
-            x:
-                position[0] +
-                width / 2 -
-                30,
-
-            y:
-                position[1] +
-                height -
-                8,
-
-            w: 60,
-            h: 18,
-
-            open: false
-        });
+    if (!gameRunning || paused) {
+        return;
     }
 
-    // TREES
-    for (
-        let i = 0;
-        i < 240;
-        i++
-    ) {
+    alienSpawnTimer -= dt;
 
-        const x =
-            random(
-                -WORLD_W / 2 + 100,
-                WORLD_W / 2 - 100
-            );
+    if (alienSpawnTimer <= 0) {
 
-        const y =
-            random(
-                -WORLD_H / 2 + 100,
-                WORLD_H / 2 - 100
-            );
+        alienSpawnTimer = 1.5;
 
-        if (
-            !nearBuilding(
-                x,
-                y,
-                100
-            )
-        ) {
+        if (enemies.length < MAX_ALIENS) {
 
-            trees.push({
-
-                x,
-                y,
-
-                size:
-                    random(
-                        18,
-                        38
-                    )
-            });
+            // 1 nieuwe alien
+            spawnAlien();
         }
     }
-
-    // ROCKS
-    for (
-        let i = 140;
-        i--;
-    ) {
-
-        const x =
-            random(
-                -WORLD_W / 2,
-                WORLD_W / 2
-            );
-
-        const y =
-            random(
-                -WORLD_H / 2,
-                WORLD_H / 2
-            );
-
-        rocks.push({
-
-            x,
-            y,
-
-            size:
-                random(
-                    12,
-                    28
-                )
-        });
-    }
-
-    // LOOT
-    for (
-        let i = 0;
-        i < 60;
-        i++
-    ) {
-
-        loot.push({
-
-            x:
-                random(
-                    -3000,
-                    3000
-                ),
-
-            y:
-                random(
-                    -3000,
-                    3000
-                ),
-
-            type:
-                Math.random() <
-                0.5
-                    ? "energy"
-                    : "credits",
-
-            collected: false,
-
-            pulse:
-                random(
-                    0,
-                    Math.PI * 2
-                )
-        });
-    }
-
-    // NPCS
-    for (
-        let i = 0;
-        i < 25;
-        i++
-    ) {
-
-        npcs.push({
-
-            x:
-                random(
-                    -3000,
-                    3000
-                ),
-
-            y:
-                random(
-                    -3000,
-                    3000
-                ),
-
-            angle:
-                random(
-                    0,
-                    Math.PI * 2
-                ),
-
-            speed:
-                random(
-                    10,
-                    25
-                ),
-
-            timer:
-                random(
-                    1,
-                    4
-                ),
-
-            clothing:
-                [
-                    "#527a78",
-                    "#765b4c",
-                    "#596b83",
-                    "#596d4d",
-                    "#704f62"
-                ][
-                    Math.floor(
-                        Math.random() *
-                        5
-                    )
-                ]
-        });
-    }
 }
 
 // ============================================================
-// BUILDING CHECK
-// ============================================================
-
-function nearBuilding(
-    x,
-    y,
-    range
-) {
-
-    for (
-        const building
-        of buildings
-    ) {
-
-        const closestX =
-            clamp(
-                x,
-                building.x,
-                building.x +
-                    building.w
-            );
-
-        const closestY =
-            clamp(
-                y,
-                building.y,
-                building.y +
-                    building.h
-            );
-
-        if (
-            distance(
-                x,
-                y,
-                closestX,
-                closestY
-            ) < range
-        ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-// ============================================================
-// COLLISION
-// ============================================================
-
-function circleRectCollision(
-    cx,
-    cy,
-    radius,
-    rect
-) {
-
-    const closestX =
-        clamp(
-            cx,
-            rect.x,
-            rect.x +
-                rect.w
-        );
-
-    const closestY =
-        clamp(
-            cy,
-            rect.y,
-            rect.y +
-                rect.h
-        );
-
-    const dx =
-        cx -
-        closestX;
-
-    const dy =
-        cy -
-        closestY;
-
-    return (
-        dx * dx +
-        dy * dy
-    ) <
-    radius * radius;
-}
-
-function blocked(
-    x,
-    y,
-    radius
-) {
-
-    const limitX =
-        WORLD_W / 2 -
-        radius;
-
-    const limitY =
-        WORLD_H / 2 -
-        radius;
-
-    if (
-        x < -limitX ||
-        x > limitX ||
-        y < -limitY ||
-        y > limitY
-    ) {
-        return true;
-    }
-
-    for (
-        const building
-        of buildings
-    ) {
-
-        if (
-            circleRectCollision(
-                x,
-                y,
-                radius,
-                building
-            )
-        ) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
-// ============================================================
-// PLAYER UPDATE
+// SPELER BEWEGEN
 // ============================================================
 
 function updatePlayer(dt) {
 
+    if (player.invincible > 0) {
+        player.invincible -= dt;
+    }
+
+    if (player.dashCooldown > 0) {
+        player.dashCooldown -= dt;
+    }
+
+    if (player.fireCooldown > 0) {
+        player.fireCooldown -= dt;
+    }
+
+    if (player.reloadTimer > 0) {
+
+        player.reloadTimer -= dt;
+
+        if (player.reloadTimer <= 0) {
+
+            const weapon = weapons[player.weapon];
+
+            weapon.ammo = weapon.maxAmmo;
+        }
+    }
+
     let dx = 0;
     let dy = 0;
 
-    // WASD
     if (keys.has("KeyW")) {
-        dy--;
+        dy -= 1;
     }
 
     if (keys.has("KeyS")) {
-        dy++;
+        dy += 1;
     }
 
     if (keys.has("KeyA")) {
-        dx--;
+        dx -= 1;
     }
 
     if (keys.has("KeyD")) {
-        dx++;
+        dx += 1;
     }
 
-    const length =
-        Math.hypot(
-            dx,
-            dy
-        );
+    const length = Math.hypot(dx, dy);
 
     if (length > 0) {
 
         dx /= length;
         dy /= length;
 
-        const sprint =
-            (
-                keys.has(
-                    "ShiftLeft"
-                ) ||
-                keys.has(
-                    "ShiftRight"
-                )
-            ) &&
-            player.energy > 0;
-
-        const speed =
-            sprint
-                ? player.sprintSpeed
-                : player.speed;
-
-        if (sprint) {
-
-            player.energy -=
-                28 * dt;
-
-        } else {
-
-            player.energy +=
-                16 * dt;
-        }
-
-        const newX =
-            player.x +
-            dx *
-            speed *
-            dt;
-
-        const newY =
-            player.y +
-            dy *
-            speed *
-            dt;
-
-        // X
-        if (
-            !blocked(
-                newX,
-                player.y,
-                player.radius
-            )
-        ) {
-
-            player.x =
-                newX;
-        }
-
-        // Y
-        if (
-            !blocked(
-                player.x,
-                newY,
-                player.radius
-            )
-        ) {
-
-            player.y =
-                newY;
-        }
-
-        player.angle =
-            Math.atan2(
-                dy,
-                dx
-            );
-
-    } else {
-
-        player.energy +=
-            16 * dt;
-    }
-
-    player.energy =
-        clamp(
-            player.energy,
-            0,
-            player.maxEnergy
-        );
-
-    // Aim
-    const target =
-        screenToWorld(
-            mouse.x,
-            mouse.y
-        );
-
-    player.turretAngle =
-        Math.atan2(
-            target.y -
-                player.y,
-            target.x -
-                player.x
-        );
-
-    // Timers
-    player.fireCooldown -= dt;
-
-    if (
-        player.fireCooldown < 0
-    ) {
-        player.fireCooldown = 0;
-    }
-
-    if (
-        player.reloadTimer > 0
-    ) {
-
-        player.reloadTimer -= dt;
+        let speed = player.speed;
 
         if (
-            player.reloadTimer <= 0
+            keys.has("ShiftLeft") ||
+            keys.has("ShiftRight")
         ) {
-
-            weapons[
-                player.weapon
-            ].ammo =
-                weapons[
-                    player.weapon
-                ].maxAmmo;
-
-            player.reloadTimer = 0;
+            speed = player.sprintSpeed;
         }
+
+        player.x += dx * speed * dt;
+        player.y += dy * speed * dt;
     }
 
-    if (
-        player.dashCooldown > 0
-    ) {
+    player.x = clamp(
+        player.x,
+        40,
+        WORLD_W - 40
+    );
 
-        player.dashCooldown -= dt;
-    }
+    player.y = clamp(
+        player.y,
+        40,
+        WORLD_H - 40
+    );
 
-    if (
-        player.invincible > 0
-    ) {
+    // Richting naar muis
+    const screenX = W / 2;
+    const screenY = H / 2;
 
-        player.invincible -= dt;
-    }
+    player.turretAngle = Math.atan2(
+        mouse.y - screenY,
+        mouse.x - screenX
+    );
 
-    // Shoot while moving
+    // Schieten
     if (
         mouse.down &&
         player.reloadTimer <= 0
     ) {
-
         shoot();
     }
 }
@@ -1018,726 +497,378 @@ function updatePlayer(dt) {
 
 function dash() {
 
-    if (!gameRunning) {
+    if (!gameRunning || paused) {
         return;
     }
 
-    if (
-        player.dashCooldown > 0 ||
-        player.energy < 35
-    ) {
+    if (player.dashCooldown > 0) {
+        return;
+    }
+
+    if (player.energy < 25) {
         return;
     }
 
     let dx = 0;
     let dy = 0;
 
-    if (
-        keys.has("KeyW")
-    ) dy--;
+    if (keys.has("KeyW")) dy--;
+    if (keys.has("KeyS")) dy++;
+    if (keys.has("KeyA")) dx--;
+    if (keys.has("KeyD")) dx++;
 
-    if (
-        keys.has("KeyS")
-    ) dy++;
+    const length = Math.hypot(dx, dy);
 
-    if (
-        keys.has("KeyA")
-    ) dx--;
-
-    if (
-        keys.has("KeyD")
-    ) dx++;
-
-    if (
-        dx === 0 &&
-        dy === 0
-    ) {
-
-        dx =
-            Math.cos(
-                player.turretAngle
-            );
-
-        dy =
-            Math.sin(
-                player.turretAngle
-            );
+    if (length === 0) {
+        return;
     }
-
-    const length =
-        Math.hypot(
-            dx,
-            dy
-        );
 
     dx /= length;
     dy /= length;
 
-    const distanceDash = 150;
+    player.x += dx * 280;
+    player.y += dy * 280;
 
-    const newX =
-        player.x +
-        dx *
-        distanceDash;
+    player.x = clamp(player.x, 40, WORLD_W - 40);
+    player.y = clamp(player.y, 40, WORLD_H - 40);
 
-    const newY =
-        player.y +
-        dy *
-        distanceDash;
+    player.energy -= 25;
 
-    if (
-        !blocked(
-            newX,
-            player.y,
-            player.radius
-        )
-    ) {
-
-        player.x =
-            newX;
-    }
-
-    if (
-        !blocked(
-            player.x,
-            newY,
-            player.radius
-        )
-    ) {
-
-        player.y =
-            newY;
-    }
-
-    player.energy -= 35;
-
-    player.dashCooldown =
-        1.2;
-
-    player.invincible =
-        0.35;
+    player.dashCooldown = 1;
 
     createParticles(
         player.x,
         player.y,
-        20
+        12
     );
 }
 
 // ============================================================
-// SHOOT
+// SCHIETEN
 // ============================================================
 
 function shoot() {
 
-    const weapon =
-        weapons[
-            player.weapon
-        ];
+    const weapon = weapons[player.weapon];
 
-    if (
-        player.fireCooldown > 0 ||
-        player.reloadTimer > 0
-    ) {
+    if (player.fireCooldown > 0) {
         return;
     }
 
-    if (
-        weapon.ammo <= 0
-    ) {
+    if (weapon.ammo <= 0) {
 
         reload();
+
         return;
     }
 
     weapon.ammo--;
 
-    player.fireCooldown =
-        weapon.fireRate;
+    player.fireCooldown = weapon.fireRate;
 
-    let angle =
-        player.turretAngle;
+    const angle = player.turretAngle;
 
-    // Burst spread
-    if (
-        player.weapon === 1
-    ) {
+    const startX =
+        player.x +
+        Math.cos(angle) * 40;
 
-        angle +=
-            random(
-                -0.055,
-                0.055
-            );
-    }
-
-    const bulletSpeed =
-        weapon.speed;
+    const startY =
+        player.y +
+        Math.sin(angle) * 40;
 
     bullets.push({
 
-        x:
-            player.x +
-            Math.cos(angle) *
-            42,
+        x: startX,
+        y: startY,
 
-        y:
-            player.y +
-            Math.sin(angle) *
-            42,
+        vx: Math.cos(angle) * weapon.speed,
+        vy: Math.sin(angle) * weapon.speed,
 
-        vx:
-            Math.cos(angle) *
-            bulletSpeed,
+        damage: weapon.damage,
 
-        vy:
-            Math.sin(angle) *
-            bulletSpeed,
+        life: 1.5,
 
-        damage:
-            weapon.damage,
-
-        radius:
-            player.weapon === 2
-                ? 7
-                : 4,
-
-        life: 1.6
+        radius: weapon.name === "CANNON" ? 7 : 4
     });
 
     createParticles(
-        player.x +
-            Math.cos(angle) *
-            42,
-
-        player.y +
-            Math.sin(angle) *
-            42,
-
-        5
+        startX,
+        startY,
+        3
     );
 }
 
 // ============================================================
-// RELOAD
+// HERLADEN
 // ============================================================
 
 function reload() {
 
-    const weapon =
-        weapons[
-            player.weapon
-        ];
+    const weapon = weapons[player.weapon];
 
-    if (
-        player.reloadTimer > 0
-    ) {
+    if (player.reloadTimer > 0) {
         return;
     }
 
-    if (
-        weapon.ammo >=
-        weapon.maxAmmo
-    ) {
+    if (weapon.ammo >= weapon.maxAmmo) {
         return;
     }
 
-    player.reloadTimer =
-        0.8;
+    player.reloadTimer = 1;
+
+    setTimeout(() => {
+
+        weapon.ammo = weapon.maxAmmo;
+
+    }, 1000);
 }
 
 // ============================================================
-// BULLETS
-// ============================================================
-
-function updateBullets(dt) {
-
-    for (
-        let i =
-            bullets.length - 1;
-        i >= 0;
-        i--
-    ) {
-
-        const bullet =
-            bullets[i];
-
-        bullet.x +=
-            bullet.vx *
-            dt;
-
-        bullet.y +=
-            bullet.vy *
-            dt;
-
-        bullet.life -= dt;
-
-        let remove = false;
-
-        // Building
-        for (
-            const building
-            of buildings
-        ) {
-
-            if (
-                circleRectCollision(
-                    bullet.x,
-                    bullet.y,
-                    bullet.radius,
-                    building
-                )
-            ) {
-
-                createParticles(
-                    bullet.x,
-                    bullet.y,
-                    8
-                );
-
-                remove = true;
-                break;
-            }
-        }
-
-        if (remove) {
-
-            bullets.splice(
-                i,
-                1
-            );
-
-            continue;
-        }
-
-        // Alien
-        for (
-            let j =
-                enemies.length - 1;
-            j >= 0;
-            j--
-        ) {
-
-            const enemy =
-                enemies[j];
-
-            if (
-                distance(
-                    bullet.x,
-                    bullet.y,
-                    enemy.x,
-                    enemy.y
-                ) <
-                bullet.radius +
-                enemy.radius
-            ) {
-
-                enemy.health -=
-                    bullet.damage;
-
-                createParticles(
-                    bullet.x,
-                    bullet.y,
-                    8
-                );
-
-                remove = true;
-
-                if (
-                    enemy.health <= 0
-                ) {
-
-                    killAlien(
-                        enemy
-                    );
-
-                    enemies.splice(
-                        j,
-                        1
-                    );
-
-                    setTimeout(
-                        spawnAlien,
-                        700
-                    );
-                }
-
-                break;
-            }
-        }
-
-        if (
-            remove ||
-            bullet.life <= 0
-        ) {
-
-            bullets.splice(
-                i,
-                1
-            );
-        }
-    }
-}
-
-// ============================================================
-// ALIEN SPAWN
-// ============================================================
-
-function spawnAlien() {
-
-    if (
-        !gameRunning ||
-        enemies.length >=
-            MAX_ENEMIES
-    ) {
-        return;
-    }
-
-    let x;
-    let y;
-
-    for (
-        let tries = 0;
-        tries < 50;
-        tries++
-    ) {
-
-        x =
-            random(
-                -3300,
-                3300
-            );
-
-        y =
-            random(
-                -3300,
-                3300
-            );
-
-        if (
-            distance(
-                x,
-                y,
-                player.x,
-                player.y
-            ) > 700 &&
-            !blocked(
-                x,
-                y,
-                35
-            )
-        ) {
-            break;
-        }
-    }
-
-    const elite =
-        Math.random() <
-        0.18;
-
-    const type =
-        elite
-            ? "guardian"
-            : Math.random() <
-                0.35
-                ? "crawler"
-                : "stalker";
-
-    enemies.push({
-
-        x,
-        y,
-
-        radius:
-            elite
-                ? 32
-                : 25,
-
-        health:
-            elite
-                ? 8
-                : 3,
-
-        maxHealth:
-            elite
-                ? 8
-                : 3,
-
-        speed:
-            elite
-                ? 60
-                : type === "crawler"
-                    ? 55
-                    : 45,
-
-        type,
-
-        elite,
-
-        shootCooldown:
-            random(
-                1,
-                3
-            ),
-
-        attackCooldown: 0,
-
-        pulse:
-            random(
-                0,
-                Math.PI * 2
-            )
-    });
-}
-
-// ============================================================
-// ALIENS
+// ALIENS UPDATEN
 // ============================================================
 
 function updateEnemies(dt) {
 
-    for (
-        const enemy
-        of enemies
-    ) {
+    for (let i = enemies.length - 1; i >= 0; i--) {
 
-        enemy.pulse +=
-            dt * 3;
+        const enemy = enemies[i];
 
-        const d =
-            distance(
-                enemy.x,
-                enemy.y,
-                player.x,
-                player.y
-            );
-
-        const angle =
-            Math.atan2(
-                player.y -
-                    enemy.y,
-                player.x -
-                    enemy.x
-            );
-
-        if (
-            d > 180
-        ) {
-
-            const newX =
-                enemy.x +
-                Math.cos(angle) *
-                enemy.speed *
-                dt;
-
-            const newY =
-                enemy.y +
-                Math.sin(angle) *
-                enemy.speed *
-                dt;
-
-            if (
-                !blocked(
-                    newX,
-                    enemy.y,
-                    enemy.radius
-                )
-            ) {
-
-                enemy.x =
-                    newX;
-            }
-
-            if (
-                !blocked(
-                    enemy.x,
-                    newY,
-                    enemy.radius
-                )
-            ) {
-
-                enemy.y =
-                    newY;
-            }
-        }
-
-        // Attack
         enemy.attackCooldown -= dt;
-
-        if (
-            d < 75 &&
-            enemy.attackCooldown <= 0
-        ) {
-
-            if (
-                player.invincible <= 0
-            ) {
-
-                player.health -=
-                    enemy.elite
-                        ? 18
-                        : 10;
-
-                player.invincible =
-                    0.4;
-
-                createParticles(
-                    player.x,
-                    player.y,
-                    10
-                );
-            }
-
-            enemy.attackCooldown =
-                1;
-        }
-
-        // Shoot
         enemy.shootCooldown -= dt;
 
-        if (
-            enemy.shootCooldown <= 0 &&
-            d < 1000 &&
-            hasLineOfSight(
-                enemy.x,
-                enemy.y,
-                player.x,
-                player.y
-            )
-        ) {
-
-            shootEnemy(
-                enemy
-            );
-
-            enemy.shootCooldown =
-                enemy.elite
-                    ? random(
-                        0.8,
-                        1.7
-                    )
-                    : random(
-                        1.4,
-                        2.8
-                    );
+        if (enemy.hitFlash > 0) {
+            enemy.hitFlash -= dt;
         }
-    }
-}
 
-// ============================================================
-// LINE OF SIGHT
-// ============================================================
+        enemy.pulse += dt * 3;
 
-function hasLineOfSight(
-    x1,
-    y1,
-    x2,
-    y2
-) {
+        const dx = player.x - enemy.x;
+        const dy = player.y - enemy.y;
 
-    const dx =
-        x2 - x1;
+        const distanceToPlayer =
+            Math.hypot(dx, dy);
 
-    const dy =
-        y2 - y1;
+        if (distanceToPlayer > 0) {
 
-    const d =
-        Math.hypot(
-            dx,
-            dy
-        );
+            const nx = dx / distanceToPlayer;
+            const ny = dy / distanceToPlayer;
 
-    const steps =
-        Math.ceil(
-            d / 15
-        );
+            // Alien loopt naar speler
+            if (distanceToPlayer > 80) {
 
-    for (
-        let i = 1;
-        i < steps;
-        i++
-    ) {
+                enemy.x +=
+                    nx *
+                    enemy.speed *
+                    dt;
 
-        const t =
-            i / steps;
+                enemy.y +=
+                    ny *
+                    enemy.speed *
+                    dt;
+            }
 
-        const x =
-            x1 +
-            dx * t;
-
-        const y =
-            y1 +
-            dy * t;
-
-        for (
-            const building
-            of buildings
-        ) {
-
+            // Alien valt speler aan
             if (
-                x >=
-                    building.x &&
-                x <=
-                    building.x +
-                    building.w &&
-                y >=
-                    building.y &&
-                y <=
-                    building.y +
-                    building.h
+                distanceToPlayer < 75 &&
+                enemy.attackCooldown <= 0
             ) {
 
-                return false;
+                damagePlayer(
+                    enemy.type === "guardian"
+                        ? 12
+                        : 7
+                );
+
+                enemy.attackCooldown = 1;
+            }
+
+            // Guardian kan schieten
+            if (
+                enemy.type === "guardian" &&
+                distanceToPlayer < 800 &&
+                enemy.shootCooldown <= 0
+            ) {
+
+                enemyShoot(enemy);
+
+                enemy.shootCooldown = 2;
             }
         }
-    }
 
-    return true;
+        enemy.x = clamp(
+            enemy.x,
+            50,
+            WORLD_W - 50
+        );
+
+        enemy.y = clamp(
+            enemy.y,
+            50,
+            WORLD_H - 50
+        );
+    }
 }
 
 // ============================================================
-// ENEMY SHOOT
+// ALIEN SCHIET
 // ============================================================
 
-function shootEnemy(enemy) {
+function enemyShoot(enemy) {
 
-    const angle =
-        Math.atan2(
-            player.y -
-                enemy.y,
-            player.x -
-                enemy.x
-        );
-
-    const speed =
-        enemy.elite
-            ? 360
-            : 300;
+    const angle = Math.atan2(
+        player.y - enemy.y,
+        player.x - enemy.x
+    );
 
     enemyBullets.push({
 
         x: enemy.x,
         y: enemy.y,
 
-        vx:
-            Math.cos(angle) *
-            speed,
+        vx: Math.cos(angle) * 350,
+        vy: Math.sin(angle) * 350,
 
-        vy:
-            Math.sin(angle) *
-            speed,
+        life: 3,
 
-        radius:
-            enemy.elite
-                ? 7
-                : 5,
+        radius: 6,
 
-        damage:
-            enemy.elite
-                ? 12
-                : 7,
-
-        life: 3
+        damage: 8
     });
+}
+
+// ============================================================
+// SPELER DAMAGE
+// ============================================================
+
+function damagePlayer(amount) {
+
+    if (player.invincible > 0) {
+        return;
+    }
+
+    player.health -= amount;
+
+    player.invincible = 0.5;
+
+    createParticles(
+        player.x,
+        player.y,
+        8
+    );
+
+    if (player.health <= 0) {
+
+        player.health = 0;
+
+        gameOver();
+    }
+}
+
+// ============================================================
+// BULLETS UPDATEN
+// ============================================================
+
+function updateBullets(dt) {
+
+    for (
+        let i = bullets.length - 1;
+        i >= 0;
+        i--
+    ) {
+
+        const bullet = bullets[i];
+
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
+
+        bullet.life -= dt;
+
+        let removeBullet =
+            bullet.life <= 0;
+
+        if (
+            bullet.x < 0 ||
+            bullet.x > WORLD_W ||
+            bullet.y < 0 ||
+            bullet.y > WORLD_H
+        ) {
+            removeBullet = true;
+        }
+
+        // Alien raken
+        for (
+            let j = enemies.length - 1;
+            j >= 0;
+            j--
+        ) {
+
+            const enemy = enemies[j];
+
+            const dx =
+                bullet.x - enemy.x;
+
+            const dy =
+                bullet.y - enemy.y;
+
+            const hitDistance =
+                bullet.radius +
+                enemy.radius;
+
+            if (
+                dx * dx +
+                dy * dy <
+                hitDistance * hitDistance
+            ) {
+
+                enemy.health -= bullet.damage;
+
+                enemy.hitFlash = 0.12;
+
+                createParticles(
+                    enemy.x,
+                    enemy.y,
+                    5
+                );
+
+                removeBullet = true;
+
+                if (enemy.health <= 0) {
+
+                    killAlien(j);
+                }
+
+                break;
+            }
+        }
+
+        if (removeBullet) {
+
+            bullets.splice(i, 1);
+        }
+    }
+}
+
+// ============================================================
+// ALIEN DOOD
+// ============================================================
+
+function killAlien(index) {
+
+    const enemy = enemies[index];
+
+    createParticles(
+        enemy.x,
+        enemy.y,
+        18
+    );
+
+    enemies.splice(index, 1);
+
+    // GEEN BLOED
+    // Alleen energie-deeltjes.
+
+    // De volgende spawn komt automatisch
+    // via updateAlienSpawner().
 }
 
 // ============================================================
@@ -1747,229 +878,52 @@ function shootEnemy(enemy) {
 function updateEnemyBullets(dt) {
 
     for (
-        let i =
-            enemyBullets.length - 1;
+        let i = enemyBullets.length - 1;
         i >= 0;
         i--
     ) {
 
-        const bullet =
-            enemyBullets[i];
+        const bullet = enemyBullets[i];
 
-        bullet.x +=
-            bullet.vx *
-            dt;
-
-        bullet.y +=
-            bullet.vy *
-            dt;
+        bullet.x += bullet.vx * dt;
+        bullet.y += bullet.vy * dt;
 
         bullet.life -= dt;
 
-        let remove = false;
+        const dx =
+            bullet.x - player.x;
 
-        for (
-            const building
-            of buildings
-        ) {
+        const dy =
+            bullet.y - player.y;
 
-            if (
-                circleRectCollision(
-                    bullet.x,
-                    bullet.y,
-                    bullet.radius,
-                    building
-                )
-            ) {
-
-                remove = true;
-
-                createParticles(
-                    bullet.x,
-                    bullet.y,
-                    5
-                );
-
-                break;
-            }
-        }
-
-        if (remove) {
-
-            enemyBullets.splice(
-                i,
-                1
-            );
-
-            continue;
-        }
-
-        if (
-            distance(
-                bullet.x,
-                bullet.y,
-                player.x,
-                player.y
-            ) <
+        const hitDistance =
             bullet.radius +
-            player.radius
-        ) {
-
-            if (
-                player.invincible <= 0
-            ) {
-
-                player.health -=
-                    bullet.damage;
-
-                player.invincible =
-                    0.4;
-
-                createParticles(
-                    player.x,
-                    player.y,
-                    10
-                );
-            }
-
-            remove = true;
-        }
+            player.radius;
 
         if (
-            remove ||
-            bullet.life <= 0
+            dx * dx +
+            dy * dy <
+            hitDistance * hitDistance
         ) {
 
-            enemyBullets.splice(
-                i,
-                1
+            damagePlayer(
+                bullet.damage
             );
-        }
-    }
-}
 
-// ============================================================
-// NPC
-// ============================================================
+            enemyBullets.splice(i, 1);
 
-function updateNPCs(dt) {
-
-    for (
-        const npc
-        of npcs
-    ) {
-
-        npc.timer -= dt;
-
-        if (
-            npc.timer <= 0
-        ) {
-
-            npc.angle =
-                random(
-                    0,
-                    Math.PI * 2
-                );
-
-            npc.timer =
-                random(
-                    1,
-                    4
-                );
-        }
-
-        const nx =
-            npc.x +
-            Math.cos(
-                npc.angle
-            ) *
-            npc.speed *
-            dt;
-
-        const ny =
-            npc.y +
-            Math.sin(
-                npc.angle
-            ) *
-            npc.speed *
-            dt;
-
-        if (
-            !blocked(
-                nx,
-                npc.y,
-                11
-            )
-        ) {
-
-            npc.x = nx;
-        }
-
-        if (
-            !blocked(
-                npc.x,
-                ny,
-                11
-            )
-        ) {
-
-            npc.y = ny;
-        }
-    }
-}
-
-// ============================================================
-// LOOT
-// ============================================================
-
-function updateLoot(dt) {
-
-    for (
-        const item
-        of loot
-    ) {
-
-        if (
-            item.collected
-        ) {
             continue;
         }
 
-        item.pulse +=
-            dt * 4;
-
         if (
-            distance(
-                player.x,
-                player.y,
-                item.x,
-                item.y
-            ) < 40
+            bullet.life <= 0 ||
+            bullet.x < 0 ||
+            bullet.x > WORLD_W ||
+            bullet.y < 0 ||
+            bullet.y > WORLD_H
         ) {
 
-            item.collected =
-                true;
-
-            if (
-                item.type ===
-                "credits"
-            ) {
-
-                credits += 10;
-
-                unlockAchievement(
-                    "SCAVENGER"
-                );
-
-            } else {
-
-                player.energy =
-                    Math.min(
-                        player.maxEnergy,
-                        player.energy +
-                            35
-                    );
-            }
+            enemyBullets.splice(i, 1);
         }
     }
 }
@@ -1978,54 +932,30 @@ function updateLoot(dt) {
 // PARTICLES
 // ============================================================
 
-function createParticles(
-    x,
-    y,
-    amount
-) {
+function createParticles(x, y, amount) {
 
-    for (
-        let i = 0;
-        i < amount;
-        i++
-    ) {
+    for (let i = 0; i < amount; i++) {
 
         const angle =
-            random(
-                0,
-                Math.PI * 2
-            );
+            Math.random() * Math.PI * 2;
 
         const speed =
-            random(
-                30,
-                140
-            );
+            random(30, 180);
 
         particles.push({
 
-            x,
-            y,
+            x: x,
+            y: y,
 
             vx:
-                Math.cos(angle) *
-                speed,
+                Math.cos(angle) * speed,
 
             vy:
-                Math.sin(angle) *
-                speed,
+                Math.sin(angle) * speed,
 
-            life:
-                random(
-                    0.2,
-                    0.7
-                ),
+            life: random(0.25, 0.7),
 
-            size:
-                random(
-                    2,
-                    5
-                )
+            size: random(2, 6)
         });
     }
 }
@@ -2033,34 +963,24 @@ function createParticles(
 function updateParticles(dt) {
 
     for (
-        let i =
-            particles.length - 1;
+        let i = particles.length - 1;
         i >= 0;
         i--
     ) {
 
-        const p =
-            particles[i];
+        const p = particles[i];
 
-        p.x +=
-            p.vx * dt;
-
-        p.y +=
-            p.vy * dt;
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
 
         p.vx *= 0.96;
         p.vy *= 0.96;
 
         p.life -= dt;
 
-        if (
-            p.life <= 0
-        ) {
+        if (p.life <= 0) {
 
-            particles.splice(
-                i,
-                1
-            );
+            particles.splice(i, 1);
         }
     }
 }
@@ -2069,75 +989,79 @@ function updateParticles(dt) {
 // CAMERA
 // ============================================================
 
-function updateCamera(dt) {
-
-    cameraX +=
-        (
-            player.x -
-            cameraX
-        ) *
-        Math.min(
-            1,
-            dt * 8
-        );
-
-    cameraY +=
-        (
-            player.y -
-            cameraY
-        ) *
-        Math.min(
-            1,
-            dt * 8
-        );
-}
-
-function worldToScreen(
-    x,
-    y
-) {
+function getCamera() {
 
     return {
 
         x:
-            x -
-            cameraX +
+            player.x -
             W / 2,
 
         y:
-            y -
-            cameraY +
+            player.y -
             H / 2
     };
 }
 
-function screenToWorld(
-    x,
-    y
-) {
+// ============================================================
+// WERELD
+// ============================================================
 
-    return {
+function createWorld() {
 
-        x:
-            x -
-            W / 2 +
-            cameraX,
+    buildings.length = 0;
+    trees.length = 0;
+    rocks.length = 0;
 
-        y:
-            y -
-            H / 2 +
-            cameraY
-    };
+    // Gebouwen
+    for (let i = 0; i < 35; i++) {
+
+        buildings.push({
+
+            x: random(200, WORLD_W - 200),
+
+            y: random(200, WORLD_H - 200),
+
+            w: random(180, 380),
+
+            h: random(150, 300)
+        });
+    }
+
+    // Bomen
+    for (let i = 0; i < 180; i++) {
+
+        trees.push({
+
+            x: random(100, WORLD_W - 100),
+
+            y: random(100, WORLD_H - 100),
+
+            radius: random(18, 35)
+        });
+    }
+
+    // Rotsen
+    for (let i = 0; i < 100; i++) {
+
+        rocks.push({
+
+            x: random(100, WORLD_W - 100),
+
+            y: random(100, WORLD_H - 100),
+
+            radius: random(10, 25)
+        });
+    }
 }
 
 // ============================================================
-// DRAW WORLD
+// WERELD TEKENEN
 // ============================================================
 
-function draw() {
+function drawWorld(camera) {
 
-    ctx.fillStyle =
-        "#101719";
+    ctx.fillStyle = "#10161a";
 
     ctx.fillRect(
         0,
@@ -2146,86 +1070,35 @@ function draw() {
         H
     );
 
-    drawGrid();
-
-    drawTrees();
-    drawRocks();
-
-    drawBuildings();
-    drawDoors();
-
-    drawLoot();
-    drawNPCs();
-
-    drawEnemies();
-
-    drawBullets();
-    drawEnemyBullets();
-
-    drawTank();
-
-    drawParticles();
-
-    drawCrosshair();
-}
-
-// ============================================================
-// GRID
-// ============================================================
-
-function drawGrid() {
-
-    const grid = 100;
-
+    // Raster
     ctx.strokeStyle =
-        "rgba(100,180,170,0.06)";
+        "rgba(80,100,105,0.12)";
 
     ctx.lineWidth = 1;
 
+    const grid = 100;
+
     const startX =
-        Math.floor(
-            (
-                cameraX -
-                W / 2
-            ) /
-            grid
-        ) *
-        grid;
+        Math.floor(camera.x / grid) * grid;
 
     const startY =
-        Math.floor(
-            (
-                cameraY -
-                H / 2
-            ) /
-            grid
-        ) *
-        grid;
+        Math.floor(camera.y / grid) * grid;
 
     for (
-        let x =
-            startX;
-        x <
-            cameraX +
-            W;
+        let x = startX;
+        x < camera.x + W + grid;
         x += grid
     ) {
-
-        const p =
-            worldToScreen(
-                x,
-                0
-            );
 
         ctx.beginPath();
 
         ctx.moveTo(
-            p.x,
+            x - camera.x,
             0
         );
 
         ctx.lineTo(
-            p.x,
+            x - camera.x,
             H
         );
 
@@ -2233,1185 +1106,229 @@ function drawGrid() {
     }
 
     for (
-        let y =
-            startY;
-        y <
-            cameraY +
-            H;
+        let y = startY;
+        y < camera.y + H + grid;
         y += grid
     ) {
-
-        const p =
-            worldToScreen(
-                0,
-                y
-            );
 
         ctx.beginPath();
 
         ctx.moveTo(
             0,
-            p.y
+            y - camera.y
         );
 
         ctx.lineTo(
             W,
-            p.y
+            y - camera.y
         );
 
         ctx.stroke();
     }
-}
 
-// ============================================================
-// TREES
-// ============================================================
+    // Gebouwen
+    for (const building of buildings) {
 
-function drawTrees() {
+        const sx =
+            building.x - camera.x;
 
-    for (
-        const tree
-        of trees
-    ) {
-
-        const p =
-            worldToScreen(
-                tree.x,
-                tree.y
-            );
+        const sy =
+            building.y - camera.y;
 
         if (
-            p.x < -80 ||
-            p.x > W + 80 ||
-            p.y < -80 ||
-            p.y > H + 80
+            sx < -500 ||
+            sx > W + 500 ||
+            sy < -500 ||
+            sy > H + 500
         ) {
             continue;
         }
 
-        ctx.fillStyle =
-            "rgba(0,0,0,0.3)";
-
-        ctx.beginPath();
-
-        ctx.ellipse(
-            p.x,
-            p.y + 15,
-            tree.size,
-            tree.size *
-                0.35,
-            0,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        ctx.fillStyle =
-            "#49372b";
+        ctx.fillStyle = "#252d31";
 
         ctx.fillRect(
-            p.x - 4,
-            p.y - 5,
-            8,
-            tree.size
+            sx,
+            sy,
+            building.w,
+            building.h
         );
 
-        ctx.fillStyle =
-            "#245548";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            p.x,
-            p.y - 15,
-            tree.size *
-                0.7,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-    }
-}
-
-// ============================================================
-// ROCKS
-// ============================================================
-
-function drawRocks() {
-
-    for (
-        const rock
-        of rocks
-    ) {
-
-        const p =
-            worldToScreen(
-                rock.x,
-                rock.y
-            );
-
-        ctx.fillStyle =
-            "#394547";
-
-        ctx.beginPath();
-
-        ctx.ellipse(
-            p.x,
-            p.y,
-            rock.size,
-            rock.size *
-                0.6,
-            0,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-    }
-}
-
-// ============================================================
-// BUILDINGS
-// ============================================================
-
-function drawBuildings() {
-
-    for (
-        const b
-        of buildings
-    ) {
-
-        const p =
-            worldToScreen(
-                b.x,
-                b.y
-            );
-
-        if (
-            p.x > W ||
-            p.x + b.w < 0 ||
-            p.y > H ||
-            p.y + b.h < 0
-        ) {
-            continue;
-        }
-
-        // Shadow
-        ctx.fillStyle =
-            "rgba(0,0,0,0.4)";
-
-        ctx.fillRect(
-            p.x + 12,
-            p.y + 12,
-            b.w,
-            b.h
-        );
-
-        // Building
-        ctx.fillStyle =
-            "#293437";
-
-        ctx.fillRect(
-            p.x,
-            p.y,
-            b.w,
-            b.h
-        );
-
-        // Border
-        ctx.strokeStyle =
-            "#627477";
+        ctx.strokeStyle = "#4b5a5f";
 
         ctx.lineWidth = 3;
 
         ctx.strokeRect(
-            p.x,
-            p.y,
-            b.w,
-            b.h
+            sx,
+            sy,
+            building.w,
+            building.h
         );
 
-        // Windows
-        ctx.fillStyle =
-            "#62bbb3";
-
-        for (
-            let x = 25;
-            x <
-            b.w - 30;
-            x += 65
-        ) {
-
-            ctx.fillRect(
-                p.x + x,
-                p.y + 30,
-                26,
-                17
-            );
-        }
-
-        // Roof detail
-        ctx.strokeStyle =
-            "#405054";
-
-        ctx.lineWidth = 2;
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            p.x + 15,
-            p.y + b.h / 2
-        );
-
-        ctx.lineTo(
-            p.x + b.w - 15,
-            p.y + b.h / 2
-        );
-
-        ctx.stroke();
-    }
-}
-
-// ============================================================
-// DOORS
-// ============================================================
-
-function drawDoors() {
-
-    for (
-        const door
-        of doors
-    ) {
-
-        const p =
-            worldToScreen(
-                door.x,
-                door.y
-            );
-
-        ctx.fillStyle =
-            "#111719";
+        // Dak
+        ctx.fillStyle = "#303b40";
 
         ctx.fillRect(
-            p.x,
-            p.y,
-            door.w,
-            door.h
-        );
-
-        ctx.strokeStyle =
-            "#789491";
-
-        ctx.strokeRect(
-            p.x,
-            p.y,
-            door.w,
-            door.h
+            sx + 15,
+            sy + 15,
+            building.w - 30,
+            25
         );
     }
-}
 
-// ============================================================
-// LOOT
-// ============================================================
+    // Bomen
+    for (const tree of trees) {
 
-function drawLoot() {
+        const sx =
+            tree.x - camera.x;
 
-    for (
-        const item
-        of loot
-    ) {
+        const sy =
+            tree.y - camera.y;
 
         if (
-            item.collected
+            sx < -50 ||
+            sx > W + 50 ||
+            sy < -50 ||
+            sy > H + 50
         ) {
             continue;
         }
 
-        const p =
-            worldToScreen(
-                item.x,
-                item.y
-            );
-
-        const pulse =
-            Math.sin(
-                item.pulse
-            ) * 3;
-
-        ctx.fillStyle =
-            item.type ===
-            "credits"
-                ? "#e0bd5e"
-                : "#62ded1";
+        ctx.fillStyle = "#263a30";
 
         ctx.beginPath();
 
         ctx.arc(
-            p.x,
-            p.y,
-            7 + pulse,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-    }
-}
-
-// ============================================================
-// NPCS
-// ============================================================
-
-function drawNPCs() {
-
-    for (
-        const npc
-        of npcs
-    ) {
-
-        const p =
-            worldToScreen(
-                npc.x,
-                npc.y
-            );
-
-        ctx.save();
-
-        ctx.translate(
-            p.x,
-            p.y
-        );
-
-        ctx.rotate(
-            npc.angle
-        );
-
-        // Body
-        ctx.fillStyle =
-            npc.clothing;
-
-        ctx.fillRect(
-            -7,
-            -1,
-            14,
-            15
-        );
-
-        // Head
-        ctx.fillStyle =
-            "#c58e6b";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            0,
-            -9,
-            7,
+            sx,
+            sy,
+            tree.radius,
             0,
             Math.PI * 2
         );
 
         ctx.fill();
 
-        // Hair
-        ctx.fillStyle =
-            "#272323";
-
-        ctx.beginPath();
-
-        ctx.arc(
-            0,
-            -12,
-            7,
-            Math.PI,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        // Legs
-        ctx.strokeStyle =
-            "#1b2224";
-
-        ctx.lineWidth = 4;
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            -3,
-            13
-        );
-
-        ctx.lineTo(
-            -4,
-            20
-        );
-
-        ctx.moveTo(
-            3,
-            13
-        );
-
-        ctx.lineTo(
-            4,
-            20
-        );
-
-        ctx.stroke();
-
-        ctx.restore();
-    }
-}
-
-// ============================================================
-// ALIENS
-// ============================================================
-
-function drawEnemies() {
-
-    for (
-        const enemy
-        of enemies
-    ) {
-
-        const p =
-            worldToScreen(
-                enemy.x,
-                enemy.y
-            );
-
-        ctx.save();
-
-        ctx.translate(
-            p.x,
-            p.y
-        );
-
-        const pulse =
-            Math.sin(
-                enemy.pulse
-            ) * 2;
-
-        // Shadow
-        ctx.fillStyle =
-            "rgba(0,0,0,0.4)";
-
-        ctx.beginPath();
-
-        ctx.ellipse(
-            0,
-            20,
-            enemy.radius,
-            9,
-            0,
-            0,
-            Math.PI * 2
-        );
-
-        ctx.fill();
-
-        if (
-            enemy.type ===
-            "crawler"
-        ) {
-
-            drawCrawler(
-                enemy,
-                pulse
-            );
-
-        } else if (
-            enemy.type ===
-            "guardian"
-        ) {
-
-            drawGuardian(
-                enemy,
-                pulse
-            );
-
-        } else {
-
-            drawStalker(
-                enemy,
-                pulse
-            );
-        }
-
-        // Health
-        const barWidth =
-            enemy.radius * 2;
-
-        ctx.fillStyle =
-            "rgba(0,0,0,0.7)";
-
-        ctx.fillRect(
-            -barWidth / 2,
-            -enemy.radius - 15,
-            barWidth,
-            5
-        );
-
-        ctx.fillStyle =
-            enemy.elite
-                ? "#b48cff"
-                : "#55dfb0";
-
-        ctx.fillRect(
-            -barWidth / 2,
-            -enemy.radius - 15,
-            barWidth *
-                (
-                    enemy.health /
-                    enemy.maxHealth
-                ),
-            5
-        );
-
-        ctx.restore();
-    }
-}
-
-// ============================================================
-// STALKER ALIEN
-// ============================================================
-
-function drawStalker(
-    enemy,
-    pulse
-) {
-
-    const color =
-        enemy.elite
-            ? "#a17cff"
-            : "#58dcb0";
-
-    // Body
-    ctx.fillStyle =
-        color;
-
-    ctx.beginPath();
-
-    ctx.ellipse(
-        0,
-        5,
-        enemy.radius *
-            0.6,
-        enemy.radius *
-            0.7,
-        0,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Head
-    ctx.beginPath();
-
-    ctx.ellipse(
-        0,
-        -enemy.radius *
-            0.45,
-        enemy.radius *
-            0.72,
-        enemy.radius *
-            0.5,
-        0,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Eyes
-    ctx.fillStyle =
-        "#07110f";
-
-    ctx.beginPath();
-
-    ctx.ellipse(
-        -8,
-        -11,
-        5,
-        8,
-        -0.2,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.ellipse(
-        8,
-        -11,
-        5,
-        8,
-        0.2,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Eyes shine
-    ctx.fillStyle =
-        "#efffff";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        -9,
-        -13,
-        2,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.arc(
-        7,
-        -13,
-        2,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Arms
-    ctx.strokeStyle =
-        color;
-
-    ctx.lineWidth = 5;
-
-    ctx.lineCap =
-        "round";
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        -12,
-        0
-    );
-
-    ctx.lineTo(
-        -23,
-        14 +
-            pulse
-    );
-
-    ctx.moveTo(
-        12,
-        0
-    );
-
-    ctx.lineTo(
-        23,
-        14 -
-            pulse
-    );
-
-    ctx.stroke();
-
-    // Antennas
-    ctx.strokeStyle =
-        "#baffef";
-
-    ctx.lineWidth = 2;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        -7,
-        -24
-    );
-
-    ctx.lineTo(
-        -13,
-        -37
-    );
-
-    ctx.moveTo(
-        7,
-        -24
-    );
-
-    ctx.lineTo(
-        13,
-        -37
-    );
-
-    ctx.stroke();
-}
-
-// ============================================================
-// CRAWLER ALIEN
-// ============================================================
-
-function drawCrawler(
-    enemy,
-    pulse
-) {
-
-    ctx.fillStyle =
-        "#50d8bf";
-
-    ctx.beginPath();
-
-    ctx.ellipse(
-        0,
-        5,
-        enemy.radius *
-            0.75,
-        enemy.radius *
-            0.45,
-        0,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Head
-    ctx.fillStyle =
-        "#78ead3";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        0,
-        -8,
-        11,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Eye
-    ctx.fillStyle =
-        "#101919";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        0,
-        -9,
-        7,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    ctx.fillStyle =
-        "#ecffff";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        -2,
-        -11,
-        2,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Tentacles
-    ctx.strokeStyle =
-        "#50d8bf";
-
-    ctx.lineWidth = 4;
-
-    for (
-        let i = -2;
-        i <= 2;
-        i++
-    ) {
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            i * 8,
-            9
-        );
-
-        ctx.quadraticCurveTo(
-            i * 13,
-            20 +
-                pulse,
-            i * 17,
-            28
-        );
+        ctx.strokeStyle = "#46624e";
 
         ctx.stroke();
     }
-}
 
-// ============================================================
-// GUARDIAN ALIEN
-// ============================================================
+    // Rotsen
+    for (const rock of rocks) {
 
-function drawGuardian(
-    enemy,
-    pulse
-) {
+        const sx =
+            rock.x - camera.x;
 
-    ctx.fillStyle =
-        "#3b2759";
+        const sy =
+            rock.y - camera.y;
 
-    ctx.beginPath();
+        ctx.fillStyle = "#414b4e";
 
-    ctx.arc(
-        0,
-        0,
-        enemy.radius,
-        0,
-        Math.PI * 2
-    );
+        ctx.beginPath();
 
-    ctx.fill();
-
-    ctx.strokeStyle =
-        "#aa7cff";
-
-    ctx.lineWidth = 5;
-
-    ctx.stroke();
-
-    // Head
-    ctx.fillStyle =
-        "#b589ff";
-
-    ctx.beginPath();
-
-    ctx.ellipse(
-        0,
-        -10,
-        18,
-        14,
-        0,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Eyes
-    ctx.fillStyle =
-        "#160d20";
-
-    ctx.beginPath();
-
-    ctx.ellipse(
-        -8,
-        -10,
-        5,
-        7,
-        0,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.ellipse(
-        8,
-        -10,
-        5,
-        7,
-        0,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    // Core
-    ctx.fillStyle =
-        "#e4cfff";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        0,
-        8,
-        7 + pulse,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-}
-
-// ============================================================
-// TANK
-// ============================================================
-
-function drawTank() {
-
-    const p =
-        worldToScreen(
-            player.x,
-            player.y
+        ctx.arc(
+            sx,
+            sy,
+            rock.radius,
+            0,
+            Math.PI * 2
         );
+
+        ctx.fill();
+    }
+}
+
+// ============================================================
+// SPELER TEKENEN
+// ============================================================
+
+function drawPlayer(camera) {
+
+    const sx = W / 2;
+    const sy = H / 2;
 
     ctx.save();
 
     ctx.translate(
-        p.x,
-        p.y
+        sx,
+        sy
     );
 
-    // Shadow
-    ctx.fillStyle =
-        "rgba(0,0,0,0.45)";
+    ctx.rotate(
+        player.turretAngle
+    );
+
+    // Tank lichaam
+    ctx.fillStyle = "#52636a";
 
     ctx.beginPath();
 
-    ctx.ellipse(
-        0,
-        10,
+    ctx.roundRect(
+        -28,
+        -22,
+        56,
+        44,
+        10
+    );
+
+    ctx.fill();
+
+    ctx.strokeStyle = "#91a4aa";
+
+    ctx.lineWidth = 3;
+
+    ctx.stroke();
+
+    // Pantser
+    ctx.fillStyle = "#354348";
+
+    ctx.fillRect(
+        -19,
+        -17,
         38,
-        24,
+        34
+    );
+
+    // Koepel
+    ctx.fillStyle = "#71848a";
+
+    ctx.beginPath();
+
+    ctx.arc(
         0,
+        0,
+        15,
         0,
         Math.PI * 2
     );
 
     ctx.fill();
 
-    // Rotate hull
-    ctx.rotate(
-        player.angle
-    );
-
-    // Tracks
-    ctx.fillStyle =
-        "#13191b";
-
-    ctx.beginPath();
-
-    ctx.roundRect(
-        -32,
-        -29,
-        64,
-        15,
-        5
-    );
-
-    ctx.fill();
-
-    ctx.beginPath();
-
-    ctx.roundRect(
-        -32,
-        14,
-        64,
-        15,
-        5
-    );
-
-    ctx.fill();
-
-    // Track lines
-    ctx.strokeStyle =
-        "#4c5b5d";
-
-    ctx.lineWidth = 2;
-
-    for (
-        let x = -26;
-        x <= 26;
-        x += 13
-    ) {
-
-        ctx.beginPath();
-
-        ctx.moveTo(
-            x,
-            -28
-        );
-
-        ctx.lineTo(
-            x,
-            -15
-        );
-
-        ctx.moveTo(
-            x,
-            15
-        );
-
-        ctx.lineTo(
-            x,
-            28
-        );
-
-        ctx.stroke();
-    }
-
-    // Hull
-    ctx.fillStyle =
-        "#455b56";
-
-    ctx.beginPath();
-
-    ctx.roundRect(
-        -27,
-        -18,
-        54,
-        36,
-        8
-    );
-
-    ctx.fill();
-
-    ctx.strokeStyle =
-        "#839692";
-
-    ctx.lineWidth = 2;
-
-    ctx.stroke();
-
-    // Armor
-    ctx.fillStyle =
-        "#5c716b";
-
-    ctx.beginPath();
-
-    ctx.roundRect(
-        -18,
-        -13,
-        36,
-        26,
-        6
-    );
-
-    ctx.fill();
-
-    // Turret
-    ctx.save();
-
-    ctx.rotate(
-        player.turretAngle -
-            player.angle
-    );
-
-    // Cannon
-    ctx.fillStyle =
-        "#121719";
-
-    ctx.fillRect(
-        0,
-        -6,
-        54,
-        12
-    );
-
-    ctx.fillStyle =
-        "#72847f";
+    // Kanon
+    ctx.fillStyle = "#a5b3b6";
 
     ctx.fillRect(
         8,
-        -4,
-        43,
-        8
+        -5,
+        38,
+        10
     );
-
-    // Cannon end
-    ctx.fillStyle =
-        "#2c3836";
-
-    ctx.fillRect(
-        48,
-        -8,
-        9,
-        16
-    );
-
-    // Turret
-    ctx.fillStyle =
-        "#637671";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        0,
-        0,
-        17,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    ctx.strokeStyle =
-        "#9badA7";
-
-    ctx.stroke();
-
-    // Turret light
-    ctx.fillStyle =
-        "#69ded2";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        6,
-        -8,
-        3,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
 
     ctx.restore();
 
-    // Lights
-    ctx.fillStyle =
-        "#66dad0";
-
-    ctx.beginPath();
-
-    ctx.arc(
-        24,
-        -9,
-        3,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.arc(
-        24,
-        9,
-        3,
-        0,
-        Math.PI * 2
-    );
-
-    ctx.fill();
-
-    ctx.restore();
-
-    // Shield
-    if (
-        player.invincible > 0
-    ) {
+    // Schade-indicatie
+    if (player.invincible > 0) {
 
         ctx.strokeStyle =
-            "rgba(100,240,230,0.8)";
+            "rgba(255,255,255,0.8)";
 
         ctx.lineWidth = 3;
 
         ctx.beginPath();
 
         ctx.arc(
-            p.x,
-            p.y,
-            40,
+            sx,
+            sy,
+            35,
             0,
             Math.PI * 2
         );
@@ -3421,71 +1338,249 @@ function drawTank() {
 }
 
 // ============================================================
-// DRAW BULLETS
+// ALIENS TEKENEN
 // ============================================================
 
-function drawBullets() {
+function drawEnemies(camera) {
 
-    for (
-        const bullet
-        of bullets
-    ) {
+    for (const enemy of enemies) {
 
-        const p =
-            worldToScreen(
-                bullet.x,
-                bullet.y
-            );
+        const sx =
+            enemy.x - camera.x;
+
+        const sy =
+            enemy.y - camera.y;
+
+        if (
+            sx < -100 ||
+            sx > W + 100 ||
+            sy < -100 ||
+            sy > H + 100
+        ) {
+            continue;
+        }
 
         ctx.save();
 
         ctx.translate(
-            p.x,
-            p.y
+            sx,
+            sy
         );
 
-        ctx.rotate(
-            Math.atan2(
-                bullet.vy,
-                bullet.vx
-            )
-        );
+        // ----------------------------------------------------
+        // ALIEN KLEUR
+        // ----------------------------------------------------
 
-        ctx.fillStyle =
-            "#6de6da";
+        if (enemy.hitFlash > 0) {
 
-        ctx.fillRect(
-            -9,
-            -2,
-            18,
-            4
-        );
+            ctx.fillStyle = "#ffffff";
 
-        ctx.restore();
-    }
-}
+        } else if (
+            enemy.type === "guardian"
+        ) {
 
-function drawEnemyBullets() {
+            ctx.fillStyle = "#7b5cff";
 
-    for (
-        const bullet
-        of enemyBullets
-    ) {
+        } else if (
+            enemy.type === "crawler"
+        ) {
 
-        const p =
-            worldToScreen(
-                bullet.x,
-                bullet.y
-            );
+            ctx.fillStyle = "#38c7b5";
 
-        ctx.fillStyle =
-            "#b98cff";
+        } else {
+
+            ctx.fillStyle = "#66a86b";
+        }
+
+        // ----------------------------------------------------
+        // ALIEN LICHAAM
+        // ----------------------------------------------------
 
         ctx.beginPath();
 
         ctx.arc(
-            p.x,
-            p.y,
+            0,
+            0,
+            enemy.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        ctx.strokeStyle = "#b8d8cf";
+
+        ctx.lineWidth = 2;
+
+        ctx.stroke();
+
+        // ----------------------------------------------------
+        // OGEN
+        // ----------------------------------------------------
+
+        const eyeOffset =
+            enemy.radius * 0.35;
+
+        ctx.fillStyle = "#dfffee";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            -eyeOffset,
+            -5,
+            5,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.arc(
+            eyeOffset,
+            -5,
+            5,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+
+        // ----------------------------------------------------
+        // GUARDIAN
+        // ----------------------------------------------------
+
+        if (
+            enemy.type === "guardian"
+        ) {
+
+            ctx.strokeStyle =
+                "rgba(170,130,255,0.7)";
+
+            ctx.lineWidth = 4;
+
+            ctx.beginPath();
+
+            ctx.arc(
+                0,
+                0,
+                enemy.radius + 8,
+                0,
+                Math.PI * 2
+            );
+
+            ctx.stroke();
+        }
+
+        // ----------------------------------------------------
+        // CRAWLER POTENEN
+        // ----------------------------------------------------
+
+        if (
+            enemy.type === "crawler"
+        ) {
+
+            ctx.strokeStyle = "#38c7b5";
+
+            ctx.lineWidth = 4;
+
+            for (let a = 0; a < 4; a++) {
+
+                const angle =
+                    a * Math.PI / 2;
+
+                ctx.beginPath();
+
+                ctx.moveTo(
+                    Math.cos(angle) * 12,
+                    Math.sin(angle) * 12
+                );
+
+                ctx.lineTo(
+                    Math.cos(angle) * 35,
+                    Math.sin(angle) * 35
+                );
+
+                ctx.stroke();
+            }
+        }
+
+        ctx.restore();
+
+        // ----------------------------------------------------
+        // HEALTH BAR
+        // ----------------------------------------------------
+
+        const barWidth =
+            enemy.radius * 2;
+
+        const healthPercent =
+            enemy.health /
+            enemy.maxHealth;
+
+        ctx.fillStyle =
+            "rgba(0,0,0,0.6)";
+
+        ctx.fillRect(
+            sx - barWidth / 2,
+            sy - enemy.radius - 13,
+            barWidth,
+            5
+        );
+
+        ctx.fillStyle = "#74d88b";
+
+        ctx.fillRect(
+            sx - barWidth / 2,
+            sy - enemy.radius - 13,
+            barWidth * healthPercent,
+            5
+        );
+    }
+}
+
+// ============================================================
+// BULLETS TEKENEN
+// ============================================================
+
+function drawBullets(camera) {
+
+    for (const bullet of bullets) {
+
+        const sx =
+            bullet.x - camera.x;
+
+        const sy =
+            bullet.y - camera.y;
+
+        ctx.fillStyle = "#d7f5ff";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            sx,
+            sy,
+            bullet.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fill();
+    }
+
+    // Alien projectielen
+    for (const bullet of enemyBullets) {
+
+        const sx =
+            bullet.x - camera.x;
+
+        const sy =
+            bullet.y - camera.y;
+
+        ctx.fillStyle = "#b77cff";
+
+        ctx.beginPath();
+
+        ctx.arc(
+            sx,
+            sy,
             bullet.radius,
             0,
             Math.PI * 2
@@ -3496,37 +1591,29 @@ function drawEnemyBullets() {
 }
 
 // ============================================================
-// PARTICLES
+// PARTICLES TEKENEN
 // ============================================================
 
-function drawParticles() {
+function drawParticles(camera) {
 
-    for (
-        const p
-        of particles
-    ) {
+    for (const p of particles) {
 
-        const screen =
-            worldToScreen(
-                p.x,
-                p.y
-            );
+        const sx =
+            p.x - camera.x;
+
+        const sy =
+            p.y - camera.y;
 
         ctx.globalAlpha =
-            clamp(
-                p.life,
-                0,
-                1
-            );
+            Math.max(0, p.life);
 
-        ctx.fillStyle =
-            "#73e4d7";
+        ctx.fillStyle = "#9bd8ce";
 
         ctx.beginPath();
 
         ctx.arc(
-            screen.x,
-            screen.y,
+            sx,
+            sy,
             p.size,
             0,
             Math.PI * 2
@@ -3539,583 +1626,58 @@ function drawParticles() {
 }
 
 // ============================================================
-// CROSSHAIR
-// ============================================================
-
-function drawCrosshair() {
-
-    if (!gameRunning) {
-        return;
-    }
-
-    ctx.strokeStyle =
-        "rgba(120,240,225,0.9)";
-
-    ctx.lineWidth = 2;
-
-    ctx.beginPath();
-
-    ctx.moveTo(
-        mouse.x - 12,
-        mouse.y
-    );
-
-    ctx.lineTo(
-        mouse.x - 4,
-        mouse.y
-    );
-
-    ctx.moveTo(
-        mouse.x + 4,
-        mouse.y
-    );
-
-    ctx.lineTo(
-        mouse.x + 12,
-        mouse.y
-    );
-
-    ctx.moveTo(
-        mouse.x,
-        mouse.y - 12
-    );
-
-    ctx.lineTo(
-        mouse.x,
-        mouse.y - 4
-    );
-
-    ctx.moveTo(
-        mouse.x,
-        mouse.y + 4
-    );
-
-    ctx.lineTo(
-        mouse.x,
-        mouse.y + 12
-    );
-
-    ctx.stroke();
-}
-
-// ============================================================
 // HUD
 // ============================================================
 
 function updateHUD() {
 
     const healthBar =
-        document.getElementById(
-            "healthBar"
-        );
+        document.getElementById("healthBar");
 
     const energyBar =
-        document.getElementById(
-            "energyBar"
-        );
+        document.getElementById("energyBar");
 
     const ammo =
-        document.getElementById(
-            "ammo"
-        );
+        document.getElementById("ammo");
 
-    const killsText =
-        document.getElementById(
-            "kills"
-        );
-
-    const creditsText =
-        document.getElementById(
-            "credits"
-        );
-
-    const objective =
-        document.getElementById(
-            "objective"
-        );
-
-    const zone =
-        document.getElementById(
-            "zone"
-        );
+    const kills =
+        document.getElementById("kills");
 
     if (healthBar) {
 
         healthBar.style.width =
-            (
+            `${Math.max(
+                0,
                 player.health /
                 player.maxHealth *
                 100
-            ) + "%";
+            )}%`;
     }
 
     if (energyBar) {
 
         energyBar.style.width =
-            (
+            `${Math.max(
+                0,
                 player.energy /
                 player.maxEnergy *
                 100
-            ) + "%";
+            )}%`;
     }
 
     if (ammo) {
 
         const weapon =
-            weapons[
-                player.weapon
-            ];
+            weapons[player.weapon];
 
         ammo.textContent =
-            player.reloadTimer > 0
-                ? "RELOADING..."
-                : `${weapon.name}  ${weapon.ammo} / ∞`;
+            `${weapon.ammo} / ∞`;
     }
 
-    if (killsText) {
+    if (kills) {
 
-        killsText.textContent =
-            `KILLS: ${kills}`;
-    }
-
-    if (creditsText) {
-
-        creditsText.textContent =
-            `CREDITS: ${credits}`;
-    }
-
-    if (objective) {
-
-        objective.textContent =
-            missionProgress >=
-            missionTarget
-                ? "SIGNAL FOUND"
-                : `FIND THE SIGNAL • ${missionProgress}/${missionTarget}`;
-    }
-
-    if (zone) {
-
-        zone.textContent =
-            `SECTOR ${level}`;
-    }
-}
-
-// ============================================================
-// KILL ALIEN
-// ============================================================
-
-function killAlien(
-    enemy
-) {
-
-    kills++;
-
-    if (
-        enemy.elite
-    ) {
-
-        score += 100;
-        credits += 30;
-
-        addXP(40);
-
-    } else {
-
-        score += 25;
-        credits += 8;
-
-        addXP(15);
-    }
-
-    missionProgress++;
-
-    createParticles(
-        enemy.x,
-        enemy.y,
-        enemy.elite
-            ? 25
-            : 16
-    );
-
-    if (
-        kills === 1
-    ) {
-
-        unlockAchievement(
-            "FIRST CONTACT"
-        );
-    }
-
-    if (
-        kills === 10
-    ) {
-
-        unlockAchievement(
-            "ALIEN HUNTER"
-        );
-    }
-}
-
-// ============================================================
-// XP
-// ============================================================
-
-function addXP(
-    amount
-) {
-
-    xp += amount;
-
-    const needed =
-        level * 100;
-
-    if (
-        xp >= needed
-    ) {
-
-        xp -= needed;
-
-        level++;
-
-        player.maxHealth += 5;
-        player.health =
-            player.maxHealth;
-
-        player.maxEnergy += 5;
-        player.energy =
-            player.maxEnergy;
-
-        unlockAchievement(
-            "LEVEL UP"
-        );
-    }
-}
-
-// ============================================================
-// ACHIEVEMENTS
-// ============================================================
-
-function getAchievements() {
-
-    try {
-
-        return JSON.parse(
-            localStorage.getItem(
-                "echoboundAchievements"
-            )
-        ) || [];
-
-    } catch {
-
-        return [];
-    }
-}
-
-function unlockAchievement(
-    name
-) {
-
-    const unlocked =
-        getAchievements();
-
-    if (
-        unlocked.includes(name)
-    ) {
-        return;
-    }
-
-    unlocked.push(name);
-
-    localStorage.setItem(
-        "echoboundAchievements",
-        JSON.stringify(
-            unlocked
-        )
-    );
-
-    const box =
-        document.getElementById(
-            "achievement"
-        );
-
-    const nameElement =
-        document.getElementById(
-            "achievementName"
-        );
-
-    if (
-        box &&
-        nameElement
-    ) {
-
-        nameElement.textContent =
-            name;
-
-        box.style.display =
-            "block";
-
-        setTimeout(() => {
-
-            box.style.display =
-                "none";
-
-        }, 3000);
-    }
-}
-
-function showAchievements() {
-
-    const achievements = [
-        "FIRST CONTACT",
-        "ALIEN HUNTER",
-        "SCAVENGER",
-        "LEVEL UP"
-    ];
-
-    const unlocked =
-        getAchievements();
-
-    let text =
-        "ACHIEVEMENTS\n\n";
-
-    for (
-        const achievement
-        of achievements
-    ) {
-
-        text +=
-            unlocked.includes(
-                achievement
-            )
-                ? `✓ ${achievement}\n`
-                : `○ ${achievement}\n`;
-    }
-
-    alert(text);
-}
-
-// ============================================================
-// CONTROLS
-// ============================================================
-
-function showControls() {
-
-    alert(
-        "CONTROLS\n\n" +
-
-        "W A S D = BEWEGEN\n" +
-        "SHIFT = SNELLER\n" +
-        "MUIS = RICHTEN\n" +
-        "LINKERMUIS = SCHIETEN\n" +
-        "R = HERLADEN\n" +
-        "SPACE = DASH\n" +
-        "1 = PULSE\n" +
-        "2 = BURST\n" +
-        "3 = CANNON\n" +
-        "ESC = PAUZE"
-    );
-}
-
-// ============================================================
-// PAUSE
-// ============================================================
-
-function togglePause() {
-
-    if (!gameRunning) {
-        return;
-    }
-
-    paused = !paused;
-
-    mouse.down = false;
-
-    if (pauseMenu) {
-
-        pauseMenu.style.display =
-            paused
-                ? "flex"
-                : "none";
-    }
-}
-
-// ============================================================
-// SAVE
-// ============================================================
-
-function saveGame() {
-
-    const data = {
-
-        x: player.x,
-        y: player.y,
-
-        health:
-            player.health,
-
-        energy:
-            player.energy,
-
-        weapon:
-            player.weapon,
-
-        score,
-        kills,
-        credits,
-
-        level,
-        xp,
-
-        missionProgress,
-
-        ammo:
-            weapons.map(
-                w => w.ammo
-            )
-    };
-
-    localStorage.setItem(
-        "echoboundSave",
-        JSON.stringify(data)
-    );
-
-    alert(
-        "RUN SAVED!"
-    );
-}
-
-// ============================================================
-// LOAD
-// ============================================================
-
-function loadGame() {
-
-    const saved =
-        localStorage.getItem(
-            "echoboundSave"
-        );
-
-    if (!saved) {
-
-        alert(
-            "NO SAVE FOUND."
-        );
-
-        return;
-    }
-
-    try {
-
-        const data =
-            JSON.parse(saved);
-
-        generateWorld();
-
-        player.x =
-            data.x || 0;
-
-        player.y =
-            data.y || 0;
-
-        player.health =
-            data.health ||
-            player.maxHealth;
-
-        player.energy =
-            data.energy ||
-            player.maxEnergy;
-
-        player.weapon =
-            data.weapon || 0;
-
-        score =
-            data.score || 0;
-
-        kills =
-            data.kills || 0;
-
-        credits =
-            data.credits || 0;
-
-        level =
-            data.level || 1;
-
-        xp =
-            data.xp || 0;
-
-        missionProgress =
-            data.missionProgress ||
-            0;
-
-        if (data.ammo) {
-
-            data.ammo.forEach(
-                (
-                    ammo,
-                    index
-                ) => {
-
-                    if (
-                        weapons[index]
-                    ) {
-
-                        weapons[
-                            index
-                        ].ammo =
-                            ammo;
-                    }
-                }
-            );
-        }
-
-        for (
-            let i = 0;
-            i < 10;
-            i++
-        ) {
-
-            spawnAlien();
-        }
-
-        gameRunning = true;
-        paused = false;
-
-        if (menu) {
-            menu.style.display =
-                "none";
-        }
-
-        updateHUD();
-
-    } catch {
-
-        alert(
-            "SAVE DATA IS CORRUPTED."
-        );
-    }
-}
-
-// ============================================================
-// QUIT
-// ============================================================
-
-function quitToMenu() {
-
-    gameRunning = false;
-    paused = false;
-
-    keys.clear();
-
-    mouse.down = false;
-
-    if (pauseMenu) {
-        pauseMenu.style.display =
-            "none";
-    }
-
-    if (menu) {
-        menu.style.display =
-            "flex";
+        kills.textContent =
+            `ALIENS: ${enemies.length}`;
     }
 }
 
@@ -4132,104 +1694,206 @@ function gameOver() {
     keys.clear();
 
     alert(
-        "TANK DESTROYED\n\n" +
-        `KILLS: ${kills}\n` +
-        `SCORE: ${score}\n` +
-        `LEVEL: ${level}`
+        "RUN ENDED\n\n" +
+        "Je tank is uitgeschakeld."
     );
+}
 
-    if (menu) {
-        menu.style.display =
-            "flex";
+// ============================================================
+// PAUZE
+// ============================================================
+
+function togglePause() {
+
+    if (!gameRunning) {
+        return;
+    }
+
+    paused = !paused;
+
+    const pause =
+        document.getElementById("pause");
+
+    if (pause) {
+
+        pause.style.display =
+            paused ? "flex" : "none";
     }
 }
 
 // ============================================================
-// MAIN UPDATE
+// NIEUWE GAME
 // ============================================================
 
-function update(dt) {
+function startGame() {
 
-    if (
-        !gameRunning ||
-        paused
-    ) {
-        return;
+    gameRunning = true;
+    paused = false;
+
+    player.x = WORLD_W / 2;
+    player.y = WORLD_H / 2;
+
+    player.health =
+        player.maxHealth;
+
+    player.energy =
+        player.maxEnergy;
+
+    player.reloadTimer = 0;
+
+    player.fireCooldown = 0;
+
+    weapons.forEach((weapon) => {
+
+        weapon.ammo =
+            weapon.maxAmmo;
+    });
+
+    bullets.length = 0;
+    enemyBullets.length = 0;
+    particles.length = 0;
+
+    alienSpawnTimer = 0;
+
+    createWorld();
+
+    spawnStartingAliens();
+
+    const menu =
+        document.getElementById("menu");
+
+    if (menu) {
+
+        menu.style.display = "none";
     }
 
-    gameTime += dt;
+    const hud =
+        document.getElementById("hud");
 
-    updatePlayer(dt);
+    if (hud) {
 
-    updateEnemies(dt);
-
-    updateBullets(dt);
-
-    updateEnemyBullets(dt);
-
-    updateNPCs(dt);
-
-    updateLoot(dt);
-
-    updateParticles(dt);
-
-    updateCamera(dt);
-
-    if (
-        player.health <= 0
-    ) {
-
-        player.health = 0;
-
-        gameOver();
+        hud.style.display = "block";
     }
+}
 
-    updateHUD();
+// ============================================================
+// BUTTONS
+// ============================================================
+
+const newGameButton =
+    document.getElementById("newGame");
+
+if (newGameButton) {
+
+    newGameButton.addEventListener(
+        "click",
+        startGame
+    );
+}
+
+const resumeButton =
+    document.getElementById("resume");
+
+if (resumeButton) {
+
+    resumeButton.addEventListener(
+        "click",
+        togglePause
+    );
+}
+
+const quitButton =
+    document.getElementById("quit");
+
+if (quitButton) {
+
+    quitButton.addEventListener(
+        "click",
+        () => {
+
+            gameRunning = false;
+            paused = false;
+
+            keys.clear();
+            mouse.down = false;
+
+            const pause =
+                document.getElementById("pause");
+
+            if (pause) {
+                pause.style.display = "none";
+            }
+
+            const menu =
+                document.getElementById("menu");
+
+            if (menu) {
+                menu.style.display = "flex";
+            }
+        }
+    );
 }
 
 // ============================================================
 // GAME LOOP
 // ============================================================
 
-let lastTime =
-    performance.now();
+function gameLoop(time) {
 
-function gameLoop(
-    currentTime
-) {
+    if (!lastTime) {
+        lastTime = time;
+    }
 
     let dt =
-        (
-            currentTime -
-            lastTime
-        ) / 1000;
+        (time - lastTime) / 1000;
 
-    lastTime =
-        currentTime;
+    lastTime = time;
 
-    dt =
-        Math.min(
-            dt,
-            0.05
-        );
+    // Voorkomt enorme sprongen na lag
+    dt = Math.min(dt, 0.05);
 
-    update(dt);
+    if (gameRunning && !paused) {
 
-    draw();
+        updatePlayer(dt);
 
-    requestAnimationFrame(
-        gameLoop
-    );
+        updateEnemies(dt);
+
+        updateBullets(dt);
+
+        updateEnemyBullets(dt);
+
+        updateParticles(dt);
+
+        updateAlienSpawner(dt);
+
+        // Energie langzaam terug
+        player.energy =
+            Math.min(
+                player.maxEnergy,
+                player.energy + 12 * dt
+            );
+
+        updateHUD();
+    }
+
+    const camera =
+        getCamera();
+
+    drawWorld(camera);
+
+    drawBullets(camera);
+
+    drawEnemies(camera);
+
+    drawParticles(camera);
+
+    drawPlayer(camera);
+
+    requestAnimationFrame(gameLoop);
 }
 
 // ============================================================
 // START
 // ============================================================
 
-generateWorld();
-
-updateHUD();
-
-requestAnimationFrame(
-    gameLoop
-);
+requestAnimationFrame(gameLoop);
