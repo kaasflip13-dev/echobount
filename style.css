@@ -1,51 +1,73 @@
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
+/* =========================================================
+   ECHOBOUND
+   MAIN WEBSITE / GAME STYLE
+   ========================================================= */
 
 :root {
-    --bg: #05070b;
-    --panel: #0a0e15;
-    --panel2: #0d131d;
-    --border: #26313e;
-    --text: #e8edf3;
-    --muted: #7f8b99;
-    --accent: #6de7ff;
-    --accent2: #2aa8c8;
-    --green: #64f2b1;
-    --red: #ff6878;
-    --gold: #ffd166;
+    --bg: #05080c;
+    --bg2: #081018;
+
+    --panel: rgba(8, 15, 22, 0.94);
+    --panel2: rgba(11, 21, 30, 0.96);
+
+    --cyan: #55e6ff;
+    --cyan2: #1caac7;
+    --cyanDark: #0b5d70;
+
+    --white: #edfaff;
+    --text: #c7d8df;
+    --muted: #72838c;
+
+    --border: rgba(85, 230, 255, 0.28);
+    --borderStrong: rgba(85, 230, 255, 0.7);
+
+    --danger: #ff536d;
+}
+
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
 }
 
 html,
 body {
+    margin: 0;
     width: 100%;
-    height: 100%;
+    min-height: 100%;
+}
+
+body {
+    background:
+        radial-gradient(
+            circle at 50% 35%,
+            rgba(23, 72, 91, 0.18),
+            transparent 45%
+        ),
+        linear-gradient(
+            135deg,
+            #030609,
+            #071019 50%,
+            #030609
+        );
+
+    color: var(--white);
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
     overflow: hidden;
-    background: var(--bg);
-    color: var(--text);
-    font-family: Arial, Helvetica, sans-serif;
 }
 
 
-/* =====================================================
-   GAME
-===================================================== */
-
-#game {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-    background: #05070b;
-}
-
-
-/* =====================================================
-   FUTURISTIC BACKGROUND
-===================================================== */
+/* =========================================================
+   BACKGROUND GRID
+   ========================================================= */
 
 body::before {
     content: "";
@@ -53,594 +75,921 @@ body::before {
     position: fixed;
     inset: 0;
 
-    z-index: 1;
-
     pointer-events: none;
 
     background-image:
         linear-gradient(
-            rgba(109, 231, 255, 0.035) 1px,
+            rgba(85, 230, 255, 0.035) 1px,
             transparent 1px
         ),
         linear-gradient(
             90deg,
-            rgba(109, 231, 255, 0.035) 1px,
+            rgba(85, 230, 255, 0.035) 1px,
             transparent 1px
         );
 
-    background-size: 50px 50px;
+    background-size: 45px 45px;
+
+    opacity: 0.55;
+
+    z-index: 1;
 }
+
+
+/* =========================================================
+   SCANLINES
+   ========================================================= */
 
 body::after {
     content: "";
 
     position: fixed;
-
-    left: 0;
-    top: -10px;
-
-    width: 100%;
-    height: 1px;
-
-    z-index: 50;
+    inset: 0;
 
     pointer-events: none;
 
     background:
+        repeating-linear-gradient(
+            to bottom,
+            transparent 0,
+            transparent 3px,
+            rgba(255,255,255,0.018) 4px
+        );
+
+    z-index: 100;
+}
+
+
+/* =========================================================
+   GAME CANVAS
+   ========================================================= */
+
+#game {
+    position: fixed;
+
+    left: 0;
+    top: 0;
+
+    width: 100%;
+    height: 100%;
+
+    display: block;
+
+    z-index: 0;
+}
+
+
+/* =========================================================
+   TOP NAVIGATION
+   ========================================================= */
+
+.topNav {
+    position: fixed;
+
+    left: 0;
+    right: 0;
+    top: 0;
+
+    height: 78px;
+
+    display: flex;
+    align-items: center;
+
+    padding: 0 34px;
+
+    background:
         linear-gradient(
-            90deg,
-            transparent,
-            rgba(109, 231, 255, 0.35),
+            180deg,
+            rgba(4, 10, 15, 0.98),
+            rgba(5, 11, 17, 0.88)
+        );
+
+    border-bottom: 1px solid var(--border);
+
+    z-index: 50;
+
+    backdrop-filter: blur(12px);
+}
+
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+.navBrand {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    min-width: 250px;
+}
+
+.brandIcon {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border: 1px solid var(--borderStrong);
+
+    color: var(--cyan);
+
+    font-size: 20px;
+    font-weight: 900;
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(85,230,255,0.12),
             transparent
         );
 
-    animation: scan 7s linear infinite;
+    box-shadow:
+        inset 0 0 18px rgba(85,230,255,0.05);
 }
 
-@keyframes scan {
-    from {
-        transform: translateY(-20px);
-    }
+.brandName {
+    color: var(--white);
 
-    to {
-        transform: translateY(100vh);
-    }
+    font-size: 19px;
+    font-weight: 900;
+
+    letter-spacing: 4px;
+}
+
+.brandSub {
+    margin-top: 3px;
+
+    color: var(--cyan);
+
+    font-size: 8px;
+    font-weight: 700;
+
+    letter-spacing: 2px;
 }
 
 
-/* =====================================================
-   HOME PAGE
-===================================================== */
+/* =========================================================
+   NAV LINKS
+   ========================================================= */
+
+.navLinks {
+    display: flex;
+    align-items: stretch;
+
+    height: 100%;
+
+    gap: 4px;
+}
+
+.navLink {
+    position: relative;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 105px;
+
+    padding: 0 18px;
+
+    border: 0;
+    background: transparent;
+
+    color: #8498a2;
+
+    text-decoration: none;
+
+    font-size: 11px;
+    font-weight: 900;
+
+    letter-spacing: 2px;
+
+    cursor: pointer;
+
+    transition:
+        color 0.2s ease,
+        background 0.2s ease;
+}
+
+.navLink:hover {
+    color: var(--white);
+
+    background:
+        rgba(85, 230, 255, 0.055);
+}
+
+.navLink.active {
+    color: var(--cyan);
+}
+
+.navLink.active::after {
+    content: "";
+
+    position: absolute;
+
+    left: 18px;
+    right: 18px;
+    bottom: 0;
+
+    height: 2px;
+
+    background: var(--cyan);
+
+    box-shadow:
+        0 0 12px rgba(85,230,255,0.7);
+}
+
+.navButton {
+    font-family: inherit;
+}
+
+
+/* =========================================================
+   SYSTEM STATUS
+   ========================================================= */
+
+.navStatus {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+
+    gap: 8px;
+
+    color: #6e858e;
+
+    font-size: 9px;
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+}
+
+.statusDot {
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #53e8b0;
+
+    box-shadow:
+        0 0 10px rgba(83,232,176,0.8);
+}
+
+
+/* =========================================================
+   START MENU
+   ========================================================= */
 
 #menu {
     position: fixed;
 
     inset: 0;
 
-    z-index: 10;
-
     display: flex;
-
     align-items: center;
     justify-content: center;
 
-    overflow-y: auto;
-
-    padding: 30px 20px;
+    padding: 120px 35px 35px;
 
     background:
         radial-gradient(
-            circle at 50% 0%,
-            rgba(45, 110, 135, 0.18),
-            transparent 40%
+            circle at 50% 48%,
+            rgba(12, 63, 79, 0.20),
+            transparent 55%
         ),
-        rgba(3, 6, 10, 0.9);
+        rgba(2, 6, 9, 0.66);
 
-    backdrop-filter: blur(5px);
+    z-index: 20;
+
+    overflow: auto;
 }
 
 
-/* =====================================================
+/* =========================================================
    MAIN TERMINAL
-===================================================== */
+   ========================================================= */
 
-.menuBox {
-    position: relative;
+.menuTerminal {
+    width: min(1180px, 100%);
 
-    width: min(1100px, 100%);
-
-    min-height: 620px;
+    min-height: 610px;
 
     display: grid;
 
     grid-template-columns:
-        1.25fr
-        0.75fr;
+        minmax(0, 1.3fr)
+        minmax(360px, 0.7fr);
 
     background:
         linear-gradient(
-            145deg,
-            rgba(13, 20, 29, 0.98),
-            rgba(5, 9, 14, 0.98)
+            135deg,
+            rgba(8,17,24,0.97),
+            rgba(4,10,15,0.98)
         );
 
-    border: 1px solid var(--border);
+    border: 1px solid var(--borderStrong);
 
     box-shadow:
-        0 30px 80px rgba(0, 0, 0, 0.65),
-        0 0 50px rgba(109, 231, 255, 0.04);
+        0 0 50px rgba(0,0,0,0.65),
+        inset 0 0 40px rgba(85,230,255,0.025);
+
+    position: relative;
 
     overflow: hidden;
 }
 
 
-/* =====================================================
-   LEFT SIDE
-===================================================== */
+/* Corner decorations */
 
-.menuBox::before {
+.menuTerminal::before,
+.menuTerminal::after {
     content: "";
 
     position: absolute;
 
-    left: 0;
-    top: 0;
+    width: 24px;
+    height: 24px;
 
-    width: 3px;
-    height: 100%;
+    pointer-events: none;
+}
+
+.menuTerminal::before {
+    top: -1px;
+    left: -1px;
+
+    border-top: 3px solid var(--cyan);
+    border-left: 3px solid var(--cyan);
+}
+
+.menuTerminal::after {
+    bottom: -1px;
+    right: -1px;
+
+    border-bottom: 3px solid var(--cyan);
+    border-right: 3px solid var(--cyan);
+}
+
+
+/* =========================================================
+   LEFT HERO
+   ========================================================= */
+
+.menuHero {
+    position: relative;
+
+    display: flex;
+    flex-direction: column;
+
+    min-width: 0;
+
+    border-right: 1px solid var(--border);
 
     background:
-        linear-gradient(
-            to bottom,
-            transparent,
-            var(--accent),
-            transparent
+        radial-gradient(
+            circle at 30% 40%,
+            rgba(37,139,164,0.12),
+            transparent 45%
         );
-
-    opacity: 0.8;
 }
 
+.heroTopLine {
+    display: flex;
+    justify-content: space-between;
 
-.menuBox::after {
-    content: "";
+    padding: 20px 28px;
 
-    position: absolute;
+    border-bottom: 1px solid var(--border);
 
-    right: 0;
-    top: 0;
+    color: #647984;
 
-    width: 1px;
-    height: 100%;
+    font-size: 9px;
+    font-weight: 800;
+
+    letter-spacing: 2px;
+}
+
+.heroContent {
+    padding: 65px 55px;
+
+    flex: 1;
+}
+
+.signalTag {
+    display: inline-block;
+
+    margin-bottom: 25px;
+
+    padding: 8px 12px;
+
+    border: 1px solid rgba(85,230,255,0.35);
 
     background:
-        linear-gradient(
-            to bottom,
-            transparent,
-            rgba(109, 231, 255, 0.35),
-            transparent
-        );
-}
+        rgba(85,230,255,0.055);
 
+    color: var(--cyan);
 
-/* =====================================================
-   BRAND / TITLE
-===================================================== */
-
-.smallLogo {
-    position: absolute;
-
-    top: 25px;
-    left: 30px;
-
-    color: var(--accent);
-
-    font-size: 10px;
-
+    font-size: 9px;
     font-weight: 900;
 
-    letter-spacing: 4px;
+    letter-spacing: 2px;
 }
 
+.heroContent h1 {
+    margin: 0;
 
-.menuBox h1 {
-    grid-column: 1;
+    color: var(--white);
 
-    align-self: center;
+    font-size: clamp(50px, 7vw, 88px);
 
-    padding:
-        100px
-        55px
-        0;
+    line-height: 0.9;
 
-    font-size:
-        clamp(48px, 7vw, 90px);
-
-    line-height: 0.84;
-
-    letter-spacing: -5px;
+    letter-spacing: -3px;
 
     font-weight: 900;
-
-    max-width: 650px;
 }
 
+.heroContent h1 span {
+    color: var(--cyan);
 
-/* =====================================================
-   DESCRIPTION
-===================================================== */
+    text-shadow:
+        0 0 25px rgba(85,230,255,0.2);
+}
 
-.menuDescription {
-    grid-column: 1;
+.heroDescription {
+    max-width: 440px;
 
-    align-self: start;
+    margin: 30px 0 0;
 
-    padding:
-        25px
-        55px
-        50px;
+    color: #81939c;
 
-    color: var(--muted);
-
-    font-size: 13px;
+    font-size: 14px;
 
     line-height: 1.8;
+
+    letter-spacing: 0.5px;
+}
+
+
+/* =========================================================
+   MISSION INFO
+   ========================================================= */
+
+.missionInfo {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 10px;
+
+    max-width: 600px;
+
+    margin-top: 45px;
+}
+
+.infoItem {
+    padding: 15px;
+
+    border: 1px solid rgba(85,230,255,0.15);
+
+    background:
+        rgba(255,255,255,0.015);
+}
+
+.infoItem span {
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #62747e;
+
+    font-size: 8px;
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+}
+
+.infoItem strong {
+    color: #cce8ef;
+
+    font-size: 10px;
 
     letter-spacing: 1px;
 }
 
 
-/* =====================================================
-   RIGHT SIDE MENU
-===================================================== */
+/* =========================================================
+   HERO FOOTER
+   ========================================================= */
 
-.menuButtons {
-    grid-column: 2;
+.heroFooter {
+    display: flex;
+    justify-content: space-between;
 
-    grid-row: 1 / span 2;
+    padding: 17px 28px;
 
-    align-self: center;
+    border-top: 1px solid var(--border);
 
-    padding:
-        90px
-        45px
-        50px
-        35px;
+    color: #50636c;
 
-    border-left: 1px solid var(--border);
+    font-size: 8px;
+    font-weight: 800;
+
+    letter-spacing: 1.5px;
+}
+
+
+/* =========================================================
+   RIGHT MENU PANEL
+   ========================================================= */
+
+.menuPanel {
+    display: flex;
+    flex-direction: column;
 
     background:
         linear-gradient(
             180deg,
-            rgba(255, 255, 255, 0.015),
-            transparent
+            rgba(10,20,28,0.92),
+            rgba(4,10,15,0.98)
         );
 }
 
+.panelHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 
-/* =====================================================
-   BUTTONS
-===================================================== */
+    padding: 25px 25px 20px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.panelSmall {
+    color: #617780;
+
+    font-size: 8px;
+    font-weight: 900;
+
+    letter-spacing: 2px;
+}
+
+.panelHeader h2 {
+    margin: 5px 0 0;
+
+    color: var(--white);
+
+    font-size: 19px;
+
+    letter-spacing: 2px;
+}
+
+.panelCode {
+    color: var(--cyan);
+
+    font-size: 9px;
+    font-weight: 900;
+
+    letter-spacing: 2px;
+}
+
+
+/* =========================================================
+   MENU BUTTONS
+   ========================================================= */
+
+.menuButtons {
+    display: flex;
+    flex-direction: column;
+
+    gap: 8px;
+
+    padding: 18px;
+
+    flex: 1;
+}
 
 .menuButton {
     position: relative;
 
-    width: 100%;
-
-    min-height: 54px;
-
-    margin-bottom: 10px;
+    min-height: 70px;
 
     display: flex;
-
     align-items: center;
-    justify-content: center;
+
+    width: 100%;
+
+    padding: 10px 14px;
+
+    border: 1px solid rgba(85,230,255,0.17);
 
     background:
         linear-gradient(
             90deg,
-            rgba(255, 255, 255, 0.015),
-            rgba(255, 255, 255, 0.04),
-            rgba(255, 255, 255, 0.015)
+            rgba(255,255,255,0.025),
+            rgba(255,255,255,0.008)
         );
 
-    color: var(--text);
-
-    border: 1px solid var(--border);
-
-    font-family: inherit;
-
-    font-size: 10px;
-
-    font-weight: 800;
-
-    letter-spacing: 3px;
+    color: var(--white);
 
     text-decoration: none;
 
     cursor: pointer;
 
+    font-family: inherit;
+
+    text-align: left;
+
     transition:
-        0.2s ease;
+        transform 0.18s ease,
+        border-color 0.18s ease,
+        background 0.18s ease;
 }
-
-
-.menuButton::before {
-    content: "";
-
-    position: absolute;
-
-    left: 0;
-    top: 0;
-
-    width: 3px;
-    height: 100%;
-
-    background: transparent;
-
-    transition: 0.2s;
-}
-
 
 .menuButton:hover {
-    color: var(--accent);
+    transform: translateX(4px);
 
     border-color:
-        rgba(109, 231, 255, 0.55);
+        rgba(85,230,255,0.55);
 
     background:
-        rgba(109, 231, 255, 0.06);
-
-    transform: translateX(3px);
+        linear-gradient(
+            90deg,
+            rgba(85,230,255,0.10),
+            rgba(85,230,255,0.025)
+        );
 }
-
-
-.menuButton:hover::before {
-    background: var(--accent);
-}
-
-
-/* NEW RUN */
 
 .menuButton.main {
-    color: #031016;
+    border-color: var(--cyan);
 
     background:
         linear-gradient(
             90deg,
-            #50cce5,
-            #6de7ff,
-            #50cce5
+            rgba(85,230,255,0.14),
+            rgba(85,230,255,0.035)
         );
-
-    border-color: var(--accent);
-
-    box-shadow:
-        0 0 25px rgba(109, 231, 255, 0.1);
 }
-
 
 .menuButton.main:hover {
-    color: #031016;
-
-    background: #8aefff;
-
     box-shadow:
-        0 0 35px rgba(109, 231, 255, 0.2);
+        inset 4px 0 0 var(--cyan),
+        0 0 18px rgba(85,230,255,0.08);
 }
 
+.buttonNumber {
+    width: 35px;
 
-/* SHOP */
+    color: #55717c;
 
-.shopButton {
-    color: var(--accent);
+    font-size: 9px;
+    font-weight: 900;
 
-    border-color:
-        rgba(109, 231, 255, 0.45);
-
-    background:
-        linear-gradient(
-            90deg,
-            rgba(109, 231, 255, 0.03),
-            rgba(109, 231, 255, 0.1),
-            rgba(109, 231, 255, 0.03)
-        );
+    letter-spacing: 1px;
 }
 
-
-.shopButton:hover {
-    color: #031016;
-
-    background: var(--accent);
-
-    border-color: var(--accent);
-
-    box-shadow:
-        0 0 25px rgba(109, 231, 255, 0.2);
+.main .buttonNumber {
+    color: var(--cyan);
 }
 
+.buttonText {
+    display: flex;
+    flex-direction: column;
 
-/* =====================================================
-   SAVE STATUS
-===================================================== */
+    gap: 5px;
 
-#saveStatus {
-    position: absolute;
+    flex: 1;
+}
 
-    left: 55px;
-    bottom: 25px;
+.buttonText strong {
+    color: #dff8ff;
 
-    color: #53616e;
+    font-size: 11px;
+    font-weight: 900;
+
+    letter-spacing: 1.5px;
+}
+
+.buttonText small {
+    color: #61757f;
 
     font-size: 8px;
 
-    letter-spacing: 3px;
+    letter-spacing: 1px;
 }
 
+.buttonArrow {
+    color: #56747f;
 
-/* =====================================================
-   TERMINAL DETAILS
-===================================================== */
-
-.menuBox h1::after {
-    content: " // LOST SIGNAL";
-
-    display: block;
-
-    margin-top: 18px;
-
-    color: var(--accent);
-
-    font-size: 10px;
+    font-size: 24px;
 
     line-height: 1;
+}
 
-    letter-spacing: 5px;
-
-    font-weight: 400;
+.menuButton:hover .buttonArrow,
+.menuButton.main .buttonArrow {
+    color: var(--cyan);
 }
 
 
-/* =====================================================
+/* =========================================================
+   SHOP BUTTON
+   ========================================================= */
+
+.shopButton {
+    border-color:
+        rgba(85,230,255,0.32);
+}
+
+
+/* =========================================================
+   PANEL FOOTER
+   ========================================================= */
+
+.panelFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 16px 20px;
+
+    border-top: 1px solid var(--border);
+
+    color: #526872;
+
+    font-size: 8px;
+    font-weight: 800;
+
+    letter-spacing: 1.3px;
+}
+
+.saveIndicator {
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+}
+
+.saveDot {
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+
+    background: var(--cyan);
+
+    box-shadow:
+        0 0 8px rgba(85,230,255,0.8);
+}
+
+
+/* =========================================================
    HUD
-===================================================== */
+   ========================================================= */
 
 #hud {
     position: fixed;
 
     inset: 0;
 
-    z-index: 5;
+    pointer-events: none;
+
+    z-index: 10;
 
     display: none;
-
-    pointer-events: none;
 }
-
 
 .topLeft {
     position: absolute;
 
-    top: 25px;
+    top: 100px;
     left: 25px;
 
     width: 230px;
-}
 
+    padding: 15px;
+
+    background:
+        rgba(4,10,15,0.72);
+
+    border-left: 2px solid var(--cyan);
+
+    backdrop-filter: blur(8px);
+}
 
 .hudTitle {
-    margin-bottom: 15px;
+    margin-bottom: 12px;
 
-    color: var(--accent);
+    color: var(--cyan);
 
     font-size: 12px;
-
     font-weight: 900;
 
-    letter-spacing: 4px;
+    letter-spacing: 3px;
 }
-
 
 .statLabel {
-    margin-top: 9px;
-    margin-bottom: 5px;
+    margin-top: 8px;
+    margin-bottom: 4px;
 
-    color: #8795a3;
+    color: #7e969f;
 
     font-size: 8px;
+    font-weight: 900;
 
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
 }
-
 
 .bar {
     width: 100%;
     height: 7px;
 
-    background:
-        rgba(255, 255, 255, 0.06);
+    background: rgba(255,255,255,0.08);
 
-    border:
-        1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255,255,255,0.06);
 }
-
 
 .healthBar {
     width: 100%;
     height: 100%;
 
-    background: var(--red);
+    background: var(--cyan);
 
     box-shadow:
-        0 0 10px rgba(255, 104, 120, 0.35);
+        0 0 10px rgba(85,230,255,0.35);
 }
-
 
 .energyBar {
     width: 100%;
     height: 100%;
 
-    background: var(--accent);
-
-    box-shadow:
-        0 0 10px rgba(109, 231, 255, 0.3);
+    background: #7a9cff;
 }
 
+
+/* =========================================================
+   OBJECTIVE
+   ========================================================= */
 
 #objective {
     position: absolute;
 
-    top: 30px;
+    top: 105px;
     left: 50%;
 
     transform: translateX(-50%);
 
-    padding-bottom: 8px;
+    padding: 10px 18px;
 
-    color: var(--text);
+    border: 1px solid var(--border);
 
-    font-size: 11px;
+    background:
+        rgba(4,10,15,0.75);
 
-    font-weight: 800;
+    color: var(--cyan);
 
-    letter-spacing: 3px;
+    font-size: 10px;
+    font-weight: 900;
 
-    border-bottom:
-        1px solid rgba(109, 231, 255, 0.4);
+    letter-spacing: 2px;
 }
 
+
+/* =========================================================
+   TOP RIGHT
+   ========================================================= */
 
 .topRight {
     position: absolute;
 
-    top: 25px;
+    top: 100px;
     right: 25px;
 
     text-align: right;
-}
 
-
-#zone {
-    color: var(--accent);
-
-    font-size: 10px;
-
-    font-weight: bold;
-
-    letter-spacing: 2px;
-}
-
-
-#kills,
-#credits {
-    margin-top: 6px;
-
-    color: var(--muted);
+    color: #8ba1aa;
 
     font-size: 9px;
+    font-weight: 900;
 
-    letter-spacing: 2px;
+    line-height: 2;
+
+    letter-spacing: 1.5px;
 }
 
+#zone {
+    color: var(--cyan);
+}
+
+
+/* =========================================================
+   BOTTOM LEFT
+   ========================================================= */
 
 .bottomLeft {
     position: absolute;
@@ -648,370 +997,455 @@ body::after {
     left: 25px;
     bottom: 25px;
 
-    color: #73818f;
+    padding: 10px 14px;
 
-    font-size: 9px;
+    border: 1px solid var(--border);
+
+    background:
+        rgba(4,10,15,0.7);
+
+    color: #78909a;
+
+    font-size: 8px;
+    font-weight: 800;
 
     letter-spacing: 1px;
 }
 
 
+/* =========================================================
+   WEAPON
+   ========================================================= */
+
 .weapon {
     position: absolute;
 
     right: 25px;
-    bottom: 22px;
+    bottom: 25px;
+
+    min-width: 150px;
+
+    padding: 14px 18px;
+
+    border-right: 2px solid var(--cyan);
+
+    background:
+        rgba(4,10,15,0.72);
 
     text-align: right;
 }
 
-
 .weaponName {
-    color: var(--accent);
+    color: var(--cyan);
 
-    font-size: 11px;
-
+    font-size: 12px;
     font-weight: 900;
 
-    letter-spacing: 3px;
+    letter-spacing: 2px;
 }
-
 
 #ammo {
     margin-top: 5px;
 
-    color: var(--text);
+    color: var(--white);
 
     font-size: 18px;
-
     font-weight: 900;
 }
 
 
-/* =====================================================
+/* =========================================================
    PAUSE
-===================================================== */
+   ========================================================= */
 
 #pause {
     position: fixed;
 
     inset: 0;
 
-    z-index: 20;
-
     display: none;
-
     align-items: center;
     justify-content: center;
 
     background:
-        rgba(3, 6, 10, 0.9);
+        rgba(2,5,8,0.78);
 
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(8px);
+
+    z-index: 80;
 }
-
 
 .pauseBox {
-    width: min(500px, calc(100% - 30px));
+    width: min(430px, calc(100% - 40px));
 
-    padding: 40px;
+    padding: 30px;
 
     background:
-        linear-gradient(
-            145deg,
-            #0d141d,
-            #060a0f
-        );
+        rgba(7,15,22,0.97);
 
-    border: 1px solid
-        rgba(109, 231, 255, 0.35);
+    border: 1px solid var(--borderStrong);
 
     box-shadow:
-        0 30px 70px rgba(0, 0, 0, 0.6);
-
-    text-align: center;
+        0 0 45px rgba(0,0,0,0.6);
 }
-
 
 .pauseSmall {
-    color: var(--accent);
+    color: var(--cyan);
 
     font-size: 9px;
-
-    letter-spacing: 4px;
-
-    margin-bottom: 15px;
-}
-
-
-.pauseBox h2 {
-    margin-bottom: 25px;
-
-    font-size: 38px;
+    font-weight: 900;
 
     letter-spacing: 3px;
 }
 
+.pauseBox h2 {
+    margin: 8px 0 25px;
+
+    font-size: 35px;
+
+    letter-spacing: 2px;
+}
 
 .pauseBox .menuButton {
     margin-top: 8px;
 }
 
 
-/* =====================================================
+/* =========================================================
    ACHIEVEMENT
-===================================================== */
+   ========================================================= */
 
 #achievement {
     position: fixed;
 
-    top: 25px;
+    top: 100px;
     right: 25px;
 
-    z-index: 100;
+    min-width: 280px;
 
-    width: 310px;
-
-    padding: 18px 20px;
+    padding: 18px;
 
     display: none;
 
     background:
-        linear-gradient(
-            135deg,
-            #0c181f,
-            #050b10
-        );
+        rgba(6,15,21,0.96);
 
-    border: 1px solid var(--accent);
+    border: 1px solid var(--cyan);
 
     box-shadow:
-        0 0 35px rgba(109, 231, 255, 0.12);
+        0 0 25px rgba(85,230,255,0.15);
+
+    z-index: 90;
 }
 
-
 .achievementTop {
-    color: var(--accent);
+    color: var(--cyan);
 
     font-size: 8px;
-
-    font-weight: bold;
+    font-weight: 900;
 
     letter-spacing: 2px;
 }
 
-
 #achievementName {
     margin-top: 8px;
 
-    font-size: 16px;
+    color: var(--white);
 
+    font-size: 15px;
     font-weight: 900;
 
     letter-spacing: 1px;
 }
 
 
-/* =====================================================
+/* =========================================================
    MAP
-===================================================== */
+   ========================================================= */
 
 #map {
     position: fixed;
 
     inset: 0;
 
-    z-index: 30;
-
     display: none;
-
     align-items: center;
     justify-content: center;
 
-    background:
-        rgba(3, 6, 10, 0.92);
+    padding: 30px;
 
-    backdrop-filter: blur(6px);
+    background:
+        rgba(1,5,8,0.82);
+
+    backdrop-filter: blur(7px);
+
+    z-index: 85;
 }
 
-
 .mapBox {
-    width: min(850px, calc(100% - 35px));
+    width: min(900px, 100%);
 
     padding: 20px;
 
-    background: #080d13;
+    background:
+        rgba(6,14,20,0.97);
 
-    border:
-        1px solid rgba(109, 231, 255, 0.35);
+    border: 1px solid var(--borderStrong);
+
+    box-shadow:
+        0 0 45px rgba(0,0,0,0.65);
 }
-
 
 .mapHeader {
     display: flex;
-
-    align-items: center;
     justify-content: space-between;
+    align-items: center;
 
     margin-bottom: 15px;
 }
 
-
 .mapHeader h2 {
-    font-size: 16px;
+    margin: 0;
 
-    letter-spacing: 3px;
+    color: var(--cyan);
+
+    font-size: 18px;
+
+    letter-spacing: 2px;
 }
 
-
 #closeMap {
-    min-height: 36px;
-
-    padding: 0 15px;
-
-    background: transparent;
-
-    color: var(--muted);
+    padding: 8px 14px;
 
     border: 1px solid var(--border);
 
-    cursor: pointer;
-}
+    background: transparent;
 
+    color: #90a9b3;
+
+    cursor: pointer;
+
+    font-weight: 800;
+
+    letter-spacing: 1px;
+}
 
 #closeMap:hover {
-    color: var(--accent);
+    border-color: var(--cyan);
 
-    border-color: var(--accent);
+    color: var(--cyan);
 }
-
 
 #mapCanvas {
     width: 100%;
 
     display: block;
 
-    background: #030609;
+    background:
+        #03080c;
 
-    border: 1px solid var(--border);
+    border: 1px solid rgba(85,230,255,0.15);
 }
 
 
-/* =====================================================
-   MOBILE
-===================================================== */
+/* =========================================================
+   BUTTON FOCUS
+   ========================================================= */
 
-@media (max-width: 800px) {
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--cyan);
 
-    #menu {
-        align-items: flex-start;
+    outline-offset: 3px;
+}
 
-        padding-top: 20px;
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+    body {
+        overflow: auto;
     }
 
+    .topNav {
+        position: absolute;
 
-    .menuBox {
-        min-height: auto;
+        height: auto;
 
-        grid-template-columns: 1fr;
+        min-height: 70px;
+
+        flex-wrap: wrap;
+
+        padding: 12px 16px;
+
+        gap: 10px;
     }
 
-
-    .menuBox h1 {
-        grid-column: 1;
-
-        padding:
-            90px
-            30px
-            20px;
-
-        font-size: 55px;
+    .navBrand {
+        min-width: auto;
     }
 
-
-    .menuDescription {
-        grid-column: 1;
-
-        padding:
-            0
-            30px
-            30px;
+    .brandName {
+        font-size: 15px;
     }
 
-
-    .menuButtons {
-        grid-column: 1;
-        grid-row: auto;
-
-        padding:
-            25px
-            30px
-            60px;
-
-        border-left: 0;
-
-        border-top: 1px solid var(--border);
-    }
-
-
-    #saveStatus {
-        left: 30px;
-        bottom: 20px;
-    }
-
-
-    .topLeft {
-        left: 15px;
-        top: 15px;
-
-        width: 170px;
-    }
-
-
-    .topRight {
-        right: 15px;
-        top: 15px;
-    }
-
-
-    .bottomLeft {
-        left: 15px;
-        bottom: 15px;
-
+    .brandSub {
         font-size: 7px;
     }
 
+    .navLinks {
+        order: 3;
+
+        width: 100%;
+
+        height: 48px;
+
+        overflow-x: auto;
+    }
+
+    .navLink {
+        min-width: 90px;
+
+        padding: 0 10px;
+    }
+
+    .navStatus {
+        margin-left: auto;
+    }
+
+    #menu {
+        position: absolute;
+
+        padding:
+            145px 16px 25px;
+    }
+
+    .menuTerminal {
+        grid-template-columns: 1fr;
+
+        min-height: auto;
+    }
+
+    .menuHero {
+        border-right: 0;
+
+        border-bottom: 1px solid var(--border);
+    }
+
+    .heroContent {
+        padding: 45px 30px;
+    }
+
+    .heroContent h1 {
+        font-size: 58px;
+    }
+
+    .menuPanel {
+        min-height: 500px;
+    }
+
+    .topLeft {
+        top: 125px;
+        left: 15px;
+    }
+
+    .topRight {
+        top: 125px;
+        right: 15px;
+    }
+}
+
+
+@media (max-width: 600px) {
+
+    .navStatus {
+        display: none;
+    }
+
+    .brandIcon {
+        width: 34px;
+        height: 34px;
+    }
+
+    .brandName {
+        font-size: 13px;
+
+        letter-spacing: 2px;
+    }
+
+    .heroContent {
+        padding: 35px 22px;
+    }
+
+    .heroContent h1 {
+        font-size: 46px;
+
+        letter-spacing: -2px;
+    }
+
+    .heroDescription {
+        font-size: 12px;
+    }
+
+    .missionInfo {
+        grid-template-columns: 1fr;
+    }
+
+    .heroFooter {
+        gap: 10px;
+
+        flex-direction: column;
+    }
+
+    .panelHeader {
+        padding: 20px;
+    }
+
+    .menuButtons {
+        padding: 12px;
+    }
+
+    .menuButton {
+        min-height: 64px;
+    }
+
+    .buttonText strong {
+        font-size: 10px;
+    }
+
+    .topLeft {
+        width: 170px;
+    }
+
+    #objective {
+        display: none;
+    }
+
+    .bottomLeft {
+        display: none;
+    }
 
     .weapon {
         right: 15px;
         bottom: 15px;
     }
-
-
-    #objective {
-        top: 105px;
-
-        font-size: 8px;
-    }
 }
 
 
-@media (max-width: 450px) {
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
 
-    .menuBox h1 {
-        font-size: 40px;
+@media (prefers-reduced-motion: reduce) {
 
-        letter-spacing: -2px;
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+        animation: none !important;
     }
-
-
-    .menuDescription {
-        font-size: 10px;
-    }
-
-
-    .menuButton {
-        min-height: 48px;
-    }
-
 }
