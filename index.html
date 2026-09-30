@@ -11,83 +11,244 @@
 
 <body>
 
-    <!-- GAME -->
+    <!-- =========================================
+         GAME CANVAS
+    ========================================== -->
     <canvas id="game"></canvas>
 
 
-    <!-- MAIN MENU -->
+    <!-- =========================================
+         TOP NAVIGATION
+    ========================================== -->
+    <header class="topNav">
+
+        <div class="navBrand">
+            <div class="brandIcon">E</div>
+
+            <div>
+                <div class="brandName">ECHOBOUND</div>
+                <div class="brandSub">THE LOST SIGNAL</div>
+            </div>
+        </div>
+
+        <nav class="navLinks">
+
+            <a href="index.html" class="navLink active">
+                GAME
+            </a>
+
+            <a href="shop.html" class="navLink">
+                SHOP
+            </a>
+
+            <a href="shop.html#inventory" class="navLink">
+                INVENTORY
+            </a>
+
+            <button
+                id="achievementsButton"
+                class="navLink navButton"
+                type="button">
+                ACHIEVEMENTS
+            </button>
+
+        </nav>
+
+        <div class="navStatus">
+            <span class="statusDot"></span>
+            SYSTEM ONLINE
+        </div>
+
+    </header>
+
+
+    <!-- =========================================
+         START MENU
+    ========================================== -->
     <div id="menu">
 
-        <div class="menuBox">
+        <div class="menuTerminal">
 
-            <div class="smallLogo">
-                ECHOBOUND
-            </div>
+            <!-- LEFT SIDE -->
+            <section class="menuHero">
 
-            <h1>
-                THE LOST SIGNAL
-            </h1>
+                <div class="heroTopLine">
+                    <span>MISSION CONTROL</span>
+                    <span>SECTOR 07</span>
+                </div>
 
-            <p class="menuDescription">
-                Explore the unknown.<br>
-                Find the signal. Survive the echoes.
-            </p>
+                <div class="heroContent">
 
+                    <div class="signalTag">
+                        ◉ SIGNAL DETECTED
+                    </div>
 
-            <div class="menuButtons">
+                    <h1>
+                        THE LOST<br>
+                        <span>SIGNAL</span>
+                    </h1>
 
-                <button
-                    id="newGame"
-                    class="menuButton main"
-                    type="button">
-                    NEW RUN
-                </button>
+                    <p class="heroDescription">
+                        Explore the unknown.
+                        Find the signal.
+                        Survive the echoes.
+                    </p>
 
+                    <div class="missionInfo">
 
-                <button
-                    id="loadGame"
-                    class="menuButton"
-                    type="button">
-                    CONTINUE
-                </button>
+                        <div class="infoItem">
+                            <span>MISSION</span>
+                            <strong>LOST SIGNAL</strong>
+                        </div>
 
+                        <div class="infoItem">
+                            <span>THREAT</span>
+                            <strong>UNKNOWN</strong>
+                        </div>
 
-                <button
-                    id="achievementsButton"
-                    class="menuButton"
-                    type="button">
-                    ACHIEVEMENTS
-                </button>
+                        <div class="infoItem">
+                            <span>SECTOR</span>
+                            <strong>07-A</strong>
+                        </div>
 
+                    </div>
 
-                <button
-                    id="controlsButton"
-                    class="menuButton"
-                    type="button">
-                    CONTROLS
-                </button>
+                </div>
 
+                <div class="heroFooter">
+                    <span>ECHOBound NETWORK</span>
+                    <span>LOCAL SAVE SYSTEM</span>
+                </div>
 
-                <!-- SHOP -->
-                <a
-                    href="shop.html"
-                    class="menuButton shopButton">
-                    SHOP
-                </a>
-
-            </div>
+            </section>
 
 
-            <div id="saveStatus">
-                SAVE DATA: LOCAL
-            </div>
+            <!-- RIGHT SIDE -->
+            <section class="menuPanel">
+
+                <div class="panelHeader">
+                    <div>
+                        <span class="panelSmall">COMMAND</span>
+                        <h2>MAIN MENU</h2>
+                    </div>
+
+                    <div class="panelCode">
+                        EB-07
+                    </div>
+                </div>
+
+
+                <div class="menuButtons">
+
+                    <button
+                        id="newGame"
+                        class="menuButton main"
+                        type="button">
+
+                        <span class="buttonNumber">01</span>
+
+                        <span class="buttonText">
+                            <strong>NEW RUN</strong>
+                            <small>START A NEW EXPEDITION</small>
+                        </span>
+
+                        <span class="buttonArrow">›</span>
+
+                    </button>
+
+
+                    <button
+                        id="loadGame"
+                        class="menuButton"
+                        type="button">
+
+                        <span class="buttonNumber">02</span>
+
+                        <span class="buttonText">
+                            <strong>CONTINUE</strong>
+                            <small>RESUME SAVED RUN</small>
+                        </span>
+
+                        <span class="buttonArrow">›</span>
+
+                    </button>
+
+
+                    <button
+                        id="achievementsButton2"
+                        class="menuButton"
+                        type="button">
+
+                        <span class="buttonNumber">03</span>
+
+                        <span class="buttonText">
+                            <strong>ACHIEVEMENTS</strong>
+                            <small>VIEW UNLOCKED RECORDS</small>
+                        </span>
+
+                        <span class="buttonArrow">›</span>
+
+                    </button>
+
+
+                    <button
+                        id="controlsButton"
+                        class="menuButton"
+                        type="button">
+
+                        <span class="buttonNumber">04</span>
+
+                        <span class="buttonText">
+                            <strong>CONTROLS</strong>
+                            <small>VIEW GAME CONTROLS</small>
+                        </span>
+
+                        <span class="buttonArrow">›</span>
+
+                    </button>
+
+
+                    <a
+                        href="shop.html"
+                        class="menuButton shopButton">
+
+                        <span class="buttonNumber">05</span>
+
+                        <span class="buttonText">
+                            <strong>SUPPLY SHOP</strong>
+                            <small>OPEN SUPPLY TERMINAL</small>
+                        </span>
+
+                        <span class="buttonArrow">›</span>
+
+                    </a>
+
+                </div>
+
+
+                <div class="panelFooter">
+
+                    <div class="saveIndicator">
+                        <span class="saveDot"></span>
+                        SAVE DATA: LOCAL
+                    </div>
+
+                    <div class="version">
+                        ECHOBOUND // 1.0
+                    </div>
+
+                </div>
+
+            </section>
 
         </div>
 
     </div>
 
 
-    <!-- HUD -->
+    <!-- =========================================
+         HUD
+    ========================================== -->
     <div id="hud">
 
         <div class="topLeft">
@@ -167,7 +328,9 @@
     </div>
 
 
-    <!-- PAUSE -->
+    <!-- =========================================
+         PAUSE MENU
+    ========================================== -->
     <div id="pause">
 
         <div class="pauseBox">
@@ -212,7 +375,9 @@
     </div>
 
 
-    <!-- ACHIEVEMENT -->
+    <!-- =========================================
+         ACHIEVEMENT NOTIFICATION
+    ========================================== -->
     <div id="achievement">
 
         <div class="achievementTop">
@@ -226,7 +391,9 @@
     </div>
 
 
-    <!-- MAP -->
+    <!-- =========================================
+         MAP
+    ========================================== -->
     <div id="map">
 
         <div class="mapBox">
@@ -250,6 +417,36 @@
         </div>
 
     </div>
+
+
+    <!-- =========================================
+         EXTRA ACHIEVEMENTS BUTTON CONNECTION
+    ========================================== -->
+    <script>
+
+        document.addEventListener("DOMContentLoaded", () => {
+
+            const mainAchievements =
+                document.getElementById("achievementsButton");
+
+            const secondAchievements =
+                document.getElementById("achievementsButton2");
+
+            if (
+                mainAchievements &&
+                secondAchievements
+            ) {
+                secondAchievements.addEventListener(
+                    "click",
+                    () => {
+                        mainAchievements.click();
+                    }
+                );
+            }
+
+        });
+
+    </script>
 
 
     <!-- GAME JAVASCRIPT -->
