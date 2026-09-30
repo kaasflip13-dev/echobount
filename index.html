@@ -11,46 +11,72 @@
 
 <body>
 
-    <!-- GAME CANVAS -->
+    <!-- GAME -->
     <canvas id="game"></canvas>
 
 
-    <!-- =========================
-         MAIN MENU
-    ========================== -->
-
+    <!-- MAIN MENU -->
     <div id="menu">
 
         <div class="menuBox">
 
-            <div class="smallLogo">ECHOBOUND</div>
+            <div class="smallLogo">
+                ECHOBOUND
+            </div>
 
-            <h1>THE LOST SIGNAL</h1>
+            <h1>
+                THE LOST SIGNAL
+            </h1>
 
             <p class="menuDescription">
                 Explore the unknown.<br>
                 Find the signal. Survive the echoes.
             </p>
 
+
             <div class="menuButtons">
 
-                <button id="newGame" class="menuButton main">
+                <button
+                    id="newGame"
+                    class="menuButton main"
+                    type="button">
                     NEW RUN
                 </button>
 
-                <button id="loadGame" class="menuButton">
+
+                <button
+                    id="loadGame"
+                    class="menuButton"
+                    type="button">
                     CONTINUE
                 </button>
 
-                <button id="achievementsButton" class="menuButton">
+
+                <button
+                    id="achievementsButton"
+                    class="menuButton"
+                    type="button">
                     ACHIEVEMENTS
                 </button>
 
-                <button id="controlsButton" class="menuButton">
+
+                <button
+                    id="controlsButton"
+                    class="menuButton"
+                    type="button">
                     CONTROLS
                 </button>
 
+
+                <!-- SHOP -->
+                <a
+                    href="shop.html"
+                    class="menuButton shopButton">
+                    SHOP
+                </a>
+
             </div>
+
 
             <div id="saveStatus">
                 SAVE DATA: LOCAL
@@ -61,10 +87,7 @@
     </div>
 
 
-    <!-- =========================
-         HUD
-    ========================== -->
-
+    <!-- HUD -->
     <div id="hud">
 
         <div class="topLeft">
@@ -78,7 +101,10 @@
             </div>
 
             <div class="bar">
-                <div id="healthBar" class="healthBar"></div>
+                <div
+                    id="healthBar"
+                    class="healthBar">
+                </div>
             </div>
 
             <div class="statLabel">
@@ -86,7 +112,10 @@
             </div>
 
             <div class="bar">
-                <div id="energyBar" class="energyBar"></div>
+                <div
+                    id="energyBar"
+                    class="energyBar">
+                </div>
             </div>
 
         </div>
@@ -115,8 +144,10 @@
 
 
         <div class="bottomLeft">
-            WASD MOVE &nbsp; • &nbsp;
-            MOUSE AIM &nbsp; • &nbsp;
+            WASD MOVE
+            &nbsp; • &nbsp;
+            MOUSE AIM
+            &nbsp; • &nbsp;
             SPACE DASH
         </div>
 
@@ -136,10 +167,7 @@
     </div>
 
 
-    <!-- =========================
-         PAUSE MENU
-    ========================== -->
-
+    <!-- PAUSE -->
     <div id="pause">
 
         <div class="pauseBox">
@@ -148,31 +176,43 @@
                 ECHOBOUND
             </div>
 
-            <h2>PAUSED</h2>
+            <h2>
+                PAUSED
+            </h2>
 
-            <button id="resume" class="menuButton main">
+            <button
+                id="resume"
+                class="menuButton main"
+                type="button">
                 RESUME
             </button>
 
-            <button id="save" class="menuButton">
+            <button
+                id="save"
+                class="menuButton"
+                type="button">
                 SAVE RUN
             </button>
 
-            <button id="quit" class="menuButton">
+            <button
+                id="quit"
+                class="menuButton"
+                type="button">
                 QUIT TO MENU
             </button>
 
-            <a href="shop.html" class="menuButton shopButton">SHOP</a>
+            <a
+                href="shop.html"
+                class="menuButton shopButton">
+                SHOP
+            </a>
 
         </div>
 
     </div>
 
 
-    <!-- =========================
-         ACHIEVEMENT POPUP
-    ========================== -->
-
+    <!-- ACHIEVEMENT -->
     <div id="achievement">
 
         <div class="achievementTop">
@@ -186,19 +226,20 @@
     </div>
 
 
-    <!-- =========================
-         MAP
-    ========================== -->
-
+    <!-- MAP -->
     <div id="map">
 
         <div class="mapBox">
 
             <div class="mapHeader">
 
-                <h2>SECTOR MAP</h2>
+                <h2>
+                    SECTOR MAP
+                </h2>
 
-                <button id="closeMap">
+                <button
+                    id="closeMap"
+                    type="button">
                     CLOSE
                 </button>
 
@@ -211,10 +252,7 @@
     </div>
 
 
-    <!-- =========================
-         JAVASCRIPT
-    ========================== -->
-
+    <!-- GAME JAVASCRIPT -->
     <script src="app.js"></script>
 
 </body>
