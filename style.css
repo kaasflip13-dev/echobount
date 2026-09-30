@@ -1055,3 +1055,68 @@ body {
     }
 
 }
+/* =====================================================
+   ECHOBOUND SHOP BUTTON
+   ===================================================== */
+
+.shopButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+
+    min-height: 52px;
+
+    padding: 0 20px;
+
+    box-sizing: border-box;
+
+    color: #6de7ff;
+
+    background:
+        linear-gradient(
+            90deg,
+            rgba(109, 231, 255, 0.04),
+            rgba(109, 231, 255, 0.12),
+            rgba(109, 231, 255, 0.04)
+        );
+
+    border: 1px solid rgba(109, 231, 255, 0.45);
+
+    text-decoration: none;
+
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 800;
+
+    letter-spacing: 3px;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+}
+
+
+.shopButton:hover {
+    color: #061016;
+
+    background: #6de7ff;
+
+    border-color: #6de7ff;
+
+    box-shadow:
+        0 0 20px rgba(109, 231, 255, 0.35);
+
+    transform: translateY(-2px);
+}
+
+
+.shopButton:active {
+    transform: translateY(0);
+}
