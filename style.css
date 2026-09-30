@@ -1032,6 +1032,23 @@ body {
     .achievementGrid {
         grid-template-columns: 1fr;
     }
+    .shopButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    color: #6de7ff;
+}
+
+.shopButton:hover {
+    color: #061016;
+    background: #6de7ff;
+    border-color: #6de7ff;
+}
 
     .achievementsHeader h2 {
         font-size: 30px;
