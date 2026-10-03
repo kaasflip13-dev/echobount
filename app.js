@@ -579,95 +579,154 @@ function createParticles(
     }
 }
 
-// ============================================================
-// SHOOTING
-// ============================================================
-
 function shoot() {
-    if (!gameRunning || paused) return;
 
-    const weapon = weapons[player.weapon];
+    if (!gameRunning) return;
+    if (gamePaused) return;
+    if (gameOver) return;
 
-    if (player.reloadTimer > 0) return;
+    if (player.isReloading) return;
 
-    if (weapon.ammo <= 0) {
+    if (player.fireCooldown > 0) {
+        return;
+    }
+
+    if (player.ammo <= 0) {
         reload();
         return;
     }
 
-    if (player.fireCooldown > 0) return;
+    player.ammo--;
 
-    weapon.ammo--;
+    player.fireCooldown = 0.45;
 
-    player.fireCooldown = weapon.fireRate;
 
-    const angle = player.turretAngle;
+    // ========================================================
+    // MUZZLE POSITIE
+    // ========================================================
 
-    const startDistance = 46;
+    const start = new THREE.Vector3();
 
-    bullets.push({
-        x:
-            player.x +
-            Math.cos(angle) * startDistance,
+    muzzle.getWorldPosition(start);
 
-        y:
-            player.y +
-            Math.sin(angle) * startDistance,
 
-        vx: Math.cos(angle) * weapon.speed,
+    // ========================================================
+    // RICHTING VAN DE KOGEL
+    // ========================================================
 
-        vy: Math.sin(angle) * weapon.speed,
+    // We gebruiken de camera om het richtpunt te bepalen,
+    // maar laten de kogel NIET rechtstreeks naar beneden
+    // vliegen wanneer de camera van boven kijkt.
 
-        damage: weapon.damage,
+    const cameraDirection =
+        new THREE.Vector3();
 
-        size: weapon.size,
-
-        life: 2
-    });
-
-    createParticles(
-        player.x + Math.cos(angle) * 40,
-        player.y + Math.sin(angle) * 40,
-        4,
-        "muzzle"
-    );
-}
-
-function reload() {
-    if (!gameRunning || paused) return;
-
-    const weapon = weapons[player.weapon];
-
-    if (weapon.ammo >= weapon.maxAmmo) return;
-
-    if (player.reloadTimer > 0) return;
-
-    player.reloadTimer = 0.9;
-}
-
-// ============================================================
-// ENEMY SHOOTING
-// ============================================================
-
-function enemyShoot(enemy) {
-    const angle = Math.atan2(
-        player.y - enemy.y,
-        player.x - enemy.x
+    camera.getWorldDirection(
+        cameraDirection
     );
 
-    enemyBullets.push({
-        x: enemy.x + Math.cos(angle) * enemy.radius,
-        y: enemy.y + Math.sin(angle) * enemy.radius,
 
-        vx: Math.cos(angle) * 330,
-        vy: Math.sin(angle) * 330,
+    // Een punt ver voor de camera.
+    const aimPoint =
+        camera.position.clone().add(
+            cameraDirection.clone().multiplyScalar(150)
+        );
 
-        life: 5,
 
-        size: 7
-    });
+    // Richting vanaf de loop naar het richtpunt.
+    const direction =
+        aimPoint.clone().sub(start).normalize();
+
+
+    // ========================================================
+    // VOORKOM DAT JE NAAR DE GROND SCHIET
+    // ========================================================
+
+    // Als je heel sterk naar beneden kijkt,
+    // houden we de verticale hoek beperkt.
+
+    const horizontalLength =
+        Math.sqrt(
+            direction.x * direction.x +
+            direction.z * direction.z
+        );
+
+
+    if (horizontalLength > 0.001) {
+
+        const maxDownAngle =
+            THREE.MathUtils.degToRad(35);
+
+        const maxVertical =
+            Math.tan(maxDownAngle) *
+            horizontalLength;
+
+
+        if (
+            direction.y < -maxVertical
+        ) {
+
+            direction.y =
+                -maxVertical;
+
+            direction.normalize();
+        }
+    }
+
+
+    // ========================================================
+    // KOGEL
+    // ========================================================
+
+    const bullet =
+        new THREE.Mesh(
+            new THREE.SphereGeometry(
+                0.16,
+                8,
+                8
+            ),
+            new THREE.MeshBasicMaterial({
+                color: 0x6cecff
+            })
+        );
+
+
+    bullet.position.copy(
+        start
+    );
+
+
+    bullet.userData = {
+
+        velocity:
+            direction
+                .clone()
+                .multiplyScalar(90),
+
+        life: 4,
+
+        damage: 50
+    };
+
+
+    scene.add(
+        bullet
+    );
+
+
+    bullets.push(
+        bullet
+    );
+
+
+    // ========================================================
+    // EFFECTEN
+    // ========================================================
+
+    createMuzzleFlash();
+
+    player.recoil = 0.18;
 }
-
 // ============================================================
 // PLAYER MOVEMENT
 // ============================================================
